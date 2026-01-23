@@ -29,7 +29,10 @@ export async function GET(req: Request) {
   try {
     // Try direct MySQL first
     try {
-      // Fetch all roles with their permissions
+      // Fetch all available permissions
+      const allPermissions = await query(`SELECT * FROM Permission ORDER BY module, type, action`) as any[]
+      
+      // Fetch all roles with their assigned permissions
       const rolesData = await query(`
         SELECT 
           r.id as role_id,
@@ -73,42 +76,48 @@ export async function GET(req: Request) {
       const roles = Array.from(rolesMap.values())
 
       const formattedRoles = roles.map((role: any) => {
-        const modulePermissions: Record<string, any> = {}
+        // Create a set of assigned permission IDs for this role
+        const assignedPermissionIds = new Set(
+          role.rolePermissions.map((rp: any) => rp.permission.id)
+        )
+
+        // Build modules structure with ALL available permissions
+        const allModulePermissions: Record<string, any> = {}
         
-        // Group permissions by module
-        role.rolePermissions.forEach((rp: any) => {
-          const module = rp.permission.module.toLowerCase()
-          const action = actionMap[rp.permission.action] || rp.permission.action.toLowerCase()
+        allPermissions.forEach((perm: any) => {
+          const module = perm.module.toLowerCase()
+          const action = actionMap[perm.action] || perm.action.toLowerCase()
+          const isChecked = assignedPermissionIds.has(perm.id)
           
-          if (!modulePermissions[module]) {
-            modulePermissions[module] = {
+          if (!allModulePermissions[module]) {
+            allModulePermissions[module] = {
               base: [],
               advanced: []
             }
           }
           
-          const permType = rp.permission.type === 'BASE' ? 'base' : 'advanced'
-          modulePermissions[module][permType].push({
+          const permType = perm.type === 'BASE' ? 'base' : 'advanced'
+          allModulePermissions[module][permType].push({
             label: action.charAt(0).toUpperCase() + action.slice(1),
-            checked: true,
-            action: rp.permission.action
+            checked: isChecked,
+            action: perm.action
           })
         })
 
         // Build modules for display
-        const modules = Object.entries(modulePermissions).map(([moduleName, perms]: [string, any]) => ({
+        const modules = Object.entries(allModulePermissions).map(([moduleName, perms]: [string, any]) => ({
           title: moduleName.charAt(0).toUpperCase() + moduleName.slice(1),
-          badge: perms.base.some((p: any) => p.action === 'VIEW') ? "ON" : undefined,
+          badge: perms.base.some((p: any) => p.checked && p.action === 'VIEW') ? "ON" : undefined,
           permissions: perms
         }))
 
         // Build flat permissions structure for modal
         const permissions: any = {}
-        Object.entries(modulePermissions).forEach(([moduleName, perms]: [string, any]) => {
+        Object.entries(allModulePermissions).forEach(([moduleName, perms]: [string, any]) => {
           permissions[moduleName] = {}
           ;[...perms.base, ...perms.advanced].forEach((p: any) => {
             const actionKey = actionMap[p.action] || p.action.toLowerCase()
-            permissions[moduleName][actionKey] = true
+            permissions[moduleName][actionKey] = p.checked
           })
         })
 
@@ -127,6 +136,15 @@ export async function GET(req: Request) {
       
       // Fallback to Prisma
       // @ts-expect-error - Prisma types not loaded in TS cache
+      const allPermissions = await prisma.permission.findMany({
+        orderBy: [
+          { module: 'asc' },
+          { type: 'asc' },
+          { action: 'asc' }
+        ]
+      })
+
+      // @ts-expect-error - Prisma types not loaded in TS cache
       const roles = await prisma.roleEntity.findMany({
         include: {
           rolePermissions: {
@@ -141,42 +159,48 @@ export async function GET(req: Request) {
       })
 
       const formattedRoles = roles.map((role: any) => {
-        const modulePermissions: Record<string, any> = {}
+        // Create a set of assigned permission IDs for this role
+        const assignedPermissionIds = new Set(
+          role.rolePermissions.map((rp: any) => rp.permission.id)
+        )
+
+        // Build modules structure with ALL available permissions
+        const allModulePermissions: Record<string, any> = {}
         
-        // Group permissions by module
-        role.rolePermissions.forEach((rp: any) => {
-          const module = rp.permission.module.toLowerCase()
-          const action = actionMap[rp.permission.action] || rp.permission.action.toLowerCase()
+        allPermissions.forEach((perm: any) => {
+          const module = perm.module.toLowerCase()
+          const action = actionMap[perm.action] || perm.action.toLowerCase()
+          const isChecked = assignedPermissionIds.has(perm.id)
           
-          if (!modulePermissions[module]) {
-            modulePermissions[module] = {
+          if (!allModulePermissions[module]) {
+            allModulePermissions[module] = {
               base: [],
               advanced: []
             }
           }
           
-          const permType = rp.permission.type === 'BASE' ? 'base' : 'advanced'
-          modulePermissions[module][permType].push({
+          const permType = perm.type === 'BASE' ? 'base' : 'advanced'
+          allModulePermissions[module][permType].push({
             label: action.charAt(0).toUpperCase() + action.slice(1),
-            checked: true,
-            action: rp.permission.action
+            checked: isChecked,
+            action: perm.action
           })
         })
 
         // Build modules for display
-        const modules = Object.entries(modulePermissions).map(([moduleName, perms]: [string, any]) => ({
+        const modules = Object.entries(allModulePermissions).map(([moduleName, perms]: [string, any]) => ({
           title: moduleName.charAt(0).toUpperCase() + moduleName.slice(1),
-          badge: perms.base.some((p: any) => p.action === 'VIEW') ? "ON" : undefined,
+          badge: perms.base.some((p: any) => p.checked && p.action === 'VIEW') ? "ON" : undefined,
           permissions: perms
         }))
 
         // Build flat permissions structure for modal
         const permissions: any = {}
-        Object.entries(modulePermissions).forEach(([moduleName, perms]: [string, any]) => {
+        Object.entries(allModulePermissions).forEach(([moduleName, perms]: [string, any]) => {
           permissions[moduleName] = {}
           ;[...perms.base, ...perms.advanced].forEach((p: any) => {
             const actionKey = actionMap[p.action] || p.action.toLowerCase()
-            permissions[moduleName][actionKey] = true
+            permissions[moduleName][actionKey] = p.checked
           })
         })
 
