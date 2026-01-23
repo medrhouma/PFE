@@ -18,7 +18,7 @@ interface RoleCardProps {
   roleName: string
   description: string
   modules: PermissionModule[]
-  onEdit: () => void
+  onEdit?: () => void
 }
 
 export function RoleCard({ roleName, description, modules, onEdit }: RoleCardProps) {
@@ -29,14 +29,16 @@ export function RoleCard({ roleName, description, modules, onEdit }: RoleCardPro
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{roleName}</h3>
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{description}</p>
         </div>
-        <button
-          onClick={onEdit}
-          className="text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 p-2 rounded-lg transition-colors"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-          </svg>
-        </button>
+        {onEdit && (
+          <button
+            onClick={onEdit}
+            className="text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 p-2 rounded-lg transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+          </button>
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-4">

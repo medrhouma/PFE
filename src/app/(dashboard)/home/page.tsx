@@ -65,7 +65,7 @@ async function getUserPermissions(email: string) {
   try {
     // Get user's role
     const users = await query(
-      'SELECT id, role, roleId FROM User WHERE email = ?',
+      'SELECT id, role FROM User WHERE email = ?',
       [email]
     ) as any[]
 
@@ -75,14 +75,22 @@ async function getUserPermissions(email: string) {
 
     const user = users[0]
 
-    // If user has a roleId, get permissions from that role
-    if (user.roleId) {
+    // Get the Role ID based on the role name
+    const roles = await query(
+      'SELECT id FROM Role WHERE name = ?',
+      [user.role]
+    ) as any[]
+
+    if (roles && roles.length > 0) {
+      const roleId = roles[0].id
+
+      // Get permissions for this role
       const permissions = await query(`
         SELECT p.module, p.action
         FROM RolePermission rp
         JOIN Permission p ON rp.permissionId = p.id
         WHERE rp.roleId = ?
-      `, [user.roleId]) as any[]
+      `, [roleId]) as any[]
 
       // Group permissions by module
       const modulePermissions: Record<string, string[]> = {}

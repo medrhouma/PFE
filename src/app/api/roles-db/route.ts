@@ -135,7 +135,6 @@ export async function GET(req: Request) {
       console.log("Direct query failed, trying Prisma:", directError)
       
       // Fallback to Prisma
-      // @ts-expect-error - Prisma types not loaded in TS cache
       const allPermissions = await prisma.permission.findMany({
         orderBy: [
           { module: 'asc' },
@@ -144,7 +143,6 @@ export async function GET(req: Request) {
         ]
       })
 
-      // @ts-expect-error - Prisma types not loaded in TS cache
       const roles = await prisma.roleEntity.findMany({
         include: {
           rolePermissions: {
@@ -263,7 +261,6 @@ export async function POST(req: Request) {
       console.log("Direct query failed, trying Prisma:", directError)
       
       // Fallback to Prisma
-      // @ts-expect-error - Prisma types not loaded in TS cache
       const role = await prisma.roleEntity.create({
         data: {
           name,
@@ -271,7 +268,6 @@ export async function POST(req: Request) {
         }
       })
 
-      // @ts-expect-error - Prisma types not loaded in TS cache
       const allPermissions = await prisma.permission.findMany()
 
       for (const perm of allPermissions) {
@@ -279,7 +275,6 @@ export async function POST(req: Request) {
         const action = actionMap[perm.action] || perm.action.toLowerCase()
         
         if (permissions[module]?.[action]) {
-          // @ts-expect-error - Prisma types not loaded in TS cache
           await prisma.rolePermission.create({
             data: {
               roleId: role.id,
@@ -342,18 +337,15 @@ export async function PUT(req: Request) {
       console.log("Direct query failed, trying Prisma:", directError)
       
       // Fallback to Prisma
-      // @ts-expect-error - Prisma types not loaded in TS cache
       await prisma.roleEntity.update({
         where: { id: roleId },
         data: { description }
       })
 
-      // @ts-expect-error - Prisma types not loaded in TS cache
       await prisma.rolePermission.deleteMany({
         where: { roleId }
       })
 
-      // @ts-expect-error - Prisma types not loaded in TS cache
       const allPermissions = await prisma.permission.findMany()
 
       for (const perm of allPermissions) {
@@ -361,7 +353,6 @@ export async function PUT(req: Request) {
         const action = actionMap[perm.action] || perm.action.toLowerCase()
         
         if (permissions[module]?.[action]) {
-          // @ts-expect-error - Prisma types not loaded in TS cache
           await prisma.rolePermission.create({
             data: {
               roleId: roleId,
@@ -418,7 +409,6 @@ export async function DELETE(req: Request) {
       
       // Fallback to Prisma
       const usersWithRole = await prisma.user.count({
-        // @ts-expect-error - Prisma types not loaded in TS cache
         where: { roleId: roleId }
       })
 
@@ -428,7 +418,6 @@ export async function DELETE(req: Request) {
         }, { status: 400 })
       }
 
-      // @ts-expect-error - Prisma types not loaded in TS cache
       await prisma.roleEntity.delete({
         where: { id: roleId }
       })

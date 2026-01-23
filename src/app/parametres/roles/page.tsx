@@ -2,12 +2,16 @@
 import { useState, useEffect } from "react"
 import { RoleCard } from "@/components/roles/RoleCard"
 import RoleEditModal from "@/components/roles/RoleEditModal"
+import { usePermissions } from "@/contexts/PermissionsContext"
 
 export default function RolesPage() {
   const [roles, setRoles] = useState<any[]>([])
   const [selectedRole, setSelectedRole] = useState<any>(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [loading, setLoading] = useState(true)
+  const { hasPermission } = usePermissions()
+
+  const canEdit = hasPermission('parametres', 'EDIT')
 
   // Fetch roles from database
   useEffect(() => {
@@ -58,10 +62,10 @@ export default function RolesPage() {
                 roleName={role.name}
                 description={role.description}
                 modules={role.modules}
-                onEdit={() => {
+                onEdit={canEdit ? () => {
                   setSelectedRole(role)
                   setModalOpen(true)
-                }}
+                } : undefined}
               />
             ))}
           </div>

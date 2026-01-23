@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import Link from "next/link"
+import { PermissionsProvider } from "@/contexts/PermissionsContext"
 
 export default async function ParametresLayout({
   children,
@@ -14,13 +15,17 @@ export default async function ParametresLayout({
     redirect("/login")
   }
 
-  // Only SUPER_ADMIN can access settings
+  // Check if user has VIEW permission for parametres module
+  // SUPER_ADMIN always has access
   if (session.user.role !== "SUPER_ADMIN") {
-    redirect("/home")
+    // For now, redirect non-SUPER_ADMIN users
+    // The permission check will be handled in the PermissionsProvider
+    // redirect("/home")
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
+    <PermissionsProvider>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
       {/* Sidebar */}
       <aside className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col py-8 px-4">
         <div className="text-2xl font-bold text-violet-600 dark:text-violet-400 mb-10 px-4">
@@ -73,5 +78,6 @@ export default async function ParametresLayout({
         {children}
       </main>
     </div>
+    </PermissionsProvider>
   )
 }

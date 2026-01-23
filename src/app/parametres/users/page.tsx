@@ -3,6 +3,7 @@ import { useEffect, useState } from "react"
 import { FiUser, FiEdit3, FiTrash2, FiRefreshCcw } from "react-icons/fi"
 import AddUserModal from "@/components/users/AddUserModal"
 import EditUserModal from "@/components/users/EditUserModal"
+import { usePermissions } from "@/contexts/PermissionsContext"
 
 function UserProviderBadges({ providers = [] }: { providers: string[] }) {
   return (
@@ -40,6 +41,11 @@ export default function UsersPage() {
   const [showAddModal, setShowAddModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [selectedUser, setSelectedUser] = useState<any>(null)
+  const { hasPermission, loading } = usePermissions()
+
+  const canAdd = hasPermission('parametres', 'ADD')
+  const canEdit = hasPermission('parametres', 'EDIT')
+  const canDelete = hasPermission('parametres', 'DELETE')
 
   useEffect(() => {
     fetch("/api/users")
@@ -100,14 +106,18 @@ export default function UsersPage() {
             <div className="border-b-2 border-blue-600 pb-3">
               <h2 className="text-base font-semibold text-blue-600">Users</h2>
             </div>
-            <button className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
-              onClick={() => setShowAddModal(true)}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              New User
-            </button>
+            {canAdd && (
+              <button 
+                className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={() => setShowAddModal(true)}
+                disabled={!canAdd}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                New User
+              </button>
+            )}
           </div>
         </div>
 
@@ -162,20 +172,29 @@ export default function UsersPage() {
                     </td>
                     <td className="py-3.5 px-4">
                       <div className="flex items-center gap-2">
-                        <button 
-                          onClick={() => handleEditUser(user)}
-                          className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 transition-colors" 
-                          title="Modifier"
-                        >
-                          <FiEdit3 className="w-4 h-4" />
-                        </button>
-                        <button 
-                          onClick={() => handleDeleteUser(user.id)}
-                          className="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500 dark:text-red-400 transition-colors" 
-                          title="Supprimer"
-                        >
-                          <FiTrash2 className="w-4 h-4" />
-                        </button>
+                        {canEdit && (
+                          <button 
+                            onClick={() => handleEditUser(user)}
+                            className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" 
+                            title="Modifier"
+                            disabled={!canEdit}
+                          >
+                            <FiEdit3 className="w-4 h-4" />
+                          </button>
+                        )}
+                        {canDelete && (
+                          <button 
+                            onClick={() => handleDeleteUser(user.id)}
+                            className="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500 dark:text-red-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" 
+                            title="Supprimer"
+                            disabled={!canDelete}
+                          >
+                            <FiTrash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                        {!canEdit && !canDelete && (
+                          <span className="text-xs text-gray-400 dark:text-gray-500">Lecture seule</span>
+                        )}
                       </div>
                     </td>
                   </tr>

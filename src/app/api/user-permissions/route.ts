@@ -13,7 +13,7 @@ export async function GET() {
 
     // Get user's role
     const users = await query(
-      'SELECT id, role, roleId FROM User WHERE email = ?',
+      'SELECT id, role FROM User WHERE email = ?',
       [session.user.email]
     ) as any[]
 
@@ -23,16 +23,23 @@ export async function GET() {
 
     const user = users[0]
 
-    // If user has a roleId, get permissions from that role
+    // Get the Role ID based on the role name
+    const roles = await query(
+      'SELECT id FROM Role WHERE name = ?',
+      [user.role]
+    ) as any[]
+
     let permissions: any[] = []
     
-    if (user.roleId) {
+    if (roles && roles.length > 0) {
+      const roleId = roles[0].id
+      
       permissions = await query(`
         SELECT p.module, p.type, p.action
         FROM RolePermission rp
         JOIN Permission p ON rp.permissionId = p.id
         WHERE rp.roleId = ?
-      `, [user.roleId]) as any[]
+      `, [roleId]) as any[]
     }
 
     // Group permissions by module
@@ -52,7 +59,6 @@ export async function GET() {
 
     return NextResponse.json({
       role: user.role,
-      roleId: user.roleId,
       permissions: modulePermissions
     })
   } catch (error: any) {

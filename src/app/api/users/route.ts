@@ -2,6 +2,37 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { pool } from "@/lib/db"
+import { query } from "@/lib/mysql-direct"
+
+async function hasPermission(email: string, module: string, action: string): Promise<boolean> {
+  try {
+    // Get user's role
+    const users = await query('SELECT role FROM User WHERE email = ?', [email]) as any[]
+    if (!users || users.length === 0) return false
+
+    const userRole = users[0].role
+    
+    // SUPER_ADMIN has all permissions
+    if (userRole === 'SUPER_ADMIN') return true
+
+    // Get Role ID
+    const roles = await query('SELECT id FROM Role WHERE name = ?', [userRole]) as any[]
+    if (!roles || roles.length === 0) return false
+
+    // Check if user has the permission
+    const permissions = await query(`
+      SELECT COUNT(*) as count
+      FROM RolePermission rp
+      JOIN Permission p ON rp.permissionId = p.id
+      WHERE rp.roleId = ? AND p.module = ? AND p.action = ?
+    `, [roles[0].id, module.toUpperCase(), action]) as any[]
+
+    return permissions[0].count > 0
+  } catch (error) {
+    console.error("Error checking permission:", error)
+    return false
+  }
+}
 
 export async function GET() {
   try {
@@ -11,12 +42,14 @@ export async function GET() {
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 })
     }
 
-    // Only SUPER_ADMIN can access users
-    if (session.user.role !== "SUPER_ADMIN") {
-      return NextResponse.json({ error: "Accès refusé" }, { status: 403 })
+    // Check if user has VIEW permission for parametres
+    const canView = await hasPermission(session.user.email!, 'PARAMETRES', 'VIEW')
+    
+    if (!canView) {
+      return NextResponse.json({ error: "Accès refusé - Permission VIEW requise" }, { status: 403 })
     }
 
-    console.log("Fetching users for SUPER_ADMIN:", session.user.email)
+    console.log("Fetching users for", session.user.role, ":", session.user.email)
 
     // Query from User table - only select existing columns
     const [rows] = await pool.execute(
