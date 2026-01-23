@@ -38,7 +38,7 @@ const superAdminModules = [
     title: "Paramètres",
     description:  "Gestion des utilisateurs, rôles et paramètres généraux.",
     icon: <ParametresIcon />,
-    href: "/parametres",
+    href: "/parametres/users",
     color: "green" as const,
   },
   {

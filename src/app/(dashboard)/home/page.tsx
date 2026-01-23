@@ -4,23 +4,15 @@ import { redirect } from "next/navigation"
 import { ModuleCard } from "@/components/dashboard/ModuleCard"
 
 // Icons Components
-const PointageIcon = () => (
+
+const DashboardIcon = () => (
   <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h18v18H3V3zM9 3v18M15 3v18M3 9h18M3 15h18" />
   </svg>
 )
 
-const CongesIcon = () => (
-  <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-  </svg>
-)
 
-const EmployesIcon = () => (
-  <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-  </svg>
-)
+
 
 const ChatbotIcon = () => (
   <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -35,41 +27,20 @@ const ParametresIcon = () => (
   </svg>
 )
 
-const RapportsIcon = () => (
-  <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-  </svg>
-)
+
 
 // Configuration des modules
 const allModules = [
-  {
-    id: "pointage",
-    title: "Pointage",
-    description: "Gérez vos entrées et sorties quotidiennes, consultez votre historique de présence.",
-    icon: <PointageIcon />,
-    href: "/pointage",
-    color: "blue" as const,
-    roles: ["SUPER_ADMIN", "RH", "USER"],
+ {   id: "dashboard",
+    title: "Tableau de bord",
+    description: "Vue d'ensemble des indicateurs clés et performances RH.",
+    icon: <DashboardIcon />,
+    href: "/dashboard",
+    color: "violet" as const,
+    roles : ["SUPER_ADMIN", "RH", "USER"],
   },
-  {
-    id: "conges",
-    title: "Congés",
-    description: "Demandez vos congés, suivez vos soldes et consultez le calendrier d'équipe.",
-    icon: <CongesIcon />,
-    href:  "/conges",
-    color:  "violet" as const,
-    roles:  ["SUPER_ADMIN", "RH", "USER"],
-  },
-  {
-    id:  "employes",
-    title:  "Employés",
-    description: "Gérez les profils des employés, contrats et informations personnelles.",
-    icon: <EmployesIcon />,
-    href: "/employes",
-    color: "orange" as const,
-    roles: ["SUPER_ADMIN", "RH"],
-  },
+ 
+  
   {
     id: "chatbot",
     title: "Chatbot IA",
@@ -77,23 +48,15 @@ const allModules = [
     icon: <ChatbotIcon />,
     href: "/chatbot",
     color: "teal" as const,
-    roles: ["SUPER_ADMIN", "RH", "USER"],
-  },
-  {
-    id: "rapports",
-    title: "Rapports",
-    description: "Tableaux de bord, statistiques et analyses des données RH.",
-    icon: <RapportsIcon />,
-    href: "/rapports",
-    color: "pink" as const,
     roles: ["SUPER_ADMIN", "RH"],
   },
+  
   {
     id: "parametres",
     title: "Paramètres",
     description: "Gestion des utilisateurs, rôles et paramètres généraux de la plateforme.",
     icon: <ParametresIcon />,
-    href: "/parametres",
+    href: "/parametres/users",
     color: "green" as const,
     roles: ["SUPER_ADMIN"],
   },
@@ -108,14 +71,14 @@ export default async function HomePage() {
   const firstName = session.user.name?. split(" ")[0] || "Utilisateur"
   
   const userRole = session.user.role || "USER"
-  const modules = allModules.filter((module) => module.roles.includes(userRole))
+  const modules = allModules.filter((module) => module.roles?.includes(userRole))
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-8">
       {/* Badge Plateforme */}
       <div className="inline-flex items-center gap-2 bg-white border border-gray-200 rounded-full px-4 py-2 mb-6 shadow-sm">
         <span className="w-2 h-2 bg-violet-500 rounded-full animate-pulse"></span>
-        <span className="text-sm text-gray-600 font-medium">Plateforme RH Santec</span>
+        <span className="text-sm text-gray-600 font-medium">Plateforme Santec AI</span>
       </div>
 
       {/* Bienvenue */}

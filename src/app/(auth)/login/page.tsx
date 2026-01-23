@@ -18,20 +18,16 @@ export default async function LoginPage() {
           {/* Logo */}
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
-              <span className="text-violet-600 font-bold text-xl">RH</span>
+              <span className="text-violet-600 font-bold text-xl">S</span>
             </div>
-            <span className="text-white text-xl font-semibold">RH Platform</span>
+            <span className="text-white text-xl font-semibold">Santec AI</span>
           </div>
         </div>
 
         {/* Content */}
         <div className="space-y-8">
           <div>
-            <h2 className="text-4xl font-bold text-white leading-tight">
-              Gérez vos talents
-              <br />
-              intelligemment
-            </h2>
+            
             <p className="mt-4 text-violet-200 text-lg">
               Une plateforme RH moderne propulsée par l'intelligence artificielle
             </p>
@@ -85,7 +81,7 @@ export default async function LoginPage() {
 
         {/* Footer */}
         <div className="text-violet-300 text-sm">
-          © 2026 RH Platform.  Tous droits réservés. 
+          © 2026 Santec AI.  Tous droits réservés. 
         </div>
       </div>
 

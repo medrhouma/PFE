@@ -49,7 +49,7 @@ export function LoginForm() {
       {/* Header */}
       <div className="text-center">
         <h1 className="text-3xl font-bold text-gray-900">
-          Bienvenue !  👋
+          Sign in
         </h1>
         <p className="mt-2 text-gray-600">
           Connectez-vous à votre compte
@@ -116,16 +116,6 @@ export function LoginForm() {
         </Button>
       </form>
 
-      {/* Footer */}
-      <p className="text-center text-sm text-gray-600">
-        Pas encore de compte ?{" "}
-        <Link
-          href="/register"
-          className="font-medium text-violet-600 hover:text-violet-500"
-        >
-          Contactez votre administrateur
-        </Link>
-      </p>
     </div>
   )
 }
