@@ -73,6 +73,7 @@ model User {
 
   accounts Account[]
   sessions Session[]
+  employee      Employe?                              // relation one-to-one avec Employe
   dossiers      DossierEmploye[]
   demandesConge DemandeConge[]
 
@@ -209,4 +210,27 @@ enum StatutConge {
   EN_ATTENTE
   VALIDE
   REFUSE
+}
+
+// ========== EMPLOYE ==========
+model Employe {
+  id            String       @id @default(cuid())
+  userId        String       @unique @map("user_id")
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nom           String?
+  prenom        String?
+  email         String?
+  birthday      DateTime?
+  sexe          Sexe?
+  rib           String?      @db.VarChar(24)
+  adresse       String?
+  telephone     String?
+  dateEmbauche  DateTime?    @map("date_embauche")
+  photo         String?      @db.Text // URL de la photo
+  cv            String?      @db.Text // URL du CV
+  typeContrat   ContratType? @map("type_contrat")
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+
+  @@map("Employe")
 }

@@ -1,5 +1,7 @@
 import { query } from '@/lib/mysql-direct';
 import StatsCard from './cards/StatsCard';
+import EmployeeList from '@/components/employees/EmployeeList';
+import RecentActivities from './RecentActivities';
 
 export default async function AdminDashboard() {
   // Fetch real data from MySQL
@@ -14,9 +16,6 @@ export default async function AdminDashboard() {
     try {
       // Test if User table exists (actual table name in DB)
       await query('SELECT 1 FROM User LIMIT 1');
-      
-      // Test if DemandeConge table exists (actual table name in DB) - for leave data
-      await query('SELECT 1 FROM DemandeConge LIMIT 1');
     } catch (tableError) {
       console.warn('Database tables may not exist yet:', tableError);
       tablesExist = false;
@@ -73,10 +72,18 @@ export default async function AdminDashboard() {
         <StatsCard title="Chatbot IA" value="En ligne" />
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <StatsCard title="Total Roles" value="3" />
         <StatsCard title="Système" value="Stable" />
       </div>
+
+      {/* Recent Activities */}
+      <div className="mb-8">
+        <RecentActivities />
+      </div>
+
+      {/* Employee List */}
+      <EmployeeList />
     </>
   );
 }

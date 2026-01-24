@@ -47,36 +47,41 @@ export function NotificationToast({
     switch (type) {
       case 'success':
         return {
-          container: 'bg-gradient-to-r from-green-500 to-emerald-600 border-green-400/50',
-          icon: 'text-green-100',
-          title: 'text-white',
-          message: 'text-green-100/90'
+          container: 'bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-500/30 shadow-2xl shadow-green-500/20',
+          icon: 'text-green-600 bg-green-100 p-3 rounded-xl',
+          iconBg: 'bg-green-500',
+          title: 'text-green-900 font-bold',
+          message: 'text-green-700'
         }
       case 'error':
         return {
-          container: 'bg-gradient-to-r from-red-500 to-rose-600 border-red-400/50',
-          icon: 'text-red-100',
-          title: 'text-white',
-          message: 'text-red-100/90'
+          container: 'bg-gradient-to-br from-red-50 to-rose-50 border-2 border-red-500/30 shadow-2xl shadow-red-500/20',
+          icon: 'text-red-600 bg-red-100 p-3 rounded-xl',
+          iconBg: 'bg-red-500',
+          title: 'text-red-900 font-bold',
+          message: 'text-red-700'
         }
       case 'warning':
         return {
-          container: 'bg-gradient-to-r from-amber-500 to-orange-600 border-amber-400/50',
-          icon: 'text-amber-100',
-          title: 'text-white',
-          message: 'text-amber-100/90'
+          container: 'bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-500/30 shadow-2xl shadow-amber-500/20',
+          icon: 'text-amber-600 bg-amber-100 p-3 rounded-xl',
+          iconBg: 'bg-amber-500',
+          title: 'text-amber-900 font-bold',
+          message: 'text-amber-700'
         }
       case 'info':
         return {
-          container: 'bg-gradient-to-r from-violet-500 to-purple-600 border-violet-400/50',
-          icon: 'text-violet-100',
-          title: 'text-white',
-          message: 'text-violet-100/90'
+          container: 'bg-gradient-to-br from-violet-50 to-purple-50 border-2 border-violet-500/30 shadow-2xl shadow-violet-500/20',
+          icon: 'text-violet-600 bg-violet-100 p-3 rounded-xl',
+          iconBg: 'bg-violet-500',
+          title: 'text-violet-900 font-bold',
+          message: 'text-violet-700'
         }
       default:
         return {
           container: 'bg-gray-800 border-gray-600',
           icon: 'text-gray-300',
+          iconBg: 'bg-gray-500',
           title: 'text-white',
           message: 'text-gray-300'
         }
@@ -97,56 +102,57 @@ export function NotificationToast({
 
   return (
     <div 
-      className={`relative transform transition-all duration-300 ease-out ${
+      className={`relative transform transition-all duration-500 ease-out ${
         isVisible && !isLeaving 
           ? 'translate-x-0 opacity-100 scale-100' 
-          : '-translate-x-full opacity-0 scale-95'
+          : 'translate-x-full opacity-0 scale-95'
       }`}
     >
       <div className={`
-        relative flex items-start gap-4 p-5 rounded-2xl border shadow-2xl shadow-black/10
-        backdrop-blur-xl bg-opacity-95 max-w-md w-full
+        relative flex items-start gap-4 p-6 rounded-2xl border
+        backdrop-blur-sm max-w-md w-full overflow-hidden
         ${styles.container}
       `}>
-        {/* Icon */}
-        <div className={`flex-shrink-0 mt-0.5 ${styles.icon}`}>
+        {/* Animated background decoration */}
+        <div className={`absolute inset-0 ${styles.iconBg} opacity-5`}>
+          <div className="absolute inset-0 animate-pulse"></div>
+        </div>
+        
+        {/* Icon with animation */}
+        <div className={`flex-shrink-0 mt-0.5 ${styles.icon} transform transition-transform duration-500 hover:scale-110`}>
           {getIcon()}
         </div>
         
         {/* Content */}
-        <div className="flex-1 min-w-0">
-          <h4 className={`text-lg font-bold mb-1 ${styles.title}`}>
+        <div className="flex-1 min-w-0 relative z-10">
+          <h4 className={`text-lg mb-1.5 ${styles.title}`}>
             {title}
           </h4>
           <p className={`text-sm leading-relaxed ${styles.message}`}>
             {message}
           </p>
           
-          {/* Progress bar */}
-          <div className="mt-3">
-            <div className="h-1 bg-black/20 rounded-full overflow-hidden">
+          {/* Enhanced Progress bar */}
+          <div className="mt-4">
+            <div className={`h-1.5 bg-white/30 rounded-full overflow-hidden relative`}>
               <div 
-                className={`h-full rounded-full ${
-                  type === 'success' ? 'bg-white/50' :
-                  type === 'error' ? 'bg-white/50' :
-                  type === 'warning' ? 'bg-white/50' :
-                  'bg-white/50'
-                }`}
+                className={`h-full rounded-full ${styles.iconBg} shadow-lg`}
                 style={{
                   animation: `progress-${id} ${duration}ms linear forwards`
                 }}
               ></div>
+              <div className={`absolute inset-0 ${styles.iconBg} opacity-20 animate-pulse`}></div>
             </div>
           </div>
         </div>
         
-        {/* Close button */}
+        {/* Close button with hover effect */}
         <button
           onClick={handleClose}
-          className="flex-shrink-0 p-1 rounded-lg hover:bg-black/10 transition-colors"
+          className={`flex-shrink-0 p-2 rounded-lg hover:bg-white/20 transition-all duration-200 hover:scale-110 relative z-10 ${styles.title}`}
           aria-label="Fermer la notification"
         >
-          <FiX className={`w-4 h-4 ${styles.icon}`} />
+          <FiX className="w-5 h-5" />
         </button>
       </div>
       

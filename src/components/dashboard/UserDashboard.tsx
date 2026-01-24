@@ -1,15 +1,83 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { query } from '@/lib/mysql-direct';
-import StatsCard from './cards/StatsCard';
+import EmployeeProfileForm from '@/components/employees/EmployeeProfileForm';
 
 export default async function UserDashboard() {
   const session = await getServerSession(authOptions);
   
-  // Fetch real data from MySQL
-  let statusToday = 'Absent'; // Default status
-  let remainingLeaves = '0 jours';
-  let pendingRequests = 0;
+  // Check if user has already submitted their profile
+  let employeeProfile: any = null;
+  
+  try {
+    const result: any = await query(
+      'SELECT * FROM Employe WHERE user_id = ?',
+      [session?.user?.id || '']
+    );
+    
+    if (result && result.length > 0) {
+      employeeProfile = result[0];
+    }
+  } catch (error) {
+    console.error('Error checking employee profile:', error);
+  }
+  
+  // If profile exists and is pending, show waiting message
+  if (employeeProfile && employeeProfile.statut === 'EN_ATTENTE') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-violet-50 to-purple-50">
+        <div className="max-w-md w-full mx-4">
+          <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
+            <div className="mb-6">
+              <div className="w-20 h-20 bg-gradient-to-br from-violet-500 to-purple-600 rounded-full flex items-center justify-center mx-auto">
+                <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+            </div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-3">
+              Profil en attente de vérification
+            </h2>
+            <p className="text-gray-600 mb-6">
+              Votre profil a été soumis avec succès et est en attente de validation par le service RH.
+            </p>
+            <div className="bg-violet-50 border border-violet-200 rounded-lg p-4">
+              <p className="text-sm text-violet-700">
+                Vous serez notifié par email une fois votre profil vérifié et approuvé.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  // If profile is rejected, allow resubmission
+  if (employeeProfile && employeeProfile.statut === 'REJETE') {
+    return (
+      <div className="p-6">
+        <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+          <h3 className="text-red-800 font-semibold mb-2">Profil refusé</h3>
+          <p className="text-red-600 text-sm">
+            Votre profil a été refusé. Veuillez corriger les informations et soumettre à nouveau.
+          </p>
+        </div>
+        <EmployeeProfileForm />
+      </div>
+    );
+  }
+  
+  // If profile approved, show regular dashboard (future feature)
+  if (employeeProfile && employeeProfile.statut === 'APPROUVE') {
+    return (
+      <div className="p-6">
+        <h1 className="text-2xl font-bold mb-6">Tableau de bord</h1>
+        <p className="text-gray-600">Votre profil a été approuvé. Bienvenue !</p>
+      </div>
+    );
+  }
+
+  // If no profile, show the form
   let userName = 'Utilisateur';
   let userEmail = session?.user?.email || 'N/A';
 
@@ -20,9 +88,6 @@ export default async function UserDashboard() {
     try {
       // Test if User table exists (actual table name in DB)
       await query('SELECT 1 FROM User LIMIT 1');
-      
-      // Test if DemandeConge table exists (actual table name in DB)
-      await query('SELECT 1 FROM DemandeConge LIMIT 1');
     } catch (tableError) {
       console.warn('Database tables may not exist yet:', tableError);
       tablesExist = false;
@@ -37,78 +102,30 @@ export default async function UserDashboard() {
           [session?.user?.email || '']
         );
       } catch (userError) {
-        // If any column doesn't exist, try with basic columns
-        userResult = await query(
-          'SELECT id, name, email FROM User WHERE email = ?',
-          [session?.user?.email || '']
-        );
+        console.error('Error fetching user:', userError);
       }
       
       if (Array.isArray(userResult) && userResult.length > 0) {
         const user = userResult[0];
         userName = user.name || session?.user?.name || 'Utilisateur';
         userEmail = user.email || session?.user?.email || 'N/A';
-        
-        // Get pending leave requests for this user
-        try {
-          const pendingResult: any = await query(
-            `SELECT COUNT(*) as count FROM DemandeConge 
-            WHERE user_id = ? AND status = 'EN_ATTENTE'`,
-            [user.id]
-          );
-          pendingRequests = Array.isArray(pendingResult) && pendingResult[0]?.count ? parseInt(pendingResult[0].count) : 0;
-        } catch (pendingError) {
-          // If status column doesn't exist, try without status filter
-          try {
-            const pendingResult: any = await query(
-              `SELECT COUNT(*) as count FROM DemandeConge 
-              WHERE user_id = ?`,
-              [user.id]
-            );
-            pendingRequests = Array.isArray(pendingResult) && pendingResult[0]?.count ? parseInt(pendingResult[0].count) : 0;
-          } catch (allPendingError) {
-            // If DemandeConge table doesn't exist, default to 0
-            pendingRequests = 0;
-          }
-        }
-        
-        // Get remaining leave days - we'll need to implement this based on the user's allocation
-        // For now, we'll keep it as a placeholder until we have leave allocation data
-        remainingLeaves = '12 jours'; // Placeholder - would be calculated from database
-        statusToday = 'Présent'; // Placeholder - would be determined from attendance system
-      } else {
-        // User not found in database
-        statusToday = 'Inconnu';
-        remainingLeaves = 'N/A';
-        pendingRequests = 0;
       }
-    } else {
-      // Fallback to default values if tables don't exist
-      statusToday = 'Présent';
-      remainingLeaves = '12 jours';
-      pendingRequests = 1;
     }
   } catch (error) {
     console.error('Error fetching user data:', error);
-    // Fallback to default values
-    statusToday = 'Présent';
-    remainingLeaves = '12 jours';
-    pendingRequests = 1;
   }
 
   return (
-    <>
-      <h1 className="text-2xl font-bold mb-6">Mon Dashboard - {userName}</h1>
+    <div className="p-6">
+      <h1 className="text-2xl font-bold mb-6">Complétez votre profil</h1>
 
-      <div className="mb-6 p-4 bg-blue-50 rounded-lg">
+      <div className="mb-6 p-4 bg-violet-50 border border-violet-200 rounded-lg">
         <p className="text-gray-700"><span className="font-semibold">Email:</span> {userEmail}</p>
+        <p className="text-gray-700"><span className="font-semibold">Nom:</span> {userName}</p>
       </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <StatsCard title="Statut aujourd’hui" value={statusToday} />
-        <StatsCard title="Congés restants" value={remainingLeaves} />
-        <StatsCard title="Demandes en attente" value={pendingRequests.toString()} />
-      </div>
-    </>
+
+      {/* Employee Profile Form */}
+      <EmployeeProfileForm />
+    </div>
   );
 }
