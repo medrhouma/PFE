@@ -3,6 +3,7 @@
 import { signOut, useSession } from "next-auth/react"
 import { useState } from "react"
 import { ThemeToggle } from "./ThemeToggle"
+import { NotificationBell } from "@/components/notifications/NotificationBell"
 
 export function Header() {
   const { data: session } = useSession()
@@ -23,6 +24,9 @@ export function Header() {
         <div className="flex items-center gap-4">
           {/* Theme Toggle */}
           <ThemeToggle />
+
+          {/* Notifications - Available for all users */}
+          <NotificationBell />
 
           {/* Profile */}
           <div className="relative">

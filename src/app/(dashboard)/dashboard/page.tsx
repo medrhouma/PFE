@@ -13,6 +13,28 @@ export default async function DashboardPage() {
     redirect("/login")
   }
 
+  // Vérifier le statut de l'utilisateur et rediriger si nécessaire
+  const userStatus = session.user.status
+  const userRole = session.user.role
+
+  // SUPER_ADMIN et RH sont exemptés des vérifications de statut
+  if (userRole !== "SUPER_ADMIN" && userRole !== "RH") {
+    // INACTIVE ou REJECTED → compléter le profil
+    if (userStatus === "INACTIVE" || userStatus === "REJECTED") {
+      redirect("/complete-profile")
+    }
+
+    // PENDING → en attente de validation
+    if (userStatus === "PENDING") {
+      redirect("/waiting-validation")
+    }
+
+    // Seuls les utilisateurs ACTIVE peuvent accéder
+    if (userStatus !== "ACTIVE") {
+      redirect("/complete-profile")
+    }
+  }
+
   const role = session.user?.role
 
   // Sécurité ultime

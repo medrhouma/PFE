@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { query } from '@/lib/mysql-direct';
+import { emailService } from '@/lib/services/email-service';
+import { notificationService } from '@/lib/services/notification-service';
 
 // GET all employees (Super Admin only)
 export async function GET(req: NextRequest) {
@@ -114,13 +116,18 @@ export async function POST(req: NextRequest) {
     let employee;
 
     if (existingEmployee && existingEmployee.length > 0) {
-      // Update existing employee
+      // Update existing employee - reset to EN_ATTENTE if resubmitting after rejection
       await query(
         `UPDATE Employe SET 
           nom = ?, prenom = ?, email = ?, birthday = ?, sexe = ?,
           rib = ?, adresse = ?, telephone = ?, date_embauche = ?,
           photo = ?, cv = ?, type_contrat = ?,
           autres_documents = ?,
+          statut = 'EN_ATTENTE',
+          status = 'EN_ATTENTE',
+          rejection_reason = NULL,
+          approved_by = NULL,
+          approved_at = NULL,
           updated_at = NOW()
         WHERE user_id = ?`,
         [
@@ -132,6 +139,12 @@ export async function POST(req: NextRequest) {
           autresDocumentsJson,
           targetUserId
         ]
+      );
+      
+      // Update user status to PENDING
+      await query(
+        `UPDATE User SET status = 'PENDING' WHERE id = ?`,
+        [targetUserId]
       );
 
       // Fetch the updated employee with user info
@@ -148,6 +161,12 @@ export async function POST(req: NextRequest) {
       );
 
       employee = result[0];
+      
+      console.log('✅ Employee profile updated - Status reset to EN_ATTENTE:', {
+        employeeId: employee.id,
+        userId: targetUserId,
+        status: 'EN_ATTENTE'
+      });
     } else {
       // Create new employee profile
       // Generate a UUID for the new employee
@@ -157,16 +176,24 @@ export async function POST(req: NextRequest) {
         `INSERT INTO Employe (
           id, user_id, nom, prenom, email, birthday, sexe,
           rib, adresse, telephone, date_embauche, photo, cv, type_contrat,
-          autres_documents
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          autres_documents, statut, status
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           employeeId, targetUserId, nom, prenom, email,
           birthday ? new Date(birthday) : null,
           sexe, rib, adresse, telephone,
           dateEmbauche ? new Date(dateEmbauche) : null,
           photo, cv, typeContrat,
-          autresDocumentsJson
+          autresDocumentsJson,
+          'EN_ATTENTE',
+          'EN_ATTENTE'
         ]
+      );
+      
+      // Update user status to PENDING
+      await query(
+        `UPDATE User SET status = 'PENDING' WHERE id = ?`,
+        [targetUserId]
       );
 
       // Fetch the created employee with user info
@@ -207,6 +234,36 @@ export async function POST(req: NextRequest) {
         email: employee.user_email,
       }
     };
+
+    // Notify all RH users of new pending employee
+    try {
+      const rhUsers: any = await query(
+        `SELECT id, email, name FROM User WHERE role IN ('RH', 'SUPER_ADMIN')`
+      );
+      
+      if (rhUsers && rhUsers.length > 0) {
+        const employeeName = `${employee.prenom || ''} ${employee.nom || ''}`.trim() || employee.email;
+        
+        // Send notifications to RH
+        const rhUserIds = rhUsers.map((rh: any) => rh.id);
+        await notificationService.notifyRHProfileSubmitted(rhUserIds, employeeName, targetUserId);
+        
+        // Send notification to user
+        await notificationService.notifyUserProfileSubmitted(targetUserId);
+        
+        // Send emails to RH
+        for (const rh of rhUsers) {
+          await emailService.notifyRHNewEmployee(
+            rh.email,
+            employeeName,
+            employee.id
+          );
+        }
+      }
+    } catch (notifError) {
+      console.error('Error sending notifications to RH:', notifError);
+      // Continue even if notification fails
+    }
 
     return NextResponse.json(formattedEmployee);
   } catch (error) {

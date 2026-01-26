@@ -30,8 +30,8 @@ export async function POST(request: NextRequest) {
     const id = uuid()
 
     await pool.execute(
-      `INSERT INTO User (id, name, email, password, role) VALUES (?, ?, ?, ?, ?)`,
-      [id, name, email, hashedPassword, "USER"]
+      `INSERT INTO User (id, name, email, password, role, status) VALUES (?, ?, ?, ?, ?, ?)`,
+      [id, name, email, hashedPassword, "USER", "INACTIVE"]
     )
 
     return NextResponse.json({

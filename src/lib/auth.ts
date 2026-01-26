@@ -76,19 +76,34 @@ export const authOptions: NextAuthOptions = {
 
     async jwt({ token, user, account }) {
       if (user) {
-        token.id = user. id
+        token.id = user.id
         token.role = (user as any).role || "USER"
+        token.status = (user as any).status || "INACTIVE"
       }
       
-      // ✅ Si c'est une connexion Google, récupérer le rôle depuis la DB
-      if (account?.provider === "google" && user?. email) {
+      // ✅ Si c'est une connexion Google, récupérer le rôle et le statut depuis la DB
+      if (account?.provider === "google" && user?.email) {
         const [rows] = await pool.execute(
-          `SELECT role FROM User WHERE email = ?`,
+          `SELECT role, status FROM User WHERE email = ?`,
           [user.email]
         )
         const users = rows as any[]
         if (users.length > 0) {
           token.role = users[0].role
+          token.status = users[0].status || "INACTIVE"
+        }
+      }
+
+      // Toujours récupérer le rôle et le statut les plus récents depuis la DB
+      if (token.email) {
+        const [rows] = await pool.execute(
+          `SELECT role, status FROM User WHERE email = ?`,
+          [token.email]
+        )
+        const users = rows as any[]
+        if (users.length > 0) {
+          token.role = users[0].role
+          token.status = users[0].status
         }
       }
       
@@ -99,6 +114,7 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         session.user.id = token.id as string
         session.user.role = token.role as string
+        session.user.status = token.status as string
       }
       return session
     },

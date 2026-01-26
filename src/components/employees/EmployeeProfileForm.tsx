@@ -157,7 +157,7 @@ export default function EmployeeProfileForm() {
 
   const handleMultiFileUpload = async (
     e: React.ChangeEvent<HTMLInputElement>,
-    docType: 'formation' | 'experience' | 'diplome'
+    docType: 'formation' | 'experience' | 'diplome' | 'autre'
   ) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -237,6 +237,11 @@ export default function EmployeeProfileForm() {
 
       if (response.ok) {
         showNotification({ type: "success", title: "Succès", message: "Profil enregistré avec succès!" });
+        
+        // Rediriger vers la page d'attente après un court délai
+        setTimeout(() => {
+          window.location.href = "/waiting-validation";
+        }, 1500);
       } else {
         const error = await response.json();
         showNotification({ type: "error", title: "Erreur", message: error.error || "Erreur lors de l'enregistrement" });

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { query } from '@/lib/mysql-direct';
+import { notificationService } from '@/lib/services/notification-service';
 
 // PATCH update employee status (RH only)
 export async function PATCH(
@@ -21,7 +22,7 @@ export async function PATCH(
     }
 
     const body = await req.json();
-    const { statut } = body;
+    const { statut, rejectionReason } = body;
 
     if (!statut || !['APPROUVE', 'REJETE'].includes(statut)) {
       return NextResponse.json(
@@ -30,13 +31,82 @@ export async function PATCH(
       );
     }
 
+    // Si rejeté, une raison peut être fournie (optionnelle)
+    const reason = statut === 'REJETE' ? (rejectionReason || 'Informations incorrectes ou incomplètes') : null;
+
     const { id: employeeId } = await params;
 
-    // Update employee status
-    await query(
-      `UPDATE Employe SET statut = ?, updated_at = NOW() WHERE id = ?`,
-      [statut, employeeId]
+    // Fetch employee first to get user_id
+    const empResult: any = await query(
+      `SELECT user_id FROM Employe WHERE id = ?`,
+      [employeeId]
     );
+
+    if (!empResult || empResult.length === 0) {
+      return NextResponse.json(
+        { error: 'Employé non trouvé' },
+        { status: 404 }
+      );
+    }
+
+    const userId = empResult[0].user_id;
+
+    // Update both Employee status AND User status
+    // Note: Employe table has BOTH 'statut' and 'status' columns - update both!
+    if (statut === 'REJETE') {
+      // Pour les rejets, inclure la raison et réinitialiser les champs d'approbation
+      await query(
+        `UPDATE Employe SET 
+          statut = ?, 
+          status = ?, 
+          rejection_reason = ?,
+          approved_by = NULL,
+          approved_at = NULL,
+          updated_at = NOW() 
+        WHERE id = ?`,
+        [statut, statut, reason, employeeId]
+      );
+    } else if (statut === 'APPROUVE') {
+      // Pour les approbations, enregistrer qui a approuvé et quand
+      await query(
+        `UPDATE Employe SET 
+          statut = ?, 
+          status = ?, 
+          rejection_reason = NULL,
+          approved_by = ?,
+          approved_at = NOW(),
+          updated_at = NOW() 
+        WHERE id = ?`,
+        [statut, statut, session.user.id, employeeId]
+      );
+    } else {
+      // Autre statut (EN_ATTENTE)
+      await query(
+        `UPDATE Employe SET statut = ?, status = ?, updated_at = NOW() WHERE id = ?`,
+        [statut, statut, employeeId]
+      );
+    }
+
+    // Update User status based on employee status
+    const userStatus = statut === 'APPROUVE' ? 'ACTIVE' : statut === 'REJETE' ? 'REJECTED' : 'PENDING';
+    await query(
+      `UPDATE User SET status = ? WHERE id = ?`,
+      [userStatus, userId]
+    );
+
+    console.log(`✅ Updated Employee status to ${statut} and User status to ${userStatus} for employee ${employeeId}`);
+
+    // Send notifications based on status change
+    try {
+      if (statut === 'APPROUVE') {
+        await notificationService.notifyProfileApproved(userId, session.user.name || 'l\'équipe RH');
+      } else if (statut === 'REJETE') {
+        await notificationService.notifyProfileRejected(userId, reason || 'Veuillez vérifier vos informations');
+      }
+    } catch (notifError) {
+      console.error('Error sending notification:', notifError);
+      // Continue even if notification fails
+    }
 
     // Fetch the updated employee
     const result: any = await query(

@@ -14,10 +14,7 @@ export function getPool() {
       connectionLimit: 10,
       queueLimit: 0,
       enableKeepAlive: true,
-      keepAliveInitialDelay: 0,
-      authPlugins: {
-        mysql_clear_password: () => () => Buffer.from(process.env.DB_PASSWORD || '')
-      }
+      keepAliveInitialDelay: 0
     })
   }
   return pool

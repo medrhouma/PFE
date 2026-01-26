@@ -120,8 +120,29 @@ export default async function HomePage() {
     redirect("/login")
   }
 
+  // Vérifier le statut de l'utilisateur et rediriger si nécessaire
+  const userStatus = session.user.status
+  const userRole = session.user.role
+
+  // SUPER_ADMIN et RH sont exemptés des vérifications de statut
+  if (userRole !== "SUPER_ADMIN" && userRole !== "RH") {
+    // INACTIVE ou REJECTED → compléter le profil
+    if (userStatus === "INACTIVE" || userStatus === "REJECTED") {
+      redirect("/complete-profile")
+    }
+
+    // PENDING → en attente de validation
+    if (userStatus === "PENDING") {
+      redirect("/waiting-validation")
+    }
+
+    // Seuls les utilisateurs ACTIVE peuvent accéder
+    if (userStatus !== "ACTIVE") {
+      redirect("/complete-profile")
+    }
+  }
+
   const firstName = session.user.name?.split(" ")[0] || "Utilisateur"
-  const userRole = session.user.role || "USER"
   
   // Get user permissions from database
   const { permissions: userPermissions } = await getUserPermissions(session.user.email!)
@@ -138,12 +159,6 @@ export default async function HomePage() {
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-8">
-      {/* Badge Plateforme */}
-      <div className="inline-flex items-center gap-2 bg-white border border-gray-200 rounded-full px-4 py-2 mb-6 shadow-sm">
-        <span className="w-2 h-2 bg-violet-500 rounded-full animate-pulse"></span>
-        <span className="text-sm text-gray-600 font-medium">Plateforme Santec AI</span>
-      </div>
-
       {/* Bienvenue */}
       <h1 className="text-3xl font-bold text-gray-900">
         Bienvenue, <span className="text-violet-600">{firstName}</span>

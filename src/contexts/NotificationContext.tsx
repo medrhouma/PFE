@@ -39,9 +39,9 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   return (
     <NotificationContext.Provider value={{ showNotification }}>
       {children}
-      <div className="fixed top-6 right-6 z-50 space-y-3 pointer-events-none">
+      <div className="fixed top-6 right-6 z-50 space-y-3 pointer-events-none" suppressHydrationWarning>
         {notifications.map(notification => (
-          <div key={notification.id} className="pointer-events-auto">
+          <div key={notification.id} className="pointer-events-auto" suppressHydrationWarning>
             <NotificationToast
               {...notification}
               onClose={removeNotification}

@@ -65,10 +65,24 @@ export default function PendingEmployeesList() {
 
   const handleAction = async (employeeId: string, action: 'APPROUVE' | 'REJETE') => {
     try {
+      let rejectionReason = null;
+      
+      // Si c'est un rejet, demander la raison
+      if (action === 'REJETE') {
+        rejectionReason = prompt('Raison du rejet (optionnel):');
+        // Si l'utilisateur annule, ne pas continuer
+        if (rejectionReason === null) {
+          return;
+        }
+      }
+
       const response = await fetch(`/api/employees/${employeeId}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ statut: action })
+        body: JSON.stringify({ 
+          statut: action,
+          rejectionReason: rejectionReason || undefined
+        })
       });
 
       if (!response.ok) {
@@ -227,6 +241,8 @@ export default function PendingEmployeesList() {
                   <label className="text-sm font-medium text-gray-500 block mb-2">CV</label>
                   <a 
                     href={selectedEmployee.cv} 
+                    target="_blank"
+                    rel="noopener noreferrer"
                     download={`CV_${selectedEmployee.nom}_${selectedEmployee.prenom}.pdf`}
                     className="inline-flex items-center gap-2 px-4 py-2 bg-violet-100 text-violet-700 rounded-lg hover:bg-violet-200 transition-colors"
                   >

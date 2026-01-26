@@ -67,17 +67,23 @@ model User {
   roleEnum      Role        @default(USER)            // rôle simplifié pour NextAuth
   role          RoleEntity? @relation(fields: [roleId], references: [id])
   roleId        String?
+  status        UserStatus  @default(INACTIVE)        // Status for user lifecycle
   isActive      Boolean     @default(true) @map("is_active")
   createdAt     DateTime    @default(now()) @map("created_at")
   updatedAt     DateTime    @updatedAt @map("updated_at")
 
-  accounts Account[]
-  sessions Session[]
-  employee      Employe?                              // relation one-to-one avec Employe
-  dossiers      DossierEmploye[]
-  demandesConge DemandeConge[]
+  accounts        Account[]
+  sessions        Session[]
+  employee        Employe?                              // relation one-to-one avec Employe
+  dossiers        DossierEmploye[]
+  demandesConge   DemandeConge[]
+  pointages       Pointage[]
+  auditLogs       AuditLog[]
+  notifications   Notification[]
+  rhDecisions     RHDecision[]     @relation("RHDecider")
+  deviceFingerprints DeviceFingerprint[]
 
-  @@map("users")
+  @@map("User")
 }
 
 // Enums RH
@@ -95,6 +101,13 @@ enum Role {
   SUPER_ADMIN
   RH
   USER
+}
+enum UserStatus {
+  INACTIVE      // Registered but profile not completed
+  PENDING       // Profile completed, waiting for RH validation
+  ACTIVE        // Approved by RH, full access
+  REJECTED      // Rejected by RH
+  SUSPENDED     // Temporarily suspended
 }
 
 // ========== PASSWORD RESET ==========
@@ -204,6 +217,7 @@ enum CongeType {
   PAID
   UNPAID
   MATERNITE
+  MALADIE
   PREAVIS
 }
 enum StatutConge {
@@ -214,23 +228,248 @@ enum StatutConge {
 
 // ========== EMPLOYE ==========
 model Employe {
-  id            String       @id @default(cuid())
-  userId        String       @unique @map("user_id")
-  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id            String         @id @default(cuid())
+  userId        String         @unique @map("user_id")
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   nom           String?
   prenom        String?
   email         String?
   birthday      DateTime?
   sexe          Sexe?
-  rib           String?      @db.VarChar(24)
+  rib           String?        @db.VarChar(24)
   adresse       String?
   telephone     String?
-  dateEmbauche  DateTime?    @map("date_embauche")
-  photo         String?      @db.Text // URL de la photo
-  cv            String?      @db.Text // URL du CV
-  typeContrat   ContratType? @map("type_contrat")
-  createdAt     DateTime     @default(now()) @map("created_at")
-  updatedAt     DateTime     @updatedAt @map("updated_at")
+  dateEmbauche  DateTime?      @map("date_embauche")
+  photo         String?        @db.Text // URL or base64 of photo
+  cv            String?        @db.Text // URL or base64 of CV
+  typeContrat   ContratType?   @map("type_contrat")
+  position      String?        // Job position
+  department    String?        // Department
+  status        EmployeStatus  @default(EN_ATTENTE)
+  rejectionReason String?      @db.Text @map("rejection_reason")
+  approvedBy    String?        @map("approved_by")
+  approvedAt    DateTime?      @map("approved_at")
+  autresDocuments String?      @db.LongText @map("autres_documents") // JSON documents
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+
+  rhDecisions   RHDecision[]
 
   @@map("Employe")
+}
+
+enum EmployeStatus {
+  EN_ATTENTE    // Waiting for RH validation
+  APPROUVE      // Approved by RH
+  REJETE        // Rejected by RH
+}
+
+// ========== POINTAGE SYSTEM ==========
+model Pointage {
+  id                  String            @id @default(cuid())
+  userId              String            @map("user_id")
+  user                User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type                PointageType
+  timestamp           DateTime          @default(now())
+  deviceFingerprintId String?           @map("device_fingerprint_id")
+  deviceFingerprint   DeviceFingerprint? @relation(fields: [deviceFingerprintId], references: [id])
+  ipAddress           String?           @map("ip_address")
+  geolocation         String?           @db.Text // JSON: {lat, lng, accuracy}
+  capturedPhoto       String?           @db.LongText @map("captured_photo") // base64 photo
+  faceVerified        Boolean           @default(false) @map("face_verified")
+  verificationScore   Float?            @map("verification_score") // 0-100
+  anomalyDetected     Boolean           @default(false) @map("anomaly_detected")
+  anomalyReason       String?           @db.Text @map("anomaly_reason")
+  status              PointageStatus    @default(VALID)
+  notes               String?           @db.Text
+  
+  createdAt           DateTime          @default(now()) @map("created_at")
+  
+  anomalies           Anomaly[]
+
+  @@index([userId, timestamp])
+  @@index([type, timestamp])
+  @@map("pointages")
+}
+
+enum PointageType {
+  IN        // Check-in
+  OUT       // Check-out
+}
+
+enum PointageStatus {
+  VALID
+  PENDING_REVIEW
+  REJECTED
+  CORRECTED
+}
+
+// ========== DEVICE FINGERPRINT ==========
+model DeviceFingerprint {
+  id                String   @id @default(cuid())
+  userId            String   @map("user_id")
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fingerprint       String   @db.Text // JSON of device info
+  userAgent         String   @db.Text @map("user_agent")
+  platform          String?
+  browser           String?
+  screenResolution  String?  @map("screen_resolution")
+  timezone          String?
+  language          String?
+  firstSeen         DateTime @default(now()) @map("first_seen")
+  lastSeen          DateTime @updatedAt @map("last_seen")
+  isTrusted         Boolean  @default(false) @map("is_trusted")
+  
+  pointages         Pointage[]
+  
+  @@index([userId])
+  @@map("device_fingerprints")
+}
+
+// ========== ANOMALIES ==========
+model Anomaly {
+  id          String        @id @default(cuid())
+  type        AnomalyType
+  severity    AnomalySeverity
+  entityType  String        @map("entity_type") // "pointage", "user", "login", etc.
+  entityId    String        @map("entity_id")
+  pointageId  String?       @map("pointage_id")
+  pointage    Pointage?     @relation(fields: [pointageId], references: [id], onDelete: Cascade)
+  description String        @db.Text
+  metadata    String?       @db.LongText // JSON additional data
+  status      AnomalyStatus @default(PENDING)
+  resolvedBy  String?       @map("resolved_by")
+  resolvedAt  DateTime?     @map("resolved_at")
+  resolution  String?       @db.Text
+  
+  createdAt   DateTime      @default(now()) @map("created_at")
+  
+  @@index([type, status])
+  @@index([severity, status])
+  @@index([createdAt])
+  @@map("anomalies")
+}
+
+enum AnomalyType {
+  UNUSUAL_HOURS         // Pointage outside normal hours
+  MULTIPLE_DEVICES      // Multiple devices in short time
+  FACE_VERIFICATION_FAIL // Face not matching
+  IMPOSSIBLE_LOCATION   // Geo location mismatch
+  DUPLICATE_POINTAGE    // Duplicate within short time
+  SUSPICIOUS_PATTERN    // Unusual pattern detected
+  MISSING_CHECKOUT      // Check-in without check-out
+  SYSTEM_ERROR          // Technical error
+}
+
+enum AnomalySeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum AnomalyStatus {
+  PENDING
+  INVESTIGATING
+  RESOLVED
+  FALSE_POSITIVE
+  IGNORED
+}
+
+// ========== AUDIT LOG ==========
+model AuditLog {
+  id          String        @id @default(cuid())
+  userId      String?       @map("user_id")
+  user        User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action      String        // "CREATE", "UPDATE", "DELETE", "LOGIN", "LOGOUT", etc.
+  entityType  String        @map("entity_type") // "User", "Employe", "Pointage", etc.
+  entityId    String?       @map("entity_id")
+  changes     String?       @db.LongText // JSON of before/after
+  ipAddress   String?       @map("ip_address")
+  userAgent   String?       @db.Text @map("user_agent")
+  metadata    String?       @db.LongText // Additional context
+  severity    LogSeverity   @default(INFO)
+  
+  createdAt   DateTime      @default(now()) @map("created_at")
+  
+  @@index([userId, createdAt])
+  @@index([action, createdAt])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+enum LogSeverity {
+  INFO
+  WARNING
+  ERROR
+  CRITICAL
+}
+
+// ========== NOTIFICATIONS ==========
+model Notification {
+  id          String             @id @default(cuid())
+  userId      String             @map("user_id")
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        NotificationType
+  title       String
+  message     String             @db.Text
+  metadata    String?            @db.LongText // JSON additional data
+  isRead      Boolean            @default(false) @map("is_read")
+  readAt      DateTime?          @map("read_at")
+  priority    NotificationPriority @default(NORMAL)
+  
+  createdAt   DateTime           @default(now()) @map("created_at")
+  
+  @@index([userId, isRead])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+enum NotificationType {
+  PROFILE_APPROVED
+  PROFILE_REJECTED
+  PROFILE_SUBMITTED
+  POINTAGE_ANOMALY
+  POINTAGE_SUCCESS
+  LEAVE_REQUEST
+  SYSTEM_ALERT
+  RH_ACTION_REQUIRED
+  DOCUMENT_REQUIRED
+  GENERAL
+}
+
+enum NotificationPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+// ========== RH DECISIONS ==========
+model RHDecision {
+  id          String         @id @default(cuid())
+  employeId   String         @map("employe_id")
+  employe     Employe        @relation(fields: [employeId], references: [id], onDelete: Cascade)
+  deciderId   String         @map("decider_id")
+  decider     User           @relation("RHDecider", fields: [deciderId], references: [id], onDelete: Cascade)
+  decision    DecisionType
+  reason      String?        @db.Text
+  comments    String?        @db.Text
+  metadata    String?        @db.LongText // JSON additional data
+  
+  createdAt   DateTime       @default(now()) @map("created_at")
+  
+  @@index([employeId])
+  @@index([deciderId])
+  @@index([createdAt])
+  @@map("rh_decisions")
+}
+
+enum DecisionType {
+  APPROVED
+  REJECTED
+  SUSPENDED
+  REACTIVATED
+  UPDATED
 }
