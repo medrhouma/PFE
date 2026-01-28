@@ -22,7 +22,7 @@ function checkRateLimit(ip: string, limit: number = 100, windowMs: number = 6000
 }
 
 export default withAuth(
-  function middleware(req) {
+  function proxy(req) {
     const token = req.nextauth.token
     const path = req.nextUrl.pathname
 
