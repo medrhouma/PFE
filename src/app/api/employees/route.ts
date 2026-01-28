@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
           u.createdAt as user_createdAt
         FROM Employe e
         INNER JOIN User u ON e.user_id = u.id
-        WHERE e.statut = 'APPROUVE'
+        WHERE e.status = 'APPROUVE'
         ORDER BY e.created_at DESC
       `);
     } else {
@@ -250,7 +250,7 @@ export async function POST(req: NextRequest) {
     // Notify all RH users of new pending employee
     try {
       const rhUsers: any = await query(
-        `SELECT id, email, name FROM User WHERE role_enum IN ('RH', 'SUPER_ADMIN')`
+        `SELECT id, email, name FROM User WHERE role IN ('RH', 'SUPER_ADMIN')`
       );
       
       if (rhUsers && rhUsers.length > 0) {

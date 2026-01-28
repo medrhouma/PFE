@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
       // Notify RH and Super Admins only
       console.log("🔍 Fetching RH and Admin users...");
       const rhUsers: any = await query(
-        `SELECT id, name, email, role_enum FROM User WHERE role_enum IN ('RH', 'SUPER_ADMIN') AND status = 'ACTIVE'`
+        `SELECT id, name, email, role FROM User WHERE role IN ('RH', 'SUPER_ADMIN') AND status = 'ACTIVE'`
       );
       console.log(`📋 Found ${rhUsers?.length || 0} RH/Admin users:`, rhUsers);
 
@@ -105,8 +105,8 @@ export async function POST(req: NextRequest) {
         const formattedDate = start.toLocaleDateString('fr-FR');
         
         // Separate RH and Super Admin users
-        const rhOnly = rhUsers.filter((u: any) => u.role_enum === 'RH');
-        const superAdmins = rhUsers.filter((u: any) => u.role_enum === 'SUPER_ADMIN');
+        const rhOnly = rhUsers.filter((u: any) => u.role === 'RH');
+        const superAdmins = rhUsers.filter((u: any) => u.role === 'SUPER_ADMIN');
         
         // Notify RH users
         if (rhOnly.length > 0) {

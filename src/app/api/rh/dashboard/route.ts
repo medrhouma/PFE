@@ -85,7 +85,7 @@ export async function GET(req: NextRequest) {
     const recentConges = await safeQuery<any[]>(`
       SELECT dc.*, u.name as userName, u.email as userEmail
       FROM demande_conge dc
-      LEFT JOIN User u ON dc.user_id = u.id
+      LEFT JOIN User u ON dc.userId = u.id
       ORDER BY dc.date_debut DESC
       LIMIT 15
     `) || [];
@@ -114,7 +114,7 @@ export async function GET(req: NextRequest) {
       FROM Employe e
       LEFT JOIN User u ON e.user_id = u.id
       WHERE e.status = 'EN_ATTENTE'
-      ORDER BY e.created_at DESC
+      ORDER BY e.createdAt DESC
       LIMIT 10
     `) || [];
 
@@ -126,7 +126,7 @@ export async function GET(req: NextRequest) {
         userEmail: prof.userEmail,
         type: 'PROFILE',
         action: 'Profil soumis',
-        timestamp: prof.created_at || new Date(),
+        timestamp: prof.createdAt || new Date(),
         details: {
           status: prof.status,
           position: prof.poste,
@@ -148,10 +148,10 @@ export async function GET(req: NextRequest) {
         u.image as u_image,
         u.telephone as u_telephone,
         u.status as u_status,
-        u.created_at as u_created_at
+        u.createdAt as u_created_at
       FROM Employe e
       LEFT JOIN User u ON e.user_id = u.id
-      ORDER BY e.created_at DESC
+      ORDER BY e.createdAt DESC
     `) || [];
 
     // Format employees for frontend

@@ -83,7 +83,7 @@ export async function PATCH(
 
       // Notify RH and Super Admins of the decision
       const admins: any = await query(
-        `SELECT id FROM User WHERE role_enum IN ('RH', 'SUPER_ADMIN') AND status = 'ACTIVE'`
+        `SELECT id FROM User WHERE role IN ('RH', 'SUPER_ADMIN') AND status = 'ACTIVE'`
       );
 
       if (admins && admins.length > 0) {
@@ -269,7 +269,7 @@ export async function DELETE(
     if (isOwner && leaveRequest.status === "EN_ATTENTE") {
       try {
         const rhUsers: any = await query(
-          `SELECT id FROM User WHERE role_enum IN ('RH', 'SUPER_ADMIN') AND status = 'ACTIVE'`
+          `SELECT id FROM User WHERE role IN ('RH', 'SUPER_ADMIN') AND status = 'ACTIVE'`
         );
 
         if (rhUsers && rhUsers.length > 0) {

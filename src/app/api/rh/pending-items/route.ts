@@ -37,10 +37,10 @@ export const GET = withRole(["RH", "SUPER_ADMIN"], async (context) => {
   try {
     // Get pending employees
     const pendingEmployees = await query<PendingEmployee[]>(`
-      SELECT id, name, email, created_at
+      SELECT id, name, email, createdAt as created_at
       FROM User
       WHERE status = 'PENDING'
-      ORDER BY created_at DESC
+      ORDER BY createdAt DESC
       LIMIT 10
     `);
 
@@ -50,7 +50,7 @@ export const GET = withRole(["RH", "SUPER_ADMIN"], async (context) => {
         dc.id, dc.type, dc.date_debut, dc.status,
         u.name as user_name, u.email as user_email
       FROM demande_conge dc
-      LEFT JOIN User u ON dc.user_id = u.id
+      LEFT JOIN User u ON dc.userId = u.id
       WHERE dc.status = 'EN_ATTENTE'
       ORDER BY dc.date_debut ASC
       LIMIT 10
