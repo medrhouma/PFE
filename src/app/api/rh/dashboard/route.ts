@@ -59,7 +59,7 @@ export async function GET(req: NextRequest) {
     const recentPointages = await safeQuery<any[]>(`
       SELECT p.*, u.name as userName, u.email as userEmail
       FROM Pointage p
-      LEFT JOIN User u ON p.user_id = u.id
+      LEFT JOIN User u ON p.user_id COLLATE utf8mb4_unicode_ci = u.id COLLATE utf8mb4_unicode_ci
       ORDER BY p.timestamp DESC
       LIMIT 20
     `) || [];
