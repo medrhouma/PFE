@@ -4,6 +4,7 @@ import { FiUser, FiEdit3, FiTrash2, FiRefreshCcw } from "react-icons/fi"
 import AddUserModal from "@/components/users/AddUserModal"
 import EditUserModal from "@/components/users/EditUserModal"
 import ConfirmationModal from "@/components/ui/ConfirmationModal"
+import UserDossierModal from "@/components/users/UserDossierModal"
 import { usePermissions } from "@/contexts/PermissionsContext"
 import { useNotification } from "@/contexts/NotificationContext"
 
@@ -45,6 +46,7 @@ export default function UsersPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [userToDelete, setUserToDelete] = useState<string | null>(null)
   const [selectedUser, setSelectedUser] = useState<any>(null)
+  const [showDossierModal, setShowDossierModal] = useState(false)
   const { hasPermission, loading } = usePermissions()
   const { showNotification } = useNotification()
 
@@ -148,6 +150,11 @@ export default function UsersPage() {
     setShowEditModal(true)
   }
 
+  const handleShowDossier = (user: any) => {
+    setSelectedUser(user)
+    setShowDossierModal(true)
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
       {/* Main Content */}
@@ -240,6 +247,15 @@ export default function UsersPage() {
                     </td>
                     <td className="py-4 px-6">
                       <div className="flex items-center gap-2">
+                        {user.statut === 'APPROUVE' && (
+                          <button
+                            onClick={() => handleShowDossier(user)}
+                            className="p-2 rounded-lg bg-gradient-to-r from-green-100 to-green-200 dark:from-green-900/20 dark:to-green-900/10 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-900/30 transition-all duration-200 transform hover:scale-105"
+                            title="Voir le dossier complet"
+                          >
+                            <FiUser className="w-4 h-4" />
+                          </button>
+                        )}
                         {canEdit && (
                           <button 
                             onClick={() => handleEditUser(user)}
@@ -302,6 +318,17 @@ export default function UsersPage() {
           </div>
         </div>
       </div>
+
+      {/* Dossier complet modal */}
+      {showDossierModal && selectedUser && (
+        <UserDossierModal
+          user={selectedUser}
+          onClose={() => {
+            setShowDossierModal(false)
+            setSelectedUser(null)
+          }}
+        />
+      )}
 
       {/* Add User Modal */}
       {showAddModal && (

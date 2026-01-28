@@ -106,6 +106,20 @@ export default function UserDashboard() {
               <p className="text-xl text-purple-100">
                 Gérez vos congés, consultez vos documents et suivez vos performances.
               </p>
+              <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4 max-w-md mx-auto shadow-sm">
+                <p className="text-sm text-amber-700 font-medium">
+                  Vous serez notifié par email une fois votre profil vérifié et approuvé.
+                </p>
+              </div>
+              
+              <div className="mt-8 flex justify-center">
+                <div className="inline-flex items-center px-4 py-2 rounded-full bg-amber-100 text-amber-800 text-sm font-medium">
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  En attente de validation
+                </div>
+              </div>
             </div>
             <div className="hidden lg:block">
               <div className="w-32 h-32 bg-white/10 backdrop-blur-sm rounded-3xl flex items-center justify-center shadow-2xl border border-white/20">
