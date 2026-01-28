@@ -72,7 +72,7 @@ export const POST = withAuth(
         // Create RH decision record
         const decisionId = uuidv4();
         await connection.execute(`
-          INSERT INTO RHDecision (id, employe_id, decider_id, decision, reason, comments, created_at)
+          INSERT INTO RHDecision (id, employe_id, decider_id, decision, reason, comments, createdAt)
           VALUES (?, ?, ?, 'REJECTED', ?, ?, NOW())
         `, [decisionId, employeId, user.id, reason, comments || null]);
         

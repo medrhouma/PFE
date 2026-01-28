@@ -40,14 +40,13 @@ export const GET = withAuth(
           e.*,
           u.id as user_id,
           u.name as user_name,
-          u.last_name as user_last_name,
           u.email as user_email,
-          u.role_enum as user_role,
-          u.created_at as user_created_at
+          u.role as user_role,
+          u.createdAt as user_created_at
         FROM Employe e
         LEFT JOIN User u ON e.user_id = u.id
         WHERE e.status = 'EN_ATTENTE'
-        ORDER BY e.created_at ASC
+        ORDER BY e.createdAt ASC
       `);
       
       // Format response to match Prisma structure

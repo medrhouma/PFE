@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
     }
 
     const rhUsers: any = await query(
-      `SELECT email, name FROM User WHERE role_enum IN ('RH', 'SUPER_ADMIN') AND status = 'ACTIVE' AND email IS NOT NULL`
+      `SELECT email, name FROM User WHERE role IN ('RH', 'SUPER_ADMIN') AND status = 'ACTIVE' AND email IS NOT NULL`
     );
 
     const pending: any = await query(

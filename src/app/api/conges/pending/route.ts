@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
     const requests: any = await query(
       `SELECT dc.*, u.name as user_name, u.email as user_email
        FROM demande_conge dc
-       JOIN User u ON dc.user_id = u.id
+       JOIN User u ON dc.userId = u.id
        WHERE dc.status = 'EN_ATTENTE'
        ORDER BY dc.date_debut DESC`
     );
