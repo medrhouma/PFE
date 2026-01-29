@@ -131,8 +131,25 @@ class NotificationService {
         // Continue even if real-time fails
       }
 
-      // Send urgent email to RH/SUPER_ADMIN when priority is URGENT
-      if (priority === "URGENT") {
+      // Check user preferences for email and push notifications
+      let userPreferences = { emailNotifications: true, pushNotifications: true };
+      try {
+        const prefs: any[] = await query(
+          `SELECT emailNotifications, pushNotifications FROM UserPreferences WHERE userId = ? LIMIT 1`,
+          [params.userId]
+        );
+        if (prefs?.[0]) {
+          userPreferences = {
+            emailNotifications: prefs[0].emailNotifications === 1 || prefs[0].emailNotifications === true,
+            pushNotifications: prefs[0].pushNotifications === 1 || prefs[0].pushNotifications === true
+          };
+        }
+      } catch (prefError) {
+        console.log("Could not fetch user preferences, using defaults:", prefError);
+      }
+
+      // Send email notification based on priority and user preferences
+      if (userPreferences.emailNotifications && (priority === "URGENT" || priority === "HIGH")) {
         try {
           const users: any = await query(
             `SELECT email, role FROM User WHERE id = ? LIMIT 1`,
@@ -140,17 +157,26 @@ class NotificationService {
           );
 
           const user = users?.[0];
-          if (user?.email && (user.role === "RH" || user.role === "SUPER_ADMIN")) {
+          if (user?.email) {
             await emailService.sendUrgentNotificationEmail(user.email, params.title, params.message);
+            console.log(`📧 Email notification sent to ${user.email}`);
           }
+        } catch (emailError) {
+          console.error("❌ Failed to send email notification:", emailError);
+        }
+      }
 
+      // Send push notification based on user preferences
+      if (userPreferences.pushNotifications) {
+        try {
           await pushService.sendToUser(params.userId, {
             title: params.title,
             body: params.message,
-            url: "/rh/notifications"
+            url: "/notifications"
           });
-        } catch (emailError) {
-          console.error("❌ Failed to send urgent email:", emailError);
+          console.log(`📱 Push notification sent to user ${params.userId}`);
+        } catch (pushError) {
+          console.error("❌ Failed to send push notification:", pushError);
         }
       }
       

@@ -1,14 +1,23 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useNotification } from "@/contexts/NotificationContext";
 import { 
   FiCamera, FiCheck, FiX, FiClock, FiCalendar, FiAlertTriangle, 
   FiMapPin, FiSmartphone, FiTrendingUp, FiActivity, FiUser,
-  FiLogIn, FiLogOut, FiRefreshCw, FiEye
+  FiLogIn, FiLogOut, FiRefreshCw, FiEye, FiShield, FiUpload
 } from "react-icons/fi";
 import { Button } from "@/components/ui/Button";
+import { SecureCamera } from "@/components/camera/SecureCamera";
+import { 
+  generateDeviceFingerprint, 
+  getBasicDeviceInfo, 
+  getGeolocation,
+  storeTrustedDevice,
+  isDeviceTrusted,
+  calculateTrustLevel
+} from "@/lib/services/device-fingerprint";
 
 interface PointageStats {
   month: number;
@@ -50,6 +59,7 @@ export default function PointagePage() {
   const [capturing, setCapturing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [captureMethod, setCaptureMethod] = useState<"camera" | "upload" | null>(null);
   const [pointageType, setPointageType] = useState<"IN" | "OUT">("IN");
   const [recentPointages, setRecentPointages] = useState<RecentPointage[]>([]);
   const [stats, setStats] = useState<PointageStats | null>(null);
@@ -58,6 +68,8 @@ export default function PointagePage() {
   const [geolocation, setGeolocation] = useState<{ lat: number; lng: number; accuracy: number } | null>(null);
   const [deviceInfo, setDeviceInfo] = useState<string>("");
   const [refreshing, setRefreshing] = useState(false);
+  const [useSecureCamera, setUseSecureCamera] = useState(true);
+  const [deviceTrusted, setDeviceTrusted] = useState(false);
 
   // Horloge en temps réel
   useEffect(() => {
@@ -71,20 +83,41 @@ export default function PointagePage() {
 
   useEffect(() => {
     fetchAllData();
-    getDeviceInfo();
-    getGeolocation();
+    initializeDevice();
     
     // Refresh every 30 seconds
     const interval = setInterval(fetchAllData, 30000);
     return () => clearInterval(interval);
   }, []);
 
+  // Initialize device info and check trust status
+  const initializeDevice = async () => {
+    try {
+      // Get basic device info for display
+      const basicInfo = getBasicDeviceInfo();
+      setDeviceInfo(`${basicInfo.type} - ${basicInfo.os} - ${basicInfo.browser}`);
+
+      // Check if device is trusted
+      const trusted = await isDeviceTrusted();
+      setDeviceTrusted(trusted);
+
+      // Get geolocation
+      const geo = await getGeolocation();
+      if (geo) {
+        setGeolocation(geo);
+      }
+    } catch (error) {
+      console.error("Error initializing device:", error);
+      setDeviceInfo(`${navigator.platform} - ${navigator.userAgent.includes('Mobile') ? 'Mobile' : 'Desktop'}`);
+    }
+  };
+
   const getDeviceInfo = () => {
     const info = `${navigator.platform} - ${navigator.userAgent.includes('Mobile') ? 'Mobile' : 'Desktop'}`;
     setDeviceInfo(info);
   };
 
-  const getGeolocation = () => {
+  const getGeolocationData = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -100,6 +133,28 @@ export default function PointagePage() {
       );
     }
   };
+
+  // Handle capture from SecureCamera component
+  const handleSecureCameraCapture = useCallback((imageData: string, method: "camera" | "upload") => {
+    setCapturedImage(imageData);
+    setCaptureMethod(method);
+    setUseSecureCamera(false);
+    
+    showNotification({
+      type: "success",
+      title: method === "camera" ? "Photo capturée" : "Photo téléchargée",
+      message: "Votre photo est prête pour la vérification"
+    });
+  }, [showNotification]);
+
+  // Handle camera error from SecureCamera
+  const handleCameraError = useCallback((error: string) => {
+    showNotification({
+      type: "warning",
+      title: "Problème caméra",
+      message: error
+    });
+  }, [showNotification]);
 
   const fetchAllData = async () => {
     await Promise.all([
@@ -240,37 +295,38 @@ export default function PointagePage() {
           const faceVerifyResponse = await fetch("/api/face-verify", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            image: capturedImage,
-            userId: session?.user?.id
-          })
-        });
+            body: JSON.stringify({
+              image: capturedImage,
+              userId: session?.user?.id,
+              captureMethod: captureMethod // Track if from camera or upload
+            })
+          });
 
-        if (faceVerifyResponse.ok) {
-          faceVerifyData = await faceVerifyResponse.json();
-          
-          if (!faceVerifyData.verified) {
+          if (faceVerifyResponse.ok) {
+            faceVerifyData = await faceVerifyResponse.json();
+            
+            if (!faceVerifyData.verified) {
+              showNotification({
+                type: "warning",
+                title: "Vérification faciale échouée",
+                message: "Pointage enregistré sans vérification faciale"
+              });
+            }
+          } else {
             showNotification({
               type: "warning",
-              title: "Vérification faciale échouée",
+              title: "Vérification faciale indisponible",
               message: "Pointage enregistré sans vérification faciale"
             });
           }
-        } else {
+        } catch (faceError) {
+          console.error("Face verification error:", faceError);
           showNotification({
             type: "warning",
             title: "Vérification faciale indisponible",
             message: "Pointage enregistré sans vérification faciale"
           });
         }
-      } catch (faceError) {
-        console.error("Face verification error:", faceError);
-        showNotification({
-          type: "warning",
-          title: "Vérification faciale indisponible",
-          message: "Pointage enregistré sans vérification faciale"
-        });
-      }
       } else {
         // No photo captured - pointage without photo
         showNotification({
@@ -280,28 +336,40 @@ export default function PointagePage() {
         });
       }
 
-      // Step 2: Get device fingerprint
-      const deviceFingerprint = {
-        platform: navigator.platform,
-        userAgent: navigator.userAgent,
-        screenResolution: `${window.screen.width}x${window.screen.height}`,
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        language: navigator.language,
-      };
+      // Step 2: Get advanced device fingerprint
+      let deviceFingerprint;
+      try {
+        deviceFingerprint = await generateDeviceFingerprint();
+        
+        // Calculate trust level
+        const trustLevel = await calculateTrustLevel(deviceFingerprint);
+        
+        // If this is a successful pointage, mark device as trusted
+        if (faceVerifyData.verified && trustLevel !== "high") {
+          storeTrustedDevice(deviceFingerprint);
+          setDeviceTrusted(true);
+        }
+      } catch (fpError) {
+        console.error("Device fingerprint error:", fpError);
+        // Fallback to basic fingerprint
+        deviceFingerprint = {
+          id: "unknown",
+          platform: navigator.platform,
+          userAgent: navigator.userAgent,
+          screenResolution: `${window.screen.width}x${window.screen.height}`,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          language: navigator.language,
+        };
+      }
       
       // Step 3: Get geolocation if available
       let geolocationData = geolocation || null;
-      if (!geolocationData && navigator.geolocation) {
+      if (!geolocationData) {
         try {
-          const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 });
-          });
-          geolocationData = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-            accuracy: position.coords.accuracy,
-          };
-          setGeolocation(geolocationData);
+          geolocationData = await getGeolocation();
+          if (geolocationData) {
+            setGeolocation(geolocationData);
+          }
         } catch (error) {
           console.log("Geolocation not available");
         }
@@ -317,8 +385,10 @@ export default function PointagePage() {
           deviceFingerprint,
           geolocation: geolocationData,
           capturedPhoto: capturedImage || null,
+          captureMethod: captureMethod || null,
           faceVerified: faceVerifyData.verified || false,
           verificationScore: Math.round((faceVerifyData.confidence || 0) * 100),
+          deviceTrusted: deviceTrusted,
         }),
       });
       
@@ -334,8 +404,11 @@ export default function PointagePage() {
         // Refresh data
         await fetchAllData();
         
-        // Stop camera and reset
+        // Reset state
         stopCamera();
+        setCapturedImage(null);
+        setCaptureMethod(null);
+        setUseSecureCamera(true);
       } else {
         showNotification({
           type: "error",
@@ -552,121 +625,60 @@ export default function PointagePage() {
                   </button>
                 </div>
 
-                {/* Video/Image Display */}
-                <div className="relative bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl overflow-hidden mb-6 shadow-inner" style={{ aspectRatio: "16/9" }}>
-                  {!capturing && !capturedImage && (
-                    <div className="absolute inset-0 flex items-center justify-center text-gray-400">
-                      <div className="text-center">
-                        <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center">
-                          <FiCamera className="w-12 h-12 text-white" />
-                        </div>
-                        <p className="text-xl font-semibold">Caméra désactivée</p>
-                        <p className="text-sm opacity-75 mt-2">Cliquez sur "Démarrer la caméra" pour commencer</p>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {capturing && !capturedImage && (
-                    <>
-                      <video
-                        ref={videoRef}
-                        autoPlay
-                        playsInline
-                        muted
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute inset-0 border-4 border-green-500 rounded-2xl pointer-events-none"></div>
-                      <div className="absolute top-4 left-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2">
-                        <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
-                        EN DIRECT
-                      </div>
-                    </>
-                  )}
-                  
-                  {capturedImage && (
-                    <>
+                {/* Device Trust Badge */}
+                {deviceTrusted && (
+                  <div className="mb-4 flex items-center gap-2 px-3 py-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                    <FiShield className="w-4 h-4 text-green-600 dark:text-green-400" />
+                    <span className="text-sm text-green-700 dark:text-green-300">
+                      Appareil de confiance reconnu
+                    </span>
+                  </div>
+                )}
+
+                {/* SecureCamera Component or Preview */}
+                {useSecureCamera && !capturedImage ? (
+                  <SecureCamera
+                    onCapture={handleSecureCameraCapture}
+                    onError={handleCameraError}
+                    disabled={loading}
+                    showFallbackUpload={true}
+                  />
+                ) : capturedImage ? (
+                  <>
+                    {/* Captured Image Preview */}
+                    <div className="relative bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl overflow-hidden mb-4" style={{ aspectRatio: "4/3" }}>
                       <img
                         src={capturedImage}
                         alt="Captured"
                         className="w-full h-full object-cover"
                       />
-                      <div className="absolute top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-full text-sm font-bold flex items-center gap-2">
+                      <div className="absolute top-4 right-4 flex items-center gap-2 bg-green-500/90 text-white px-4 py-2 rounded-full text-sm font-bold">
                         <FiCheck className="w-4 h-4" />
-                        PHOTO CAPTURÉE
+                        {captureMethod === "upload" ? "PHOTO TÉLÉCHARGÉE" : "PHOTO CAPTURÉE"}
                       </div>
-                    </>
-                  )}
-                  
-                  <canvas ref={canvasRef} className="hidden" />
-                  
-                  {/* Device Info Overlay */}
-                  {(capturing || capturedImage) && (
-                    <div className="absolute bottom-4 left-4 right-4 flex justify-between text-xs text-white">
-                      <div className="bg-black/50 px-3 py-1.5 rounded-lg flex items-center gap-2">
-                        <FiSmartphone className="w-3 h-3" />
-                        {deviceInfo}
-                      </div>
-                      {geolocation && (
-                        <div className="bg-black/50 px-3 py-1.5 rounded-lg flex items-center gap-2">
-                          <FiMapPin className="w-3 h-3" />
-                          GPS: {geolocation.lat.toFixed(4)}, {geolocation.lng.toFixed(4)}
+                      {captureMethod === "upload" && (
+                        <div className="absolute top-4 left-4 flex items-center gap-2 bg-amber-500/90 text-white px-3 py-1.5 rounded-full text-xs font-medium">
+                          <FiUpload className="w-3 h-3" />
+                          Mode Upload
                         </div>
                       )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Controls */}
-                <div className="flex gap-3">
-                  {!capturing && !capturedImage && (
-                    <>
-                      <Button
-                        onClick={startCamera}
-                        className="flex-1 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white py-4 text-lg font-bold shadow-lg"
-                      >
-                        <FiCamera className="w-6 h-6 mr-2" />
-                        Démarrer la Caméra
-                      </Button>
-                      <Button
-                        onClick={submitPointage}
-                        disabled={loading}
-                        className="flex-1 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white py-4 text-lg font-bold shadow-lg"
-                      >
-                        {loading ? (
-                          <>
-                            <FiRefreshCw className="w-5 h-5 mr-2 animate-spin" />
-                            Envoi...
-                          </>
-                        ) : (
-                          <>
-                            <FiCheck className="w-6 h-6 mr-2" />
-                            Sans Photo
-                          </>
+                      {/* Device Info Overlay */}
+                      <div className="absolute bottom-4 left-4 right-4 flex justify-between text-xs text-white">
+                        <div className="bg-black/50 px-3 py-1.5 rounded-lg flex items-center gap-2">
+                          <FiSmartphone className="w-3 h-3" />
+                          {deviceInfo}
+                        </div>
+                        {geolocation && (
+                          <div className="bg-black/50 px-3 py-1.5 rounded-lg flex items-center gap-2">
+                            <FiMapPin className="w-3 h-3" />
+                            GPS: {geolocation.lat.toFixed(4)}, {geolocation.lng.toFixed(4)}
+                          </div>
                         )}
-                      </Button>
-                    </>
-                  )}
-                  
-                  {capturing && !capturedImage && (
-                    <>
-                      <Button
-                        onClick={capturePhoto}
-                        className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white py-4 text-lg font-bold shadow-lg"
-                      >
-                        <FiCamera className="w-6 h-6 mr-2" />
-                        Capturer
-                      </Button>
-                      <Button
-                        onClick={stopCamera}
-                        className="px-6 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 py-4"
-                      >
-                        <FiX className="w-5 h-5" />
-                      </Button>
-                    </>
-                  )}
-                  
-                  {capturedImage && (
-                    <>
+                      </div>
+                    </div>
+
+                    {/* Captured Image Controls */}
+                    <div className="flex gap-3">
                       <Button
                         onClick={submitPointage}
                         disabled={loading}
@@ -675,7 +687,7 @@ export default function PointagePage() {
                         {loading ? (
                           <>
                             <FiRefreshCw className="w-5 h-5 mr-2 animate-spin" />
-                            Envoi en cours...
+                            Vérification...
                           </>
                         ) : (
                           <>
@@ -687,23 +699,49 @@ export default function PointagePage() {
                       <Button
                         onClick={() => {
                           setCapturedImage(null);
-                          setCapturing(true);
+                          setCaptureMethod(null);
+                          setUseSecureCamera(true);
                         }}
                         className="px-6 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 py-4"
                       >
-                        <FiRefreshCw className="w-5 h-5" />
+                        <FiRefreshCw className="w-5 h-5 text-gray-600 dark:text-gray-300" />
                       </Button>
-                    </>
-                  )}
-                </div>
+                    </div>
+                  </>
+                ) : null}
 
-                {/* Help Text */}
-                <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                  <p className="text-sm text-blue-800 dark:text-blue-300 flex items-center gap-2">
-                    <FiEye className="w-4 h-4" />
-                    <span className="font-medium">Options:</span> Vous pouvez pointer avec ou sans photo. La vérification faciale est optionnelle.
-                  </p>
-                </div>
+                {/* Option to pointage without photo */}
+                {useSecureCamera && !capturedImage && (
+                  <div className="mt-4">
+                    <div className="relative">
+                      <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-gray-200 dark:border-gray-700" />
+                      </div>
+                      <div className="relative flex justify-center text-sm">
+                        <span className="px-4 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+                          ou pointage rapide
+                        </span>
+                      </div>
+                    </div>
+                    <Button
+                      onClick={submitPointage}
+                      disabled={loading}
+                      className="w-full mt-4 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-3 font-medium"
+                    >
+                      {loading ? (
+                        <>
+                          <FiRefreshCw className="w-5 h-5 mr-2 animate-spin" />
+                          Envoi...
+                        </>
+                      ) : (
+                        <>
+                          <FiCheck className="w-5 h-5 mr-2" />
+                          Pointer sans photo (confiance réduite)
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
           </div>

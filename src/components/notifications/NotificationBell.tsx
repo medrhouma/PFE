@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
-import { FiBell, FiCheck, FiX, FiAlertCircle, FiClock, FiCheckCircle, FiXCircle } from "react-icons/fi"
+import { useState, useEffect, useRef, useCallback } from "react"
+import { FiBell, FiCheck, FiX, FiAlertCircle, FiClock, FiCheckCircle, FiXCircle, FiInfo, FiGift, FiCalendar, FiUser } from "react-icons/fi"
 import { useSession } from "next-auth/react"
 
 interface Notification {
@@ -14,13 +14,24 @@ interface Notification {
   created_at: string
 }
 
+// Toast notification for real-time updates
+interface Toast {
+  id: string
+  title: string
+  message: string
+  type: string
+}
+
 export function NotificationBell() {
   const { data: session } = useSession()
   const [isOpen, setIsOpen] = useState(false)
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [loading, setLoading] = useState(false)
+  const [toasts, setToasts] = useState<Toast[]>([])
+  const [isAnimating, setIsAnimating] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const prevUnreadRef = useRef(0)
 
   useEffect(() => {
     if (session?.user) {
@@ -176,18 +187,40 @@ export function NotificationBell() {
     }
   }
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case "URGENT":
-        return "border-l-4 border-red-500"
-      case "HIGH":
-        return "border-l-4 border-orange-500"
-      case "NORMAL":
-        return "border-l-4 border-blue-500"
-      default:
-        return "border-l-4 border-gray-300"
+  // Add toast notification
+  const addToast = useCallback((notification: Notification) => {
+    const toast: Toast = {
+      id: notification.id,
+      title: notification.title,
+      message: notification.message,
+      type: notification.type
     }
-  }
+    setToasts(prev => [...prev, toast])
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== toast.id))
+    }, 5000)
+  }, [])
+
+  // Remove toast
+  const removeToast = useCallback((id: string) => {
+    setToasts(prev => prev.filter(t => t.id !== id))
+  }, [])
+
+  // Animate bell when new notification arrives
+  useEffect(() => {
+    if (unreadCount > prevUnreadRef.current && prevUnreadRef.current !== 0) {
+      setIsAnimating(true)
+      
+      // Show toast for new notifications
+      const newNotifs = notifications.filter(n => !n.is_read).slice(0, 1)
+      newNotifs.forEach(addToast)
+      
+      setTimeout(() => setIsAnimating(false), 600)
+    }
+    prevUnreadRef.current = unreadCount
+  }, [unreadCount, notifications, addToast])
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString)
@@ -204,71 +237,176 @@ export function NotificationBell() {
     return date.toLocaleDateString('fr-FR')
   }
 
-  return (
-    <div className="relative" ref={dropdownRef}>
-      {/* Bell Button */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-all duration-200 group"
-        aria-label="Notifications"
-      >
-        <FiBell className="w-6 h-6 text-gray-600 dark:text-gray-300 group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors" />
-        {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 min-w-[20px] h-5 bg-gradient-to-r from-red-500 to-red-600 text-white text-xs rounded-full flex items-center justify-center font-semibold shadow-lg animate-pulse px-1.5">
-            {unreadCount > 99 ? "99+" : unreadCount}
-          </span>
-        )}
-      </button>
+  const getToastIcon = (type: string) => {
+    switch (type) {
+      case "PROFILE_APPROVED":
+      case "POINTAGE_SUCCESS":
+        return <FiCheckCircle className="w-5 h-5 text-green-500" />
+      case "PROFILE_REJECTED":
+        return <FiXCircle className="w-5 h-5 text-red-500" />
+      case "POINTAGE_ANOMALY":
+        return <FiAlertCircle className="w-5 h-5 text-orange-500" />
+      case "LEAVE_REQUEST":
+      case "LEAVE_APPROVED":
+        return <FiCalendar className="w-5 h-5 text-blue-500" />
+      case "BIRTHDAY":
+        return <FiGift className="w-5 h-5 text-pink-500" />
+      case "NEW_EMPLOYEE":
+        return <FiUser className="w-5 h-5 text-violet-500" />
+      default:
+        return <FiInfo className="w-5 h-5 text-blue-500" />
+    }
+  }
 
-      {/* Dropdown Panel */}
-      {isOpen && (
-        <div className="absolute right-0 mt-3 w-[420px] bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+  return (
+    <>
+      {/* Toast Notifications */}
+      <div className="fixed top-4 right-4 z-[9999] flex flex-col gap-3 pointer-events-none">
+        {toasts.map((toast, index) => (
+          <div
+            key={toast.id}
+            className="pointer-events-auto animate-toast-in"
+            style={{ 
+              animationDelay: `${index * 50}ms`,
+              transform: `translateY(${index * 4}px)`
+            }}
+          >
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 p-4 max-w-sm backdrop-blur-lg bg-opacity-95 dark:bg-opacity-95">
+              <div className="flex gap-3">
+                <div className="flex-shrink-0 mt-0.5">
+                  {getToastIcon(toast.type)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                    {toast.title}
+                  </p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">
+                    {toast.message}
+                  </p>
+                </div>
+                <button
+                  onClick={() => removeToast(toast.id)}
+                  className="flex-shrink-0 p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                >
+                  <FiX className="w-4 h-4 text-gray-500" />
+                </button>
+              </div>
+              {/* Progress bar */}
+              <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-200 dark:bg-gray-700 rounded-b-xl overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-violet-500 to-purple-500 animate-toast-progress" />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="relative" ref={dropdownRef}>
+        {/* Bell Button with animations */}
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className={`relative p-2.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-all duration-300 group ${
+            isAnimating ? 'animate-bell-ring' : ''
+          }`}
+          aria-label="Notifications"
+        >
+          <FiBell className={`w-6 h-6 text-gray-600 dark:text-gray-300 group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-all duration-300 ${
+            isAnimating ? 'text-violet-600 dark:text-violet-400' : ''
+          }`} />
+          {unreadCount > 0 && (
+            <span className={`absolute -top-1 -right-1 min-w-[20px] h-5 bg-gradient-to-r from-red-500 to-red-600 text-white text-xs rounded-full flex items-center justify-center font-semibold shadow-lg px-1.5 ${
+              isAnimating ? 'animate-badge-pop' : ''
+            }`}>
+              {unreadCount > 99 ? "99+" : unreadCount}
+            </span>
+          )}
+          
+          {/* Ripple effect on new notification */}
+          {isAnimating && (
+            <span className="absolute inset-0 rounded-xl animate-ripple bg-violet-500/20" />
+          )}
+        </button>
+
+        {/* Dropdown Panel with improved animations */}
+        <div className={`absolute right-0 mt-3 w-[420px] bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 z-50 overflow-hidden transition-all duration-300 ease-out origin-top-right ${
+          isOpen 
+            ? 'opacity-100 scale-100 translate-y-0' 
+            : 'opacity-0 scale-95 -translate-y-2 pointer-events-none'
+        }`}>
           {/* Header */}
-          <div className="bg-gradient-to-r from-violet-600 to-purple-600 px-6 py-4 text-white">
-            <div className="flex items-center justify-between">
+          <div className="bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 px-6 py-5 text-white relative overflow-hidden">
+            {/* Animated background pattern */}
+            <div className="absolute inset-0 opacity-20">
+              <div className="absolute top-0 left-0 w-40 h-40 bg-white rounded-full blur-3xl animate-float-slow" />
+              <div className="absolute bottom-0 right-0 w-32 h-32 bg-white rounded-full blur-3xl animate-float-slow-delayed" />
+            </div>
+            
+            <div className="relative flex items-center justify-between">
               <div>
-                <h3 className="font-bold text-lg">Notifications</h3>
-                <p className="text-violet-100 text-sm">
-                  {unreadCount > 0 ? `${unreadCount} non lue${unreadCount > 1 ? 's' : ''}` : 'Tout est à jour'}
+                <h3 className="font-bold text-lg flex items-center gap-2">
+                  <FiBell className="w-5 h-5" />
+                  Notifications
+                </h3>
+                <p className="text-violet-100 text-sm mt-1">
+                  {unreadCount > 0 ? `${unreadCount} non lue${unreadCount > 1 ? 's' : ''}` : 'Tout est à jour ✨'}
                 </p>
               </div>
               {unreadCount > 0 && (
                 <button
                   onClick={markAllAsRead}
                   disabled={loading}
-                  className="px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                  className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-xl text-sm font-medium transition-all duration-200 disabled:opacity-50 backdrop-blur-sm flex items-center gap-2 hover:scale-105 active:scale-95"
                 >
-                  {loading ? "..." : "Tout marquer"}
+                  <FiCheck className="w-4 h-4" />
+                  {loading ? "..." : "Tout lire"}
                 </button>
               )}
             </div>
           </div>
 
-          {/* Notifications List */}
-          <div className="max-h-[500px] overflow-y-auto custom-scrollbar">
+          {/* Notifications List with smooth scrolling */}
+          <div className="max-h-[400px] overflow-y-auto custom-scrollbar scroll-smooth">
             {notifications.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
-                <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
-                  <FiBell className="w-8 h-8 text-gray-400" />
+              <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
+                <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 rounded-2xl flex items-center justify-center mb-5 rotate-12 animate-float">
+                  <FiBell className="w-10 h-10 text-gray-400 -rotate-12" />
                 </div>
-                <p className="text-gray-500 dark:text-gray-400 font-medium">Aucune notification</p>
-                <p className="text-gray-400 dark:text-gray-500 text-sm mt-1">Vous êtes à jour !</p>
+                <p className="text-gray-600 dark:text-gray-300 font-semibold text-lg">Aucune notification</p>
+                <p className="text-gray-400 dark:text-gray-500 text-sm mt-2">Vous êtes à jour ! 🎉</p>
               </div>
             ) : (
-              <div className="divide-y divide-gray-100 dark:divide-gray-700">
-                {notifications.map((notif) => (
+              <div className="divide-y divide-gray-100 dark:divide-gray-700/50">
+                {notifications.map((notif, index) => (
                   <div
                     key={notif.id}
-                    className={`group relative transition-all duration-200 ${
+                    className={`group relative transition-all duration-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
                       !notif.is_read 
-                        ? "bg-violet-50 dark:bg-violet-900/10 hover:bg-violet-100 dark:hover:bg-violet-900/20" 
-                        : "hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                    } ${getPriorityColor(notif.priority)}`}
+                        ? "bg-violet-50/50 dark:bg-violet-900/5" 
+                        : ""
+                    }`}
+                    style={{ 
+                      animationName: isOpen ? 'slideInRight' : 'none',
+                      animationDuration: '0.3s',
+                      animationTimingFunction: 'ease-out',
+                      animationFillMode: 'forwards',
+                      animationDelay: `${index * 50}ms`
+                    }}
                   >
-                    <div className="p-4">
+                    {/* Priority indicator */}
+                    <div className={`absolute left-0 top-0 bottom-0 w-1 transition-all duration-300 ${
+                      notif.priority === 'URGENT' ? 'bg-gradient-to-b from-red-500 to-red-600' :
+                      notif.priority === 'HIGH' ? 'bg-gradient-to-b from-orange-500 to-orange-600' :
+                      notif.priority === 'NORMAL' ? 'bg-gradient-to-b from-blue-500 to-blue-600' :
+                      'bg-gray-300 dark:bg-gray-600'
+                    } ${!notif.is_read ? 'opacity-100' : 'opacity-50'}`} />
+                    
+                    <div className="p-4 pl-5">
                       <div className="flex gap-3">
-                        {/* Icon */}
-                        <div className="flex-shrink-0 mt-1">
+                        {/* Animated Icon */}
+                        <div className={`flex-shrink-0 mt-0.5 p-2 rounded-xl transition-all duration-300 ${
+                          !notif.is_read 
+                            ? 'bg-violet-100 dark:bg-violet-900/30' 
+                            : 'bg-gray-100 dark:bg-gray-700'
+                        } group-hover:scale-110`}>
                           {getNotificationIcon(notif.type)}
                         </div>
 
@@ -276,31 +414,31 @@ export function NotificationBell() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-2">
                             <div className="flex-1">
-                              <p className={`text-sm font-semibold ${
+                              <p className={`text-sm font-semibold transition-colors duration-200 ${
                                 !notif.is_read 
                                   ? "text-gray-900 dark:text-white" 
                                   : "text-gray-700 dark:text-gray-300"
                               }`}>
                                 {notif.title}
                                 {!notif.is_read && (
-                                  <span className="inline-block w-2 h-2 bg-violet-600 rounded-full ml-2"></span>
+                                  <span className="inline-flex items-center justify-center w-2 h-2 bg-violet-600 rounded-full ml-2 animate-pulse" />
                                 )}
                               </p>
-                              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">
+                              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1.5 line-clamp-2 leading-relaxed">
                                 {notif.message}
                               </p>
-                              <p className="text-xs text-gray-500 dark:text-gray-500 mt-2 flex items-center gap-1">
-                                <FiClock className="w-3 h-3" />
+                              <p className="text-xs text-gray-500 dark:text-gray-500 mt-2.5 flex items-center gap-1.5">
+                                <FiClock className="w-3.5 h-3.5" />
                                 {formatTime(notif.created_at)}
                               </p>
                             </div>
 
-                            {/* Actions */}
-                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            {/* Actions with smooth reveal */}
+                            <div className="flex items-center gap-1 transition-all duration-300 opacity-0 translate-x-2 group-hover:opacity-100 group-hover:translate-x-0">
                               {!notif.is_read && (
                                 <button
                                   onClick={() => markAsRead(notif.id)}
-                                  className="p-1.5 hover:bg-green-100 dark:hover:bg-green-900/20 rounded-lg transition-colors"
+                                  className="p-2 hover:bg-green-100 dark:hover:bg-green-900/30 rounded-xl transition-all duration-200 hover:scale-110 active:scale-95"
                                   title="Marquer comme lu"
                                 >
                                   <FiCheck className="w-4 h-4 text-green-600 dark:text-green-400" />
@@ -308,7 +446,7 @@ export function NotificationBell() {
                               )}
                               <button
                                 onClick={() => deleteNotification(notif.id)}
-                                className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                className="p-2 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-xl transition-all duration-200 hover:scale-110 active:scale-95"
                                 title="Supprimer"
                               >
                                 <FiX className="w-4 h-4 text-red-600 dark:text-red-400" />
@@ -326,53 +464,111 @@ export function NotificationBell() {
 
           {/* Footer */}
           {notifications.length > 0 && (
-            <div className="border-t border-gray-200 dark:border-gray-700 px-6 py-3 bg-gray-50 dark:bg-gray-800/50">
+            <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-3 bg-gray-50/50 dark:bg-gray-800/50 backdrop-blur-sm">
               <a
                 href={session?.user?.role === "RH" || session?.user?.role === "SUPER_ADMIN" ? "/rh/notifications" : "#"}
                 onClick={() => setIsOpen(false)}
-                className="block w-full text-center text-sm font-medium text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 transition-colors py-2 rounded-lg hover:bg-violet-50 dark:hover:bg-violet-900/20"
+                className="flex items-center justify-center gap-2 w-full text-sm font-medium text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 transition-all duration-200 py-2.5 rounded-xl hover:bg-violet-50 dark:hover:bg-violet-900/20 group"
               >
-                {session?.user?.role === "RH" || session?.user?.role === "SUPER_ADMIN" 
-                  ? "Voir le centre de notifications" 
-                  : "Voir toutes les notifications"}
+                <span>
+                  {session?.user?.role === "RH" || session?.user?.role === "SUPER_ADMIN" 
+                    ? "Voir le centre de notifications" 
+                    : "Voir toutes les notifications"}
+                </span>
+                <span className="transition-transform duration-200 group-hover:translate-x-1">→</span>
               </a>
             </div>
           )}
         </div>
-      )}
 
-      <style jsx>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 6px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #cbd5e0;
-          border-radius: 3px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #a0aec0;
-        }
-        .dark .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #4a5568;
-        }
-        .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #718096;
-        }
-        @keyframes fade-in {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes slide-in-from-top-2 {
-          from { transform: translateY(-8px); }
-          to { transform: translateY(0); }
-        }
-        .animate-in {
-          animation: fade-in 0.2s ease-out, slide-in-from-top-2 0.2s ease-out;
-        }
-      `}</style>
-    </div>
+        <style jsx>{`
+          .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+          }
+          .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+          }
+          .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: linear-gradient(to bottom, #a78bfa, #8b5cf6);
+            border-radius: 3px;
+          }
+          .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(to bottom, #8b5cf6, #7c3aed);
+          }
+          
+          @keyframes bell-ring {
+            0%, 100% { transform: rotate(0); }
+            10%, 30%, 50%, 70%, 90% { transform: rotate(10deg); }
+            20%, 40%, 60%, 80% { transform: rotate(-10deg); }
+          }
+          .animate-bell-ring {
+            animation: bell-ring 0.6s ease-in-out;
+          }
+          
+          @keyframes badge-pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.3); }
+            100% { transform: scale(1); }
+          }
+          .animate-badge-pop {
+            animation: badge-pop 0.3s ease-out;
+          }
+          
+          @keyframes ripple {
+            0% { transform: scale(1); opacity: 0.4; }
+            100% { transform: scale(2); opacity: 0; }
+          }
+          .animate-ripple {
+            animation: ripple 0.6s ease-out forwards;
+          }
+          
+          @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(12deg); }
+            50% { transform: translateY(-10px) rotate(12deg); }
+          }
+          .animate-float {
+            animation: float 3s ease-in-out infinite;
+          }
+          
+          @keyframes float-slow {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(10px, -10px); }
+          }
+          .animate-float-slow {
+            animation: float-slow 6s ease-in-out infinite;
+          }
+          .animate-float-slow-delayed {
+            animation: float-slow 6s ease-in-out infinite 3s;
+          }
+          
+          @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+          }
+          
+          @keyframes toast-in {
+            from { 
+              opacity: 0; 
+              transform: translateX(100%) scale(0.8);
+            }
+            to { 
+              opacity: 1; 
+              transform: translateX(0) scale(1);
+            }
+          }
+          .animate-toast-in {
+            animation: toast-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          }
+          
+          @keyframes toast-progress {
+            from { width: 100%; }
+            to { width: 0%; }
+          }
+          .animate-toast-progress {
+            animation: toast-progress 5s linear forwards;
+          }
+        `}</style>
+      </div>
+    </>
   )
 }

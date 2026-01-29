@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { query } from "@/lib/mysql-direct";
 import { notificationService } from "@/lib/services/notification-service";
+import { auditLogger } from "@/lib/services/audit-logger";
+import { checkRateLimit, getClientIP } from "@/lib/security-middleware";
 
 // GET - Récupérer les demandes de congé de l'utilisateur
 export async function GET(req: NextRequest) {
@@ -55,6 +57,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
     }
 
+    // Rate limiting
+    const ip = getClientIP(req);
+    const { allowed } = checkRateLimit(`conges:${session.user.id}`, "api");
+    if (!allowed) {
+      return NextResponse.json(
+        { error: "Trop de demandes. Veuillez patienter." },
+        { status: 429 }
+      );
+    }
+
     const { type, startDate, endDate, reason } = await req.json();
 
     if (!type || !startDate || !endDate) {
@@ -88,6 +100,22 @@ export async function POST(req: NextRequest) {
     );
 
     console.log("✅ Leave request created:", demandeId);
+
+    // Log the leave request creation
+    await auditLogger.logLeaveRequest(
+      "created",
+      demandeId,
+      session.user.id!,
+      undefined,
+      ip,
+      req.headers.get("user-agent") || undefined,
+      {
+        leaveType: type,
+        startDate: start.toISOString(),
+        endDate: end.toISOString(),
+        reason,
+      }
+    );
 
     // Send notifications
     try {

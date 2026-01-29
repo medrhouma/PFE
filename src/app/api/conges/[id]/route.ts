@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { query } from "@/lib/mysql-direct";
 import { notificationService } from "@/lib/services/notification-service";
+import { auditLogger } from "@/lib/services/audit-logger";
+import { getClientIP } from "@/lib/security-middleware";
 
 export async function PATCH(
   req: NextRequest,
@@ -58,6 +60,22 @@ export async function PATCH(
     );
 
     console.log(`✅ Leave request ${requestId} ${status}`);
+
+    // Log the leave request decision
+    await auditLogger.logLeaveRequest(
+      status === "APPROVED" ? "approved" : "rejected",
+      requestId,
+      leaveRequest.userId,
+      session.user.id!,
+      getClientIP(req),
+      req.headers.get("user-agent") || undefined,
+      {
+        leaveType: leaveRequest.type,
+        startDate: leaveRequest.date_debut,
+        endDate: leaveRequest.date_fin,
+        comment: comments,
+      }
+    );
 
     // Send notifications
     try {

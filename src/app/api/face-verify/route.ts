@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { query } from "@/lib/mysql-direct";
+import { checkRateLimit, getClientIP, withSecurityHeaders } from "@/lib/security-middleware";
+import { auditLogger } from "@/lib/services/audit-logger";
 
 /**
  * Face Verification Service
@@ -16,7 +18,25 @@ import { query } from "@/lib/mysql-direct";
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting for face verification
+    const ip = getClientIP(request);
+    const { allowed, remaining } = checkRateLimit(`face-verify:${ip}`, "face-verify");
+    
+    if (!allowed) {
+      return withSecurityHeaders(NextResponse.json({ 
+        error: "Trop de tentatives de vérification. Veuillez attendre.",
+        verified: false,
+        reason: "RATE_LIMITED"
+      }, { status: 429 }));
+    }
+
     const session = await getServerSession(authOptions);
+
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
+    }
+
+    const userAgent = request.headers.get("user-agent") || undefined;
 
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
@@ -64,7 +84,16 @@ export async function POST(request: NextRequest) {
 
     // Mock provider for development/testing
     if (provider === "mock" || !provider || provider === "") {
-      return NextResponse.json({
+      // Log successful face verification
+      await auditLogger.logFaceVerification(
+        session.user.id!,
+        true,
+        ip,
+        userAgent,
+        { confidence: 0.95, mode: "mock" }
+      );
+      
+      return withSecurityHeaders(NextResponse.json({
         verified: true,
         match: true,
         mode: "detect",
@@ -73,7 +102,7 @@ export async function POST(request: NextRequest) {
         faceCount: 1,
         message: "Visage vérifié avec succès (mode développement)",
         timestamp: new Date().toISOString()
-      });
+      }));
     }
 
     const imageBuffer = Buffer.from(image.split(",")[1], "base64");

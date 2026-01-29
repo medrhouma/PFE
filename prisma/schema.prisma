@@ -82,6 +82,8 @@ model User {
   notifications   Notification[]
   rhDecisions     RHDecision[]     @relation("RHDecider")
   deviceFingerprints DeviceFingerprint[]
+  cookieConsents  CookieConsent[]
+  userSessions    UserSession[]
 
   @@map("User")
 }
@@ -472,4 +474,67 @@ enum DecisionType {
   SUSPENDED
   REACTIVATED
   UPDATED
+}
+
+// ========== COOKIE CONSENT (GDPR) ==========
+model CookieConsent {
+  id                  String   @id @default(cuid())
+  sessionId           String?  @map("session_id") // For anonymous users
+  userId              String?  @map("user_id") // For authenticated users
+  user                User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Consent preferences
+  necessary           Boolean  @default(true) // Always true, cannot be disabled
+  functional          Boolean  @default(false) // Session, language, theme preferences
+  analytics           Boolean  @default(false) // Analytics and tracking
+  marketing           Boolean  @default(false) // Marketing and advertising
+  
+  // Consent metadata
+  consentVersion      String   @default("1.0") @map("consent_version")
+  consentMethod       String   @default("banner") @map("consent_method") // banner, settings, api
+  ipAddress           String?  @map("ip_address")
+  userAgent           String?  @db.Text @map("user_agent")
+  
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+  
+  @@index([userId])
+  @@index([sessionId])
+  @@index([createdAt])
+  @@map("cookie_consents")
+}
+
+// ========== USER SESSIONS (Enhanced) ==========
+model UserSession {
+  id                  String   @id @default(cuid())
+  userId              String   @map("user_id")
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Session info
+  sessionToken        String   @unique @map("session_token")
+  refreshToken        String?  @unique @map("refresh_token")
+  
+  // Device info
+  deviceFingerprint   String?  @db.Text @map("device_fingerprint")
+  userAgent           String?  @db.Text @map("user_agent")
+  ipAddress           String?  @map("ip_address")
+  platform            String?
+  browser             String?
+  
+  // Session state
+  isActive            Boolean  @default(true) @map("is_active")
+  lastActivity        DateTime @default(now()) @map("last_activity")
+  expiresAt           DateTime @map("expires_at")
+  
+  // Security
+  csrfToken           String?  @map("csrf_token")
+  revokedAt           DateTime? @map("revoked_at")
+  revokedReason       String?  @map("revoked_reason")
+  
+  createdAt           DateTime @default(now()) @map("created_at")
+  
+  @@index([userId])
+  @@index([sessionToken])
+  @@index([isActive, expiresAt])
+  @@map("user_sessions")
 }
