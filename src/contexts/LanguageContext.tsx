@@ -17,6 +17,7 @@ const translations: Record<Language, Record<string, string>> = {
     // Common
     "dashboard": "Tableau de bord",
     "home": "Accueil",
+    "workspace": "Espace de travail",
     "settings": "Paramètres",
     "profile": "Profil",
     "logout": "Déconnexion",
@@ -45,9 +46,11 @@ const translations: Record<Language, Record<string, string>> = {
     "notification_center": "Centre de notifications",
     "user_management": "Gestion utilisateurs",
     "role_management": "Gestion des rôles",
-    "ai_assistant": "Assistant IA",
+    "help": "Assistance",
     "audit_logs": "Journal d'audit",
     "cookie_settings": "Paramètres cookies",
+    "administration": "Administration",
+    "profile_validation": "Validation profils",
     
     // Settings
     "general": "Général",
@@ -83,11 +86,22 @@ const translations: Record<Language, Record<string, string>> = {
     "goodbye": "Au revoir",
     "no_data": "Aucune donnée disponible",
     "no_results": "Aucun résultat trouvé",
+    
+    // Chatbot / Help
+    "chatbot_title": "Assistant RH",
+    "chatbot_subtitle": "Toujours disponible pour vous aider",
+    "chatbot_online": "En ligne",
+    "chatbot_typing": "En train d'écrire...",
+    "chatbot_placeholder": "Posez votre question...",
+    "chatbot_send": "Envoyer",
+    "chatbot_beta": "L'assistant est en version bêta. Les réponses sont simulées pour le moment.",
+    "chatbot_welcome": "Je suis votre assistant RH virtuel. Je peux vous aider avec:\n\n• Questions sur les congés et absences\n• Informations sur vos pointages\n• Procédures administratives\n• Documents à fournir\n\nComment puis-je vous aider aujourd'hui?",
   },
   en: {
     // Common
     "dashboard": "Dashboard",
     "home": "Home",
+    "workspace": "Workspace",
     "settings": "Settings",
     "profile": "Profile",
     "logout": "Logout",
@@ -116,9 +130,11 @@ const translations: Record<Language, Record<string, string>> = {
     "notification_center": "Notification center",
     "user_management": "User management",
     "role_management": "Role management",
-    "ai_assistant": "AI Assistant",
+    "help": "Help",
     "audit_logs": "Audit Logs",
     "cookie_settings": "Cookie Settings",
+    "administration": "Administration",
+    "profile_validation": "Profile Validation",
     
     // Settings
     "general": "General",
@@ -154,11 +170,22 @@ const translations: Record<Language, Record<string, string>> = {
     "goodbye": "Goodbye",
     "no_data": "No data available",
     "no_results": "No results found",
+    
+    // Chatbot / Help
+    "chatbot_title": "HR Assistant",
+    "chatbot_subtitle": "Always available to help you",
+    "chatbot_online": "Online",
+    "chatbot_typing": "Typing...",
+    "chatbot_placeholder": "Ask your question...",
+    "chatbot_send": "Send",
+    "chatbot_beta": "The assistant is in beta. Responses are simulated for now.",
+    "chatbot_welcome": "I'm your virtual HR assistant. I can help you with:\n\n• Questions about leaves and absences\n• Information about your attendance\n• Administrative procedures\n• Required documents\n\nHow can I help you today?",
   },
   ar: {
     // Common
     "dashboard": "لوحة التحكم",
     "home": "الرئيسية",
+    "workspace": "مساحة العمل",
     "settings": "الإعدادات",
     "profile": "الملف الشخصي",
     "logout": "تسجيل الخروج",
@@ -187,9 +214,11 @@ const translations: Record<Language, Record<string, string>> = {
     "notification_center": "مركز الإشعارات",
     "user_management": "إدارة المستخدمين",
     "role_management": "إدارة الأدوار",
-    "ai_assistant": "المساعد الذكي",
+    "help": "المساعدة",
     "audit_logs": "سجل التدقيق",
     "cookie_settings": "إعدادات ملفات تعريف الارتباط",
+    "administration": "الإدارة",
+    "profile_validation": "التحقق من الملفات الشخصية",
     
     // Settings
     "general": "عام",
@@ -225,6 +254,16 @@ const translations: Record<Language, Record<string, string>> = {
     "goodbye": "وداعا",
     "no_data": "لا توجد بيانات متاحة",
     "no_results": "لم يتم العثور على نتائج",
+    
+    // Chatbot
+    "chatbot_title": "مساعد الموارد البشرية الذكي",
+    "chatbot_subtitle": "متاح دائماً لمساعدتك",
+    "chatbot_online": "متصل",
+    "chatbot_typing": "يكتب...",
+    "chatbot_placeholder": "اطرح سؤالك...",
+    "chatbot_send": "إرسال",
+    "chatbot_beta": "المساعد الذكي في النسخة التجريبية. الردود محاكاة حالياً.",
+    "chatbot_welcome": "أنا مساعدك الافتراضي للموارد البشرية. يمكنني مساعدتك في:\n\n• أسئلة حول الإجازات والغياب\n• معلومات عن حضورك\n• الإجراءات الإدارية\n• المستندات المطلوبة\n\nكيف يمكنني مساعدتك اليوم؟",
   },
 };
 

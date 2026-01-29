@@ -3,10 +3,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import {
-  FiHelpCircle, FiBook, FiMessageCircle, FiMail, FiPhone,
-  FiChevronDown, FiChevronUp, FiSearch, FiExternalLink,
-  FiCamera, FiClock, FiUsers, FiShield, FiSettings
-} from "react-icons/fi";
+  HelpCircle, Book, MessageCircle, Mail, Phone,
+  ChevronDown, ChevronUp, Search, ExternalLink,
+  Camera, Clock, Users, Shield, Settings
+} from "lucide-react";
 
 interface FAQ {
   question: string;
@@ -74,11 +74,11 @@ export default function HelpPage() {
 
   const getCategoryIcon = (category: string) => {
     switch (category) {
-      case "Pointage": return <FiClock className="w-4 h-4" />;
-      case "Congés": return <FiUsers className="w-4 h-4" />;
-      case "Sécurité": return <FiShield className="w-4 h-4" />;
-      case "Profil": return <FiSettings className="w-4 h-4" />;
-      default: return <FiHelpCircle className="w-4 h-4" />;
+      case "Pointage": return <Clock className="w-4 h-4" />;
+      case "Congés": return <Users className="w-4 h-4" />;
+      case "Sécurité": return <Shield className="w-4 h-4" />;
+      case "Profil": return <Settings className="w-4 h-4" />;
+      default: return <HelpCircle className="w-4 h-4" />;
     }
   };
 
@@ -88,7 +88,7 @@ export default function HelpPage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-            <FiHelpCircle className="w-8 h-8 text-violet-600" />
+            <HelpCircle className="w-8 h-8 text-violet-600" />
             Aide & Support
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-2">
@@ -104,7 +104,7 @@ export default function HelpPage() {
           >
             <div className="flex items-center gap-3">
               <div className="p-2 bg-violet-100 dark:bg-violet-900/30 rounded-lg group-hover:bg-violet-200 dark:group-hover:bg-violet-900/50 transition-colors">
-                <FiCamera className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+                <Camera className="w-5 h-5 text-violet-600 dark:text-violet-400" />
               </div>
               <div>
                 <p className="font-medium text-gray-900 dark:text-white">Guide Pointage</p>
@@ -118,7 +118,7 @@ export default function HelpPage() {
           >
             <div className="flex items-center gap-3">
               <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg group-hover:bg-blue-200 dark:group-hover:bg-blue-900/50 transition-colors">
-                <FiSettings className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                <Settings className="w-5 h-5 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
                 <p className="font-medium text-gray-900 dark:text-white">Paramètres</p>
@@ -132,7 +132,7 @@ export default function HelpPage() {
           >
             <div className="flex items-center gap-3">
               <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg group-hover:bg-green-200 dark:group-hover:bg-green-900/50 transition-colors">
-                <FiMail className="w-5 h-5 text-green-600 dark:text-green-400" />
+                <Mail className="w-5 h-5 text-green-600 dark:text-green-400" />
               </div>
               <div>
                 <p className="font-medium text-gray-900 dark:text-white">Contact Support</p>
@@ -145,7 +145,7 @@ export default function HelpPage() {
         {/* Search */}
         <div className="mb-6">
           <div className="relative">
-            <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
               type="text"
               value={searchQuery}
@@ -188,7 +188,7 @@ export default function HelpPage() {
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="p-4 border-b border-gray-200 dark:border-gray-700">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-              <FiBook className="w-5 h-5 text-violet-600" />
+              <Book className="w-5 h-5 text-violet-600" />
               Questions fréquentes
             </h2>
           </div>
@@ -196,7 +196,7 @@ export default function HelpPage() {
           <div className="divide-y divide-gray-100 dark:divide-gray-700">
             {filteredFaqs.length === 0 ? (
               <div className="p-8 text-center text-gray-500 dark:text-gray-400">
-                <FiHelpCircle className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                <HelpCircle className="w-12 h-12 mx-auto mb-3 opacity-50" />
                 <p>Aucune question trouvée pour "{searchQuery}"</p>
               </div>
             ) : (
@@ -215,9 +215,9 @@ export default function HelpPage() {
                       </span>
                     </div>
                     {expandedFaq === index ? (
-                      <FiChevronUp className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                      <ChevronUp className="w-5 h-5 text-gray-400 flex-shrink-0" />
                     ) : (
-                      <FiChevronDown className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                      <ChevronDown className="w-5 h-5 text-gray-400 flex-shrink-0" />
                     )}
                   </button>
                   {expandedFaq === index && (
@@ -242,14 +242,14 @@ export default function HelpPage() {
               href="mailto:support@santec-ai.com"
               className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
             >
-              <FiMail className="w-4 h-4" />
+              <Mail className="w-4 h-4" />
               support@santec-ai.com
             </a>
             <a
               href="tel:+21612345678"
               className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
             >
-              <FiPhone className="w-4 h-4" />
+              <Phone className="w-4 h-4" />
               +216 12 345 678
             </a>
           </div>

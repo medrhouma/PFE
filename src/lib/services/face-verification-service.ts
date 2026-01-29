@@ -3,7 +3,7 @@
  * Handles face comparison and verification for pointage system
  */
 
-import { prisma } from "@/lib/prisma";
+import { query, execute } from "@/lib/mysql-direct";
 import { auditLogger } from "./audit-logger";
 import { securityService } from "./security-service";
 
@@ -41,10 +41,11 @@ class FaceVerificationService {
   ): Promise<FaceVerificationResult> {
     try {
       // Get user's reference photo from Employe table
-      const employe = await prisma.employe.findUnique({
-        where: { userId },
-        select: { photo: true, nom: true, prenom: true },
-      });
+      const employes = await query(
+        `SELECT photo, nom, prenom FROM Employe WHERE userId = ? LIMIT 1`,
+        [userId]
+      ) as any[];
+      const employe = employes[0];
 
       if (!employe || !employe.photo) {
         return {
@@ -248,32 +249,36 @@ class FaceVerificationService {
       : "REJECTED";
 
     // Create pointage
-    const pointage = await prisma.pointage.create({
-      data: {
+    const pointageId = `ptg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    await execute(
+      `INSERT INTO Pointage (id, user_id, type, timestamp, capturedPhoto, face_verified, verificationScore, anomaly_detected, anomaly_reason, status, deviceFingerprintId, ip_address, notes)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        pointageId,
         userId,
         type,
-        timestamp: captureData.timestamp,
-        capturedPhoto: captureData.photoData,
-        faceVerified: verificationResult.isMatch,
-        verificationScore: verificationResult.confidence,
-        anomalyDetected,
+        captureData.timestamp,
+        captureData.photoData,
+        verificationResult.isMatch ? 1 : 0,
+        verificationResult.confidence,
+        anomalyDetected ? 1 : 0,
         anomalyReason,
         status,
-        deviceFingerprintId,
-        ipAddress,
-        notes: JSON.stringify({
+        deviceFingerprintId || null,
+        ipAddress || null,
+        JSON.stringify({
           captureMethod: captureData.captureMethod,
           deviceInfo: captureData.deviceInfo,
         }),
-      },
-    });
+      ]
+    );
 
     // Log pointage
     await auditLogger.log({
       action: `POINTAGE_${type}`,
       userId,
       entityType: "POINTAGE",
-      entityId: pointage.id,
+      entityId: pointageId,
       metadata: JSON.stringify({
         faceVerified: verificationResult.isMatch,
         confidence: verificationResult.confidence,
@@ -291,7 +296,7 @@ class FaceVerificationService {
           ? "HIGH"
           : "MEDIUM",
         "POINTAGE",
-        pointage.id,
+        pointageId,
         anomalyReason || "Face verification anomaly",
         {
           userId,
@@ -302,7 +307,7 @@ class FaceVerificationService {
       );
     }
 
-    return pointage.id;
+    return pointageId;
   }
 
   /**
@@ -312,22 +317,11 @@ class FaceVerificationService {
     const since = new Date();
     since.setDate(since.getDate() - days);
 
-    return await prisma.pointage.findMany({
-      where: {
-        userId,
-        timestamp: { gte: since },
-      },
-      orderBy: { timestamp: "desc" },
-      select: {
-        id: true,
-        type: true,
-        timestamp: true,
-        faceVerified: true,
-        verificationScore: true,
-        anomalyDetected: true,
-        status: true,
-      },
-    });
+    return await query(
+      `SELECT id, type, timestamp, face_verified as faceVerified, verificationScore, anomaly_detected as anomalyDetected, status
+       FROM Pointage WHERE user_id = ? AND timestamp >= ? ORDER BY timestamp DESC`,
+      [userId, since]
+    ) as any[];
   }
 
   /**

@@ -14,19 +14,19 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Santec AI - Plateforme RH",
+  title: "Santec RH - Plateforme de gestion des ressources humaines",
   description: "Plateforme de gestion des ressources humaines avec pointage intelligent et reconnaissance faciale",
   keywords: ["RH", "pointage", "gestion", "employés", "congés", "reconnaissance faciale"],
-  authors: [{ name: "Santec AI" }],
-  creator: "Santec AI",
-  publisher: "Santec AI",
+  authors: [{ name: "Santec" }],
+  creator: "Santec",
+  publisher: "Santec",
   robots: {
     index: true,
     follow: true,
   },
   openGraph: {
-    title: "Santec AI - Plateforme RH",
-    description: "Plateforme de gestion des ressources humaines intelligente",
+    title: "Santec RH - Plateforme de gestion des ressources humaines",
+    description: "Plateforme de gestion des ressources humaines professionnelle",
     type: "website",
     locale: "fr_FR",
   },

@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { useNotification } from "@/contexts/NotificationContext";
-import { FiUpload, FiUser, FiMail, FiPhone, FiMapPin, FiBriefcase, FiCalendar, FiFileText, FiFile, FiX, FiDownload } from "react-icons/fi";
+import { Upload, User, Mail, Phone, MapPin, Briefcase, Calendar, FileText, File, X, Download } from "lucide-react";
 
 interface DocumentFile {
   name: string;
@@ -267,7 +267,7 @@ export default function EmployeeProfileForm() {
       <div className="bg-gradient-to-r from-violet-600 to-purple-600 px-8 py-6">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-white/20 rounded-lg">
-            <FiUser className="w-6 h-6 text-white" />
+            <User className="w-6 h-6 text-white" />
           </div>
           <h2 className="text-2xl font-bold text-white">
             Mon Profil Employé
@@ -290,7 +290,7 @@ export default function EmployeeProfileForm() {
               />
             ) : (
               <div className="w-32 h-32 rounded-full bg-gradient-to-br from-violet-100 to-purple-100 dark:from-violet-900 dark:to-purple-900 flex items-center justify-center border-4 border-violet-100 dark:border-violet-900">
-                <FiUser className="w-16 h-16 text-violet-400 dark:text-violet-600" />
+                <User className="w-16 h-16 text-violet-400 dark:text-violet-600" />
               </div>
             )}
           </div>
@@ -307,7 +307,7 @@ export default function EmployeeProfileForm() {
             onClick={() => photoInputRef.current?.click()}
             className="flex items-center gap-2"
           >
-            <FiUpload className="w-4 h-4" />
+            <Upload className="w-4 h-4" />
             Choisir une photo (PNG, JPG, SVG)
           </Button>
           <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -319,7 +319,7 @@ export default function EmployeeProfileForm() {
         <div className="space-y-6">
           <div className="flex items-center gap-2 mb-4">
             <div className="p-2 bg-violet-100 dark:bg-violet-900 rounded-lg">
-              <FiUser className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+              <User className="w-5 h-5 text-violet-600 dark:text-violet-400" />
             </div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
               Informations personnelles
@@ -349,7 +349,7 @@ export default function EmployeeProfileForm() {
                 onChange={handleChange}
                 placeholder="email@example.com"
               />
-              <FiMail className="absolute right-3 top-11 text-gray-400" />
+              <Mail className="absolute right-3 top-11 text-gray-400" />
             </div>
             <Input
               label="Date de naissance"
@@ -381,7 +381,7 @@ export default function EmployeeProfileForm() {
                 onChange={handleChange}
                 placeholder="+216 XX XXX XXX"
               />
-              <FiPhone className="absolute right-3 top-11 text-gray-400" />
+              <Phone className="absolute right-3 top-11 text-gray-400" />
             </div>
           </div>
         </div>
@@ -390,7 +390,7 @@ export default function EmployeeProfileForm() {
         <div className="space-y-6 pt-8 border-t border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-2 mb-4">
             <div className="p-2 bg-violet-100 dark:bg-violet-900 rounded-lg">
-              <FiMapPin className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+              <MapPin className="w-5 h-5 text-violet-600 dark:text-violet-400" />
             </div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
               Coordonnées
@@ -413,7 +413,7 @@ export default function EmployeeProfileForm() {
                 onChange={handleChange}
                 placeholder="Rue, Ville, Code postal"
               />
-              <FiMapPin className="absolute right-3 top-11 text-gray-400" />
+              <MapPin className="absolute right-3 top-11 text-gray-400" />
             </div>
           </div>
         </div>
@@ -422,7 +422,7 @@ export default function EmployeeProfileForm() {
         <div className="space-y-6 pt-8 border-t border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-2 mb-4">
             <div className="p-2 bg-violet-100 dark:bg-violet-900 rounded-lg">
-              <FiBriefcase className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+              <Briefcase className="w-5 h-5 text-violet-600 dark:text-violet-400" />
             </div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
               Informations professionnelles
@@ -437,7 +437,7 @@ export default function EmployeeProfileForm() {
                 value={formData.dateEmbauche}
                 onChange={handleChange}
               />
-              <FiCalendar className="absolute right-3 top-11 text-gray-400" />
+              <Calendar className="absolute right-3 top-11 text-gray-400" />
             </div>
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -463,7 +463,7 @@ export default function EmployeeProfileForm() {
         <div className="space-y-6 pt-8 border-t border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-2 mb-4">
             <div className="p-2 bg-violet-100 dark:bg-violet-900 rounded-lg">
-              <FiFileText className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+              <FileText className="w-5 h-5 text-violet-600 dark:text-violet-400" />
             </div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
               Curriculum Vitae
@@ -484,12 +484,12 @@ export default function EmployeeProfileForm() {
                 onClick={() => cvInputRef.current?.click()}
                 className="flex items-center gap-2"
               >
-                <FiUpload className="w-4 h-4" />
+                <Upload className="w-4 h-4" />
                 Importer mon CV (PDF)
               </Button>
               {cvFileName && (
                 <div className="flex items-center gap-2 px-4 py-2 bg-violet-50 dark:bg-violet-900/20 rounded-lg">
-                  <FiFileText className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+                  <FileText className="w-4 h-4 text-violet-600 dark:text-violet-400" />
                   <span className="text-sm text-violet-700 dark:text-violet-300">{cvFileName}</span>
                 </div>
               )}
@@ -504,7 +504,7 @@ export default function EmployeeProfileForm() {
         <div className="space-y-6 pt-8 border-t border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-2 mb-4">
             <div className="p-2 bg-violet-100 dark:bg-violet-900 rounded-lg">
-              <FiFile className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+              <File className="w-5 h-5 text-violet-600 dark:text-violet-400" />
             </div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
               Documents supplémentaires
@@ -532,7 +532,7 @@ export default function EmployeeProfileForm() {
               onClick={() => formationInputRef.current?.click()}
               className="w-full flex items-center justify-center gap-2 border-blue-300 dark:border-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900/30"
             >
-              <FiUpload className="w-4 h-4" />
+              <Upload className="w-4 h-4" />
               Ajouter des documents de formation
             </Button>
             {formData.autresDocuments.filter(d => d.type === 'formation').length > 0 && (
@@ -540,7 +540,7 @@ export default function EmployeeProfileForm() {
                 {formData.autresDocuments.map((doc, index) => doc.type === 'formation' && (
                   <div key={index} className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
                     <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <FiFile className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                      <File className="w-4 h-4 text-blue-600 flex-shrink-0" />
                       <span className="text-sm text-gray-700 dark:text-gray-300 truncate">{doc.name}</span>
                     </div>
                     <div className="flex items-center gap-2">
@@ -549,14 +549,14 @@ export default function EmployeeProfileForm() {
                         onClick={() => downloadDocument(doc)}
                         className="p-1.5 text-green-600 hover:bg-green-100 dark:hover:bg-green-900/30 rounded-lg transition-colors"
                       >
-                        <FiDownload className="w-4 h-4" />
+                        <Download className="w-4 h-4" />
                       </button>
                       <button
                         type="button"
                         onClick={() => removeDocument(index)}
                         className="p-1.5 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors"
                       >
-                        <FiX className="w-4 h-4" />
+                        <X className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
@@ -586,7 +586,7 @@ export default function EmployeeProfileForm() {
               onClick={() => experienceInputRef.current?.click()}
               className="w-full flex items-center justify-center gap-2 border-purple-300 dark:border-purple-700 hover:bg-purple-100 dark:hover:bg-purple-900/30"
             >
-              <FiUpload className="w-4 h-4" />
+              <Upload className="w-4 h-4" />
               Ajouter des documents d'expérience
             </Button>
             {formData.autresDocuments.filter(d => d.type === 'experience').length > 0 && (
@@ -594,7 +594,7 @@ export default function EmployeeProfileForm() {
                 {formData.autresDocuments.map((doc, index) => doc.type === 'experience' && (
                   <div key={index} className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
                     <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <FiFile className="w-4 h-4 text-purple-600 flex-shrink-0" />
+                      <File className="w-4 h-4 text-purple-600 flex-shrink-0" />
                       <span className="text-sm text-gray-700 dark:text-gray-300 truncate">{doc.name}</span>
                     </div>
                     <div className="flex items-center gap-2">
@@ -603,14 +603,14 @@ export default function EmployeeProfileForm() {
                         onClick={() => downloadDocument(doc)}
                         className="p-1.5 text-green-600 hover:bg-green-100 dark:hover:bg-green-900/30 rounded-lg transition-colors"
                       >
-                        <FiDownload className="w-4 h-4" />
+                        <Download className="w-4 h-4" />
                       </button>
                       <button
                         type="button"
                         onClick={() => removeDocument(index)}
                         className="p-1.5 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors"
                       >
-                        <FiX className="w-4 h-4" />
+                        <X className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
@@ -640,7 +640,7 @@ export default function EmployeeProfileForm() {
               onClick={() => diplomeInputRef.current?.click()}
               className="w-full flex items-center justify-center gap-2 border-emerald-300 dark:border-emerald-700 hover:bg-emerald-100 dark:hover:bg-emerald-900/30"
             >
-              <FiUpload className="w-4 h-4" />
+              <Upload className="w-4 h-4" />
               Ajouter des diplômes
             </Button>
             {formData.autresDocuments.filter(d => d.type === 'diplome').length > 0 && (
@@ -648,7 +648,7 @@ export default function EmployeeProfileForm() {
                 {formData.autresDocuments.map((doc, index) => doc.type === 'diplome' && (
                   <div key={index} className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
                     <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <FiFile className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                      <File className="w-4 h-4 text-emerald-600 flex-shrink-0" />
                       <span className="text-sm text-gray-700 dark:text-gray-300 truncate">{doc.name}</span>
                     </div>
                     <div className="flex items-center gap-2">
@@ -657,14 +657,14 @@ export default function EmployeeProfileForm() {
                         onClick={() => downloadDocument(doc)}
                         className="p-1.5 text-green-600 hover:bg-green-100 dark:hover:bg-green-900/30 rounded-lg transition-colors"
                       >
-                        <FiDownload className="w-4 h-4" />
+                        <Download className="w-4 h-4" />
                       </button>
                       <button
                         type="button"
                         onClick={() => removeDocument(index)}
                         className="p-1.5 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors"
                       >
-                        <FiX className="w-4 h-4" />
+                        <X className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
@@ -694,7 +694,7 @@ export default function EmployeeProfileForm() {
               onClick={() => autresInputRef.current?.click()}
               className="w-full flex items-center justify-center gap-2 border-amber-300 dark:border-amber-700 hover:bg-amber-100 dark:hover:bg-amber-900/30"
             >
-              <FiUpload className="w-4 h-4" />
+              <Upload className="w-4 h-4" />
               Ajouter d'autres documents
             </Button>
             {formData.autresDocuments.filter(d => !d.type || d.type === 'autre').length > 0 && (
@@ -702,7 +702,7 @@ export default function EmployeeProfileForm() {
                 {formData.autresDocuments.map((doc, index) => (!doc.type || doc.type === 'autre') && (
                   <div key={index} className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
                     <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <FiFile className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                      <File className="w-4 h-4 text-amber-600 flex-shrink-0" />
                       <span className="text-sm text-gray-700 dark:text-gray-300 truncate">{doc.name}</span>
                     </div>
                     <div className="flex items-center gap-2">
@@ -711,14 +711,14 @@ export default function EmployeeProfileForm() {
                         onClick={() => downloadDocument(doc)}
                         className="p-1.5 text-green-600 hover:bg-green-100 dark:hover:bg-green-900/30 rounded-lg transition-colors"
                       >
-                        <FiDownload className="w-4 h-4" />
+                        <Download className="w-4 h-4" />
                       </button>
                       <button
                         type="button"
                         onClick={() => removeDocument(index)}
                         className="p-1.5 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors"
                       >
-                        <FiX className="w-4 h-4" />
+                        <X className="w-4 h-4" />
                       </button>
                     </div>
                   </div>

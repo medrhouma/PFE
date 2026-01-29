@@ -3,7 +3,7 @@
  * Enterprise-grade security features for HR platform
  */
 
-import { prisma } from "@/lib/prisma";
+import { query, execute } from "@/lib/mysql-direct";
 import { auditLogger } from "./audit-logger";
 import { notificationService } from "./notification-service";
 import crypto from "crypto";
@@ -62,48 +62,50 @@ class SecurityService {
     const fingerprintJson = JSON.stringify(fingerprintData);
 
     // Check if device already exists
-    const existingDevice = await prisma.deviceFingerprint.findFirst({
-      where: {
-        userId,
-        fingerprint: fingerprintJson,
-      },
-    });
+    const existingDevices = await query(
+      `SELECT id, isTrusted FROM DeviceFingerprint WHERE userId = ? AND fingerprint = ? LIMIT 1`,
+      [userId, fingerprintJson]
+    ) as any[];
+    const existingDevice = existingDevices[0];
 
     if (existingDevice) {
       // Update last seen
-      await prisma.deviceFingerprint.update({
-        where: { id: existingDevice.id },
-        data: { lastSeen: new Date() },
-      });
+      await execute(
+        `UPDATE DeviceFingerprint SET lastSeen = NOW() WHERE id = ?`,
+        [existingDevice.id]
+      );
 
       return {
         deviceId: existingDevice.id,
         isNew: false,
-        isTrusted: existingDevice.isTrusted,
+        isTrusted: existingDevice.isTrusted === 1 || existingDevice.isTrusted === true,
       };
     }
 
     // Create new device
-    const newDevice = await prisma.deviceFingerprint.create({
-      data: {
+    const deviceId = `dev_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    await execute(
+      `INSERT INTO DeviceFingerprint (id, userId, fingerprint, userAgent, platform, browser, screenResolution, timezone, language, isTrusted, firstSeen, lastSeen)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, NOW(), NOW())`,
+      [
+        deviceId,
         userId,
-        fingerprint: fingerprintJson,
-        userAgent: fingerprintData.userAgent,
-        platform: fingerprintData.platform,
-        browser: fingerprintData.browser,
-        screenResolution: fingerprintData.screenResolution,
-        timezone: fingerprintData.timezone,
-        language: fingerprintData.language,
-        isTrusted: false, // New devices start as untrusted
-      },
-    });
+        fingerprintJson,
+        fingerprintData.userAgent,
+        fingerprintData.platform || null,
+        fingerprintData.browser || null,
+        fingerprintData.screenResolution || null,
+        fingerprintData.timezone || null,
+        fingerprintData.language || null,
+      ]
+    );
 
     // Log new device
     await auditLogger.log({
       action: "NEW_DEVICE_REGISTERED",
       userId,
       entityType: "DEVICE",
-      entityId: newDevice.id,
+      entityId: deviceId,
       metadata: JSON.stringify({
         fingerprintHash,
         ipAddress,
@@ -121,7 +123,7 @@ class SecurityService {
       message: `Un nouveau périphérique a été détecté lors de votre connexion. Si ce n'est pas vous, veuillez contacter le support.`,
       priority: "HIGH",
       metadata: {
-        deviceId: newDevice.id,
+        deviceId,
         platform: fingerprintData.platform,
         browser: fingerprintData.browser,
       },
@@ -137,7 +139,7 @@ class SecurityService {
     );
 
     return {
-      deviceId: newDevice.id,
+      deviceId,
       isNew: true,
       isTrusted: false,
     };
@@ -147,10 +149,10 @@ class SecurityService {
    * Trust a device
    */
   async trustDevice(deviceId: string, userId: string): Promise<void> {
-    await prisma.deviceFingerprint.update({
-      where: { id: deviceId, userId },
-      data: { isTrusted: true },
-    });
+    await execute(
+      `UPDATE DeviceFingerprint SET isTrusted = 1 WHERE id = ? AND userId = ?`,
+      [deviceId, userId]
+    );
 
     await auditLogger.log({
       action: "DEVICE_TRUSTED",
@@ -165,12 +167,12 @@ class SecurityService {
    * Check if device is trusted
    */
   async isDeviceTrusted(deviceId: string, userId: string): Promise<boolean> {
-    const device = await prisma.deviceFingerprint.findFirst({
-      where: { id: deviceId, userId },
-      select: { isTrusted: true },
-    });
+    const devices = await query(
+      `SELECT isTrusted FROM DeviceFingerprint WHERE id = ? AND userId = ? LIMIT 1`,
+      [deviceId, userId]
+    ) as any[];
 
-    return device?.isTrusted || false;
+    return devices[0]?.isTrusted === 1 || devices[0]?.isTrusted === true;
   }
 
   /**
@@ -185,16 +187,13 @@ class SecurityService {
 
     // Check 1: Multiple devices in short time
     if (activityType === "LOGIN" || activityType === "POINTAGE") {
-      const recentDevices = await prisma.deviceFingerprint.findMany({
-        where: {
-          userId,
-          lastSeen: {
-            gte: new Date(Date.now() - 5 * 60 * 1000), // Last 5 minutes
-          },
-        },
-      });
+      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+      const recentDevices = await query(
+        `SELECT COUNT(*) as count FROM DeviceFingerprint WHERE userId = ? AND lastSeen >= ?`,
+        [userId, fiveMinutesAgo]
+      ) as any[];
 
-      if (recentDevices.length > 2) {
+      if (recentDevices[0]?.count > 2) {
         checks.push({
           isAllowed: true,
           reason: "Multiple devices detected in short time",
@@ -219,16 +218,13 @@ class SecurityService {
 
     // Check 3: Rapid successive actions
     if (activityType === "POINTAGE") {
-      const recentPointages = await prisma.pointage.findMany({
-        where: {
-          userId,
-          timestamp: {
-            gte: new Date(Date.now() - 2 * 60 * 1000), // Last 2 minutes
-          },
-        },
-      });
+      const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
+      const recentPointages = await query(
+        `SELECT COUNT(*) as count FROM Pointage WHERE user_id = ? AND timestamp >= ?`,
+        [userId, twoMinutesAgo]
+      ) as any[];
 
-      if (recentPointages.length > 1) {
+      if (recentPointages[0]?.count > 1) {
         checks.push({
           isAllowed: false,
           reason: "Duplicate pointage in short time",
@@ -254,23 +250,17 @@ class SecurityService {
     userId: string,
     currentIP: string
   ): Promise<boolean> {
-    const recentLogs = await prisma.auditLog.findMany({
-      where: {
-        userId,
-        createdAt: {
-          gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // Last 7 days
-        },
-      },
-      select: { ipAddress: true },
-      distinct: ["ipAddress"],
-      take: 10,
-    });
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const recentLogs = await query(
+      `SELECT DISTINCT ip_address FROM audit_logs WHERE user_id = ? AND created_at >= ? LIMIT 10`,
+      [userId, sevenDaysAgo]
+    ) as any[];
 
     // If no history, allow
     if (recentLogs.length === 0) return true;
 
     // Check if current IP is in recent history
-    return recentLogs.some((log) => log.ipAddress === currentIP);
+    return recentLogs.some((log: any) => log.ip_address === currentIP);
   }
 
   /**
@@ -284,24 +274,20 @@ class SecurityService {
     description: string,
     metadata?: any
   ): Promise<string> {
-    const anomaly = await prisma.anomaly.create({
-      data: {
-        type: type as any,
-        severity: severity as any,
-        entityType,
-        entityId,
-        description,
-        metadata: metadata ? JSON.stringify(metadata) : null,
-        status: "PENDING",
-      },
-    });
+    const anomalyId = `anom_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    await execute(
+      `INSERT INTO Anomaly (id, type, severity, entityType, entityId, description, metadata, status, createdAt)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'PENDING', NOW())`,
+      [anomalyId, type, severity, entityType, entityId, description, metadata ? JSON.stringify(metadata) : null]
+    );
 
     // Log anomaly
     await auditLogger.log({
       action: "ANOMALY_DETECTED",
       entityType,
       entityId,
-      metadata: JSON.stringify({ anomalyId: anomaly.id, type, severity }),
+      metadata: JSON.stringify({ anomalyId, type, severity }),
       severity: severity as any,
     });
 
@@ -316,36 +302,28 @@ class SecurityService {
       );
     }
 
-    return anomaly.id;
+    return anomalyId;
   }
 
   /**
    * Get user's trusted devices
    */
   async getUserDevices(userId: string) {
-    return await prisma.deviceFingerprint.findMany({
-      where: { userId },
-      orderBy: { lastSeen: "desc" },
-      select: {
-        id: true,
-        platform: true,
-        browser: true,
-        isTrusted: true,
-        firstSeen: true,
-        lastSeen: true,
-        userAgent: true,
-      },
-    });
+    return await query(
+      `SELECT id, platform, browser, isTrusted, firstSeen, lastSeen, userAgent
+       FROM DeviceFingerprint WHERE userId = ? ORDER BY lastSeen DESC`,
+      [userId]
+    ) as any[];
   }
 
   /**
    * Revoke device trust
    */
   async revokeDeviceTrust(deviceId: string, userId: string): Promise<void> {
-    await prisma.deviceFingerprint.update({
-      where: { id: deviceId, userId },
-      data: { isTrusted: false },
-    });
+    await execute(
+      `UPDATE DeviceFingerprint SET isTrusted = 0 WHERE id = ? AND userId = ?`,
+      [deviceId, userId]
+    );
 
     await auditLogger.log({
       action: "DEVICE_TRUST_REVOKED",
@@ -360,9 +338,10 @@ class SecurityService {
    * Delete device
    */
   async deleteDevice(deviceId: string, userId: string): Promise<void> {
-    await prisma.deviceFingerprint.delete({
-      where: { id: deviceId, userId },
-    });
+    await execute(
+      `DELETE FROM DeviceFingerprint WHERE id = ? AND userId = ?`,
+      [deviceId, userId]
+    );
 
     await auditLogger.log({
       action: "DEVICE_DELETED",
@@ -377,15 +356,12 @@ class SecurityService {
    * Validate session integrity
    */
   async validateSession(userId: string, sessionToken: string): Promise<boolean> {
-    const session = await prisma.session.findFirst({
-      where: {
-        userId,
-        sessionToken,
-        expires: { gt: new Date() },
-      },
-    });
+    const sessions = await query(
+      `SELECT id FROM Session WHERE userId = ? AND sessionToken = ? AND expires > NOW() LIMIT 1`,
+      [userId, sessionToken]
+    ) as any[];
 
-    return !!session;
+    return sessions.length > 0;
   }
 
   /**

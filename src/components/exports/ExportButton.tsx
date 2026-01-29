@@ -7,7 +7,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useExport, ExportOptions } from "@/hooks/useExport";
-import { FiDownload, FiChevronDown, FiFileText, FiUsers, FiCalendar, FiClock, FiShield } from "react-icons/fi";
+import { Download, ChevronDown, FileText, Users, Calendar, Clock, Shield } from "lucide-react";
 
 interface ExportButtonProps {
   /** Available export types for this button */
@@ -38,32 +38,32 @@ interface ExportButtonProps {
 const exportTypeLabels: Record<string, { label: string; icon: any; description: string }> = {
   employees: {
     label: 'Liste des employés',
-    icon: FiUsers,
+    icon: Users,
     description: 'Exporter tous les employés'
   },
   pointages: {
     label: 'Historique pointages',
-    icon: FiClock,
+    icon: Clock,
     description: 'Exporter les pointages'
   },
   conges: {
     label: 'Demandes de congés',
-    icon: FiCalendar,
+    icon: Calendar,
     description: 'Exporter les congés'
   },
   audit: {
     label: 'Logs d\'audit',
-    icon: FiShield,
+    icon: Shield,
     description: 'Exporter les logs système'
   },
   monthly: {
     label: 'Rapport mensuel',
-    icon: FiFileText,
+    icon: FileText,
     description: 'Rapport mensuel complet'
   },
   personal: {
     label: 'Mon relevé personnel',
-    icon: FiFileText,
+    icon: FileText,
     description: 'Votre relevé de pointage'
   }
 };
@@ -149,7 +149,7 @@ export default function ExportButton({
   // Single button mode
   if (!dropdown && singleType) {
     const typeInfo = exportTypeLabels[singleType];
-    const Icon = typeInfo?.icon || FiDownload;
+    const Icon = typeInfo?.icon || Download;
 
     return (
       <button
@@ -179,10 +179,10 @@ export default function ExportButton({
         {isExporting ? (
           <span className="animate-spin w-4 h-4 border-2 border-current border-t-transparent rounded-full" />
         ) : (
-          <FiDownload className="w-4 h-4" />
+          <Download className="w-4 h-4" />
         )}
         <span>Exporter</span>
-        <FiChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {isOpen && (
@@ -223,7 +223,7 @@ export default function ExportButton({
           <div className="py-1">
             {availableTypes.map((type) => {
               const typeInfo = exportTypeLabels[type];
-              const Icon = typeInfo?.icon || FiDownload;
+              const Icon = typeInfo?.icon || Download;
 
               return (
                 <button

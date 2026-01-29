@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { FiUser, FiMail, FiPhone, FiBriefcase, FiX, FiFileText, FiMapPin, FiCalendar } from "react-icons/fi";
+import { User, Mail, Phone, Briefcase, X, FileText, MapPin, Calendar } from "lucide-react";
+import { getSafeImageSrc } from "@/lib/utils";
 
 interface Employee {
   id: string;
@@ -84,7 +85,7 @@ export default function EmployeeList() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-white/20 rounded-lg">
-              <FiBriefcase className="w-6 h-6 text-white" />
+              <Briefcase className="w-6 h-6 text-white" />
             </div>
             <div>
               <h2 className="text-2xl font-bold text-white">
@@ -103,7 +104,7 @@ export default function EmployeeList() {
 
       {employees.length === 0 ? (
         <div className="text-center py-12 px-8 text-gray-500 dark:text-gray-400">
-          <FiUser className="w-16 h-16 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
+          <User className="w-16 h-16 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
           <p className="text-lg">Aucun employé trouvé</p>
         </div>
       ) : (
@@ -141,19 +142,19 @@ export default function EmployeeList() {
               {employees.map((employee) => (
                 <tr key={employee.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                   <td className="px-6 py-4 whitespace-nowrap">
-                    {employee.photo ? (
+                    {getSafeImageSrc(employee.photo) ? (
                       <img
-                        src={employee.photo}
+                        src={getSafeImageSrc(employee.photo)!}
                         alt={`${employee.nom} ${employee.prenom}`}
                         className="h-10 w-10 rounded-full object-cover"
+                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
                       />
-                    ) : (
-                      <div className="h-10 w-10 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
-                        <span className="text-gray-600 dark:text-gray-300 text-sm font-medium">
-                          {employee.nom?.[0]}{employee.prenom?.[0]}
-                        </span>
-                      </div>
-                    )}
+                    ) : null}
+                    <div className={`h-10 w-10 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center ${getSafeImageSrc(employee.photo) ? 'hidden' : ''}`}>
+                      <span className="text-gray-600 dark:text-gray-300 text-sm font-medium">
+                        {employee.nom?.[0]}{employee.prenom?.[0]}
+                      </span>
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900 dark:text-white">
@@ -202,7 +203,7 @@ export default function EmployeeList() {
                       onClick={() => setSelectedEmployee(employee)}
                       className="px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors flex items-center gap-2"
                     >
-                      <FiUser className="w-4 h-4" />
+                      <User className="w-4 h-4" />
                       Voir détails
                     </button>
                   </td>
@@ -220,17 +221,17 @@ export default function EmployeeList() {
             {/* Modal Header with gradient */}
             <div className="bg-gradient-to-r from-violet-600 to-purple-600 px-8 py-6 flex justify-between items-start sticky top-0">
               <div className="flex items-center gap-4">
-                {selectedEmployee.photo ? (
+                {getSafeImageSrc(selectedEmployee.photo) ? (
                   <img
-                    src={selectedEmployee.photo}
+                    src={getSafeImageSrc(selectedEmployee.photo)!}
                     alt={`${selectedEmployee.nom} ${selectedEmployee.prenom}`}
                     className="h-16 w-16 rounded-full object-cover border-4 border-white/30"
+                    onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }}
                   />
-                ) : (
-                  <div className="h-16 w-16 rounded-full bg-white/20 flex items-center justify-center border-4 border-white/30">
-                    <FiUser className="w-8 h-8 text-white" />
-                  </div>
-                )}
+                ) : null}
+                <div className={`h-16 w-16 rounded-full bg-white/20 flex items-center justify-center border-4 border-white/30 ${getSafeImageSrc(selectedEmployee.photo) ? 'hidden' : ''}`}>
+                  <User className="w-8 h-8 text-white" />
+                </div>
                 <div>
                   <h3 className="text-2xl font-bold text-white">
                     {selectedEmployee.nom} {selectedEmployee.prenom}
@@ -242,7 +243,7 @@ export default function EmployeeList() {
                 onClick={() => setSelectedEmployee(null)}
                 className="p-2 hover:bg-white/20 rounded-lg transition-colors"
               >
-                <FiX className="h-6 w-6 text-white" />
+                <X className="h-6 w-6 text-white" />
               </button>
             </div>
 
@@ -251,7 +252,7 @@ export default function EmployeeList() {
               <div className="space-y-4">
                 <div className="flex items-center gap-2 mb-4">
                   <div className="p-2 bg-violet-100 dark:bg-violet-900 rounded-lg">
-                    <FiUser className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+                    <User className="w-5 h-5 text-violet-600 dark:text-violet-400" />
                   </div>
                   <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
                     Informations Personnelles
@@ -267,14 +268,14 @@ export default function EmployeeList() {
                     <p className="text-base font-medium text-gray-900 dark:text-white mt-1">{selectedEmployee.prenom || "N/A"}</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <FiMail className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+                    <Mail className="w-4 h-4 text-violet-600 dark:text-violet-400" />
                     <div className="flex-1">
                       <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Email</span>
                       <p className="text-base font-medium text-gray-900 dark:text-white mt-1">{selectedEmployee.email || "N/A"}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <FiCalendar className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+                    <Calendar className="w-4 h-4 text-violet-600 dark:text-violet-400" />
                     <div className="flex-1">
                       <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Date de naissance</span>
                       <p className="text-base font-medium text-gray-900 dark:text-white mt-1">{formatDate(selectedEmployee.birthday)}</p>
@@ -285,14 +286,14 @@ export default function EmployeeList() {
                     <p className="text-base font-medium text-gray-900 dark:text-white mt-1">{selectedEmployee.sexe || "N/A"}</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <FiPhone className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+                    <Phone className="w-4 h-4 text-violet-600 dark:text-violet-400" />
                     <div className="flex-1">
                       <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Téléphone</span>
                       <p className="text-base font-medium text-gray-900 dark:text-white mt-1">{selectedEmployee.telephone || "N/A"}</p>
                     </div>
                   </div>
                   <div className="md:col-span-2 flex items-start gap-2">
-                    <FiMapPin className="w-4 h-4 text-violet-600 dark:text-violet-400 mt-1" />
+                    <MapPin className="w-4 h-4 text-violet-600 dark:text-violet-400 mt-1" />
                     <div className="flex-1">
                       <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Adresse</span>
                       <p className="text-base font-medium text-gray-900 dark:text-white mt-1">{selectedEmployee.adresse || "N/A"}</p>
@@ -305,7 +306,7 @@ export default function EmployeeList() {
               <div className="space-y-4">
                 <div className="flex items-center gap-2 mb-4">
                   <div className="p-2 bg-violet-100 dark:bg-violet-900 rounded-lg">
-                    <FiBriefcase className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+                    <Briefcase className="w-5 h-5 text-violet-600 dark:text-violet-400" />
                   </div>
                   <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
                     Informations Professionnelles
@@ -329,7 +330,7 @@ export default function EmployeeList() {
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <FiCalendar className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+                    <Calendar className="w-4 h-4 text-violet-600 dark:text-violet-400" />
                     <div className="flex-1">
                       <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Date d'embauche</span>
                       <p className="text-base font-medium text-gray-900 dark:text-white mt-1">{formatDate(selectedEmployee.dateEmbauche)}</p>
@@ -368,7 +369,7 @@ export default function EmployeeList() {
               <div className="space-y-4">
                 <div className="flex items-center gap-2 mb-4">
                   <div className="p-2 bg-violet-100 dark:bg-violet-900 rounded-lg">
-                    <FiFileText className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+                    <FileText className="w-5 h-5 text-violet-600 dark:text-violet-400" />
                   </div>
                   <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
                     Informations Bancaires
@@ -385,7 +386,7 @@ export default function EmployeeList() {
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 mb-4">
                     <div className="p-2 bg-violet-100 dark:bg-violet-900 rounded-lg">
-                      <FiFileText className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+                      <FileText className="w-5 h-5 text-violet-600 dark:text-violet-400" />
                     </div>
                     <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
                       Documents
@@ -397,7 +398,7 @@ export default function EmployeeList() {
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors"
                   >
-                    <FiFileText className="w-4 h-4" />
+                    <FileText className="w-4 h-4" />
                     Télécharger CV
                   </a>
                 </div>

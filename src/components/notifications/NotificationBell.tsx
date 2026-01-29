@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect, useRef, useCallback } from "react"
-import { FiBell, FiCheck, FiX, FiAlertCircle, FiClock, FiCheckCircle, FiXCircle, FiInfo, FiGift, FiCalendar, FiUser } from "react-icons/fi"
+import { useRouter } from "next/navigation"
+import { Bell, Check, X, AlertCircle, Clock, CheckCircle, XCircle, Info, Gift, Calendar, User, ExternalLink } from "lucide-react"
 import { useSession } from "next-auth/react"
 
 interface Notification {
@@ -24,6 +25,7 @@ interface Toast {
 
 export function NotificationBell() {
   const { data: session } = useSession()
+  const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
@@ -168,22 +170,66 @@ export function NotificationBell() {
     }
   }
 
+  // Get redirect URL based on notification type
+  const getNotificationUrl = (notif: Notification): string | null => {
+    const type = notif.type
+    const role = session?.user?.role
+    
+    switch (type) {
+      case "LEAVE_REQUEST":
+        return role === "RH" || role === "SUPER_ADMIN" ? "/rh/conges" : "/conges"
+      case "LEAVE_APPROVED":
+      case "LEAVE_REJECTED":
+        return "/conges"
+      case "POINTAGE_SUCCESS":
+      case "POINTAGE_ANOMALY":
+        return "/pointage"
+      case "PROFILE_APPROVED":
+      case "PROFILE_REJECTED":
+      case "PROFILE_SUBMITTED":
+        return role === "RH" || role === "SUPER_ADMIN" ? "/rh/profiles" : "/profile"
+      case "RH_ACTION_REQUIRED":
+        return "/rh/notifications"
+      case "DOCUMENT_REQUIRED":
+        return "/documents"
+      case "SYSTEM_ALERT":
+        return role === "SUPER_ADMIN" ? "/parametres/logs" : null
+      default:
+        return null
+    }
+  }
+
+  // Handle notification click - mark as read and redirect
+  const handleNotificationClick = async (notif: Notification) => {
+    // Mark as read first
+    if (!notif.is_read) {
+      await markAsRead(notif.id)
+    }
+    
+    // Get URL and redirect
+    const url = getNotificationUrl(notif)
+    if (url) {
+      setIsOpen(false)
+      router.push(url)
+    }
+  }
+
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case "PROFILE_APPROVED":
-        return <FiCheckCircle className="w-5 h-5 text-green-500" />
+        return <CheckCircle className="w-5 h-5 text-green-500" />
       case "PROFILE_REJECTED":
-        return <FiXCircle className="w-5 h-5 text-red-500" />
+        return <XCircle className="w-5 h-5 text-red-500" />
       case "POINTAGE_ANOMALY":
-        return <FiAlertCircle className="w-5 h-5 text-orange-500" />
+        return <AlertCircle className="w-5 h-5 text-orange-500" />
       case "RH_ACTION_REQUIRED":
-        return <FiClock className="w-5 h-5 text-blue-500" />
+        return <Clock className="w-5 h-5 text-blue-500" />
       case "PROFILE_SUBMITTED":
-        return <FiClock className="w-5 h-5 text-violet-500" />
+        return <Clock className="w-5 h-5 text-violet-500" />
       case "POINTAGE_SUCCESS":
-        return <FiCheckCircle className="w-5 h-5 text-green-500" />
+        return <CheckCircle className="w-5 h-5 text-green-500" />
       default:
-        return <FiBell className="w-5 h-5 text-gray-500" />
+        return <Bell className="w-5 h-5 text-gray-500" />
     }
   }
 
@@ -241,20 +287,20 @@ export function NotificationBell() {
     switch (type) {
       case "PROFILE_APPROVED":
       case "POINTAGE_SUCCESS":
-        return <FiCheckCircle className="w-5 h-5 text-green-500" />
+        return <CheckCircle className="w-5 h-5 text-green-500" />
       case "PROFILE_REJECTED":
-        return <FiXCircle className="w-5 h-5 text-red-500" />
+        return <XCircle className="w-5 h-5 text-red-500" />
       case "POINTAGE_ANOMALY":
-        return <FiAlertCircle className="w-5 h-5 text-orange-500" />
+        return <AlertCircle className="w-5 h-5 text-orange-500" />
       case "LEAVE_REQUEST":
       case "LEAVE_APPROVED":
-        return <FiCalendar className="w-5 h-5 text-blue-500" />
+        return <Calendar className="w-5 h-5 text-blue-500" />
       case "BIRTHDAY":
-        return <FiGift className="w-5 h-5 text-pink-500" />
+        return <Gift className="w-5 h-5 text-pink-500" />
       case "NEW_EMPLOYEE":
-        return <FiUser className="w-5 h-5 text-violet-500" />
+        return <User className="w-5 h-5 text-violet-500" />
       default:
-        return <FiInfo className="w-5 h-5 text-blue-500" />
+        return <Info className="w-5 h-5 text-blue-500" />
     }
   }
 
@@ -288,7 +334,7 @@ export function NotificationBell() {
                   onClick={() => removeToast(toast.id)}
                   className="flex-shrink-0 p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                 >
-                  <FiX className="w-4 h-4 text-gray-500" />
+                  <X className="w-4 h-4 text-gray-500" />
                 </button>
               </div>
               {/* Progress bar */}
@@ -309,7 +355,7 @@ export function NotificationBell() {
           }`}
           aria-label="Notifications"
         >
-          <FiBell className={`w-6 h-6 text-gray-600 dark:text-gray-300 group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-all duration-300 ${
+          <Bell className={`w-6 h-6 text-gray-600 dark:text-gray-300 group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-all duration-300 ${
             isAnimating ? 'text-violet-600 dark:text-violet-400' : ''
           }`} />
           {unreadCount > 0 && (
@@ -343,11 +389,11 @@ export function NotificationBell() {
             <div className="relative flex items-center justify-between">
               <div>
                 <h3 className="font-bold text-lg flex items-center gap-2">
-                  <FiBell className="w-5 h-5" />
+                  <Bell className="w-5 h-5" />
                   Notifications
                 </h3>
                 <p className="text-violet-100 text-sm mt-1">
-                  {unreadCount > 0 ? `${unreadCount} non lue${unreadCount > 1 ? 's' : ''}` : 'Tout est à jour ✨'}
+                  {unreadCount > 0 ? `${unreadCount} non lue${unreadCount > 1 ? 's' : ''}` : 'Tout est à jour'}
                 </p>
               </div>
               {unreadCount > 0 && (
@@ -356,7 +402,7 @@ export function NotificationBell() {
                   disabled={loading}
                   className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-xl text-sm font-medium transition-all duration-200 disabled:opacity-50 backdrop-blur-sm flex items-center gap-2 hover:scale-105 active:scale-95"
                 >
-                  <FiCheck className="w-4 h-4" />
+                  <Check className="w-4 h-4" />
                   {loading ? "..." : "Tout lire"}
                 </button>
               )}
@@ -368,21 +414,25 @@ export function NotificationBell() {
             {notifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
                 <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 rounded-2xl flex items-center justify-center mb-5 rotate-12 animate-float">
-                  <FiBell className="w-10 h-10 text-gray-400 -rotate-12" />
+                  <Bell className="w-10 h-10 text-gray-400 -rotate-12" />
                 </div>
                 <p className="text-gray-600 dark:text-gray-300 font-semibold text-lg">Aucune notification</p>
-                <p className="text-gray-400 dark:text-gray-500 text-sm mt-2">Vous êtes à jour ! 🎉</p>
+                <p className="text-gray-400 dark:text-gray-500 text-sm mt-2">Vous êtes à jour</p>
               </div>
             ) : (
               <div className="divide-y divide-gray-100 dark:divide-gray-700/50">
-                {notifications.map((notif, index) => (
+                {notifications.slice(0, 10).map((notif, index) => {
+                  const hasLink = getNotificationUrl(notif) !== null
+                  
+                  return (
                   <div
                     key={notif.id}
+                    onClick={() => hasLink && handleNotificationClick(notif)}
                     className={`group relative transition-all duration-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
                       !notif.is_read 
                         ? "bg-violet-50/50 dark:bg-violet-900/5" 
                         : ""
-                    }`}
+                    } ${hasLink ? 'cursor-pointer' : ''}`}
                     style={{ 
                       animationName: isOpen ? 'slideInRight' : 'none',
                       animationDuration: '0.3s',
@@ -428,7 +478,7 @@ export function NotificationBell() {
                                 {notif.message}
                               </p>
                               <p className="text-xs text-gray-500 dark:text-gray-500 mt-2.5 flex items-center gap-1.5">
-                                <FiClock className="w-3.5 h-3.5" />
+                                <Clock className="w-3.5 h-3.5" />
                                 {formatTime(notif.created_at)}
                               </p>
                             </div>
@@ -441,7 +491,7 @@ export function NotificationBell() {
                                   className="p-2 hover:bg-green-100 dark:hover:bg-green-900/30 rounded-xl transition-all duration-200 hover:scale-110 active:scale-95"
                                   title="Marquer comme lu"
                                 >
-                                  <FiCheck className="w-4 h-4 text-green-600 dark:text-green-400" />
+                                  <Check className="w-4 h-4 text-green-600 dark:text-green-400" />
                                 </button>
                               )}
                               <button
@@ -449,7 +499,7 @@ export function NotificationBell() {
                                 className="p-2 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-xl transition-all duration-200 hover:scale-110 active:scale-95"
                                 title="Supprimer"
                               >
-                                <FiX className="w-4 h-4 text-red-600 dark:text-red-400" />
+                                <X className="w-4 h-4 text-red-600 dark:text-red-400" />
                               </button>
                             </div>
                           </div>
@@ -457,7 +507,7 @@ export function NotificationBell() {
                       </div>
                     </div>
                   </div>
-                ))}
+                )})}
               </div>
             )}
           </div>

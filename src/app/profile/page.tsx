@@ -4,10 +4,11 @@ import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import {
-  FiUser, FiMail, FiPhone, FiMapPin, FiCalendar, FiEdit3, FiSave, FiX,
-  FiShield, FiCamera, FiCheck, FiAlertCircle, FiClock, FiBriefcase,
-  FiCreditCard, FiUsers, FiSettings, FiArrowLeft
-} from "react-icons/fi";
+  User, Mail, Phone, MapPin, Calendar, Edit3, Save, X,
+  Shield, Camera, Check, AlertCircle, Clock, Briefcase,
+  CreditCard, Users, Settings, ArrowLeft
+} from "lucide-react";
+import { getSafeImageSrc } from "@/lib/utils";
 
 interface UserProfile {
   id: string;
@@ -204,7 +205,7 @@ export default function ProfilePage() {
         <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button onClick={() => router.back()} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
-              <FiArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+              <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
             </button>
             <div>
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Mon Profil</h1>
@@ -214,17 +215,17 @@ export default function ProfilePage() {
           
           {!isEditing ? (
             <button onClick={() => setIsEditing(true)} className="flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white font-medium rounded-lg transition-colors">
-              <FiEdit3 className="w-4 h-4" />
+              <Edit3 className="w-4 h-4" />
               Modifier
             </button>
           ) : (
             <div className="flex gap-2">
               <button onClick={() => setIsEditing(false)} className="flex items-center gap-2 px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg transition-colors">
-                <FiX className="w-4 h-4" />
+                <X className="w-4 h-4" />
                 Annuler
               </button>
               <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50">
-                {saving ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <FiSave className="w-4 h-4" />}
+                {saving ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Save className="w-4 h-4" />}
                 Enregistrer
               </button>
             </div>
@@ -234,7 +235,7 @@ export default function ProfilePage() {
         {/* Message Alert */}
         {message && (
           <div className={`mb-6 p-4 rounded-xl flex items-center gap-3 ${message.type === "success" ? "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800" : "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800"}`}>
-            {message.type === "success" ? <FiCheck className="w-5 h-5" /> : <FiAlertCircle className="w-5 h-5" />}
+            {message.type === "success" ? <Check className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
             {message.text}
           </div>
         )}
@@ -247,15 +248,19 @@ export default function ProfilePage() {
             <div className="flex flex-col md:flex-row gap-6 -mt-16">
               <div className="relative group">
                 <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
-                {user?.image ? (
-                  <img src={user.image} alt="Profile" className="w-32 h-32 rounded-2xl border-4 border-white dark:border-gray-800 object-cover shadow-lg" />
-                ) : (
-                  <div className="w-32 h-32 rounded-2xl border-4 border-white dark:border-gray-800 bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white text-4xl font-bold shadow-lg">
-                    {user?.name?.charAt(0)?.toUpperCase() || "U"}
-                  </div>
-                )}
+                {getSafeImageSrc(user?.image) ? (
+                  <img 
+                    src={getSafeImageSrc(user?.image)!} 
+                    alt="Profile" 
+                    className="w-32 h-32 rounded-2xl border-4 border-white dark:border-gray-800 object-cover shadow-lg"
+                    onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }}
+                  />
+                ) : null}
+                <div className={`w-32 h-32 rounded-2xl border-4 border-white dark:border-gray-800 bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white text-4xl font-bold shadow-lg ${getSafeImageSrc(user?.image) ? 'hidden' : ''}`}>
+                  {user?.name?.charAt(0)?.toUpperCase() || "U"}
+                </div>
                 <button onClick={handlePhotoClick} className="absolute bottom-2 right-2 p-2 bg-white dark:bg-gray-700 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
-                  <FiCamera className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+                  <Camera className="w-4 h-4 text-gray-600 dark:text-gray-300" />
                 </button>
               </div>
 
@@ -279,7 +284,7 @@ export default function ProfilePage() {
           {/* Personal Information */}
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
             <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-              <FiUser className="w-5 h-5 text-violet-500" />
+              <User className="w-5 h-5 text-violet-500" />
               Informations Personnelles
             </h3>
             
@@ -303,12 +308,12 @@ export default function ProfilePage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-2"><FiMail className="w-4 h-4" />Email</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-2"><Mail className="w-4 h-4" />Email</label>
                 <p className="text-gray-900 dark:text-white">{user?.email}</p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-2"><FiPhone className="w-4 h-4" />Téléphone</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-2"><Phone className="w-4 h-4" />Téléphone</label>
                 {isEditing ? (
                   <input type="tel" value={editForm.telephone} onChange={(e) => setEditForm({ ...editForm, telephone: e.target.value })} className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-violet-500 focus:border-transparent" placeholder="+216 XX XXX XXX" />
                 ) : (
@@ -317,7 +322,7 @@ export default function ProfilePage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-2"><FiMapPin className="w-4 h-4" />Adresse</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-2"><MapPin className="w-4 h-4" />Adresse</label>
                 {isEditing ? (
                   <textarea value={editForm.adresse} onChange={(e) => setEditForm({ ...editForm, adresse: e.target.value })} rows={2} className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-violet-500 focus:border-transparent" placeholder="Votre adresse complète" />
                 ) : (
@@ -343,7 +348,7 @@ export default function ProfilePage() {
           {/* Professional Information */}
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
             <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-              <FiBriefcase className="w-5 h-5 text-blue-500" />
+              <Briefcase className="w-5 h-5 text-blue-500" />
               Informations Professionnelles
             </h3>
             
@@ -359,13 +364,13 @@ export default function ProfilePage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-2"><FiCalendar className="w-4 h-4" />Date d'embauche</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-2"><Calendar className="w-4 h-4" />Date d'embauche</label>
                 <p className="text-gray-900 dark:text-white">{user?.dateEmbauche ? new Date(user.dateEmbauche).toLocaleDateString('fr-FR') : "-"}</p>
               </div>
 
               {isRH && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-2"><FiCreditCard className="w-4 h-4" />RIB</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-2"><CreditCard className="w-4 h-4" />RIB</label>
                   <p className="text-gray-900 dark:text-white font-mono">{user?.rib ? `${user.rib.substring(0, 4)} **** **** ${user.rib.substring(user.rib.length - 4)}` : "-"}</p>
                 </div>
               )}
@@ -386,7 +391,7 @@ export default function ProfilePage() {
           {/* Security Information */}
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
             <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-              <FiShield className="w-5 h-5 text-green-500" />
+              <Shield className="w-5 h-5 text-green-500" />
               Sécurité & Compte
             </h3>
             
@@ -402,22 +407,22 @@ export default function ProfilePage() {
               </div>
 
               <div className="flex items-center justify-between py-2 border-t border-gray-100 dark:border-gray-700">
-                <div className="flex items-center gap-2"><FiClock className="w-4 h-4 text-gray-400" /><p className="font-medium text-gray-900 dark:text-white">Compte créé le</p></div>
+                <div className="flex items-center gap-2"><Clock className="w-4 h-4 text-gray-400" /><p className="font-medium text-gray-900 dark:text-white">Compte créé le</p></div>
                 <span className="text-gray-600 dark:text-gray-400">{user?.createdAt ? new Date(user.createdAt).toLocaleDateString('fr-FR') : "-"}</span>
               </div>
 
               <div className="flex items-center justify-between py-2 border-t border-gray-100 dark:border-gray-700">
-                <div className="flex items-center gap-2"><FiClock className="w-4 h-4 text-gray-400" /><p className="font-medium text-gray-900 dark:text-white">Dernière modification</p></div>
+                <div className="flex items-center gap-2"><Clock className="w-4 h-4 text-gray-400" /><p className="font-medium text-gray-900 dark:text-white">Dernière modification</p></div>
                 <span className="text-gray-600 dark:text-gray-400">{user?.updatedAt ? new Date(user.updatedAt).toLocaleDateString('fr-FR') : "-"}</span>
               </div>
 
               <div className="pt-4 border-t border-gray-100 dark:border-gray-700">
                 <div className="flex flex-wrap gap-2">
                   <button onClick={() => router.push('/settings?tab=security')} className="flex items-center gap-2 px-3 py-2 text-sm bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors">
-                    <FiShield className="w-4 h-4" />Changer mot de passe
+                    <Shield className="w-4 h-4" />Changer mot de passe
                   </button>
                   <button onClick={() => router.push('/settings')} className="flex items-center gap-2 px-3 py-2 text-sm bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors">
-                    <FiSettings className="w-4 h-4" />Paramètres
+                    <Settings className="w-4 h-4" />Paramètres
                   </button>
                 </div>
               </div>
@@ -428,7 +433,7 @@ export default function ProfilePage() {
           {isRH && (
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
               <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                <FiUsers className="w-5 h-5 text-purple-500" />
+                <Users className="w-5 h-5 text-purple-500" />
                 Accès {userRole}
               </h3>
               
@@ -437,18 +442,18 @@ export default function ProfilePage() {
                 
                 <div className="grid grid-cols-2 gap-2">
                   <button onClick={() => router.push('/rh')} className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors text-left">
-                    <FiUsers className="w-5 h-5 text-blue-500" /><span className="text-sm text-gray-700 dark:text-gray-300">Gestion RH</span>
+                    <Users className="w-5 h-5 text-blue-500" /><span className="text-sm text-gray-700 dark:text-gray-300">Gestion RH</span>
                   </button>
                   <button onClick={() => router.push('/parametres/users')} className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors text-left">
-                    <FiSettings className="w-5 h-5 text-purple-500" /><span className="text-sm text-gray-700 dark:text-gray-300">Utilisateurs</span>
+                    <Settings className="w-5 h-5 text-purple-500" /><span className="text-sm text-gray-700 dark:text-gray-300">Utilisateurs</span>
                   </button>
                   {userRole === "SUPER_ADMIN" && (
                     <>
                       <button onClick={() => router.push('/parametres/roles')} className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors text-left">
-                        <FiShield className="w-5 h-5 text-red-500" /><span className="text-sm text-gray-700 dark:text-gray-300">Rôles</span>
+                        <Shield className="w-5 h-5 text-red-500" /><span className="text-sm text-gray-700 dark:text-gray-300">Rôles</span>
                       </button>
                       <button onClick={() => router.push('/dashboard')} className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors text-left">
-                        <FiBriefcase className="w-5 h-5 text-green-500" /><span className="text-sm text-gray-700 dark:text-gray-300">Dashboard</span>
+                        <Briefcase className="w-5 h-5 text-green-500" /><span className="text-sm text-gray-700 dark:text-gray-300">Dashboard</span>
                       </button>
                     </>
                   )}

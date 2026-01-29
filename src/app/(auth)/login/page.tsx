@@ -20,7 +20,7 @@ export default async function LoginPage() {
             <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
               <span className="text-violet-600 font-bold text-xl">S</span>
             </div>
-            <span className="text-white text-xl font-semibold">Santec AI</span>
+            <span className="text-white text-xl font-semibold">Santec RH</span>
           </div>
         </div>
 
@@ -29,7 +29,7 @@ export default async function LoginPage() {
           <div>
             
             <p className="mt-4 text-violet-200 text-lg">
-              Une plateforme RH moderne propulsée par l'intelligence artificielle
+              Votre plateforme RH moderne et sécurisée
             </p>
           </div>
 
@@ -41,7 +41,7 @@ export default async function LoginPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <span className="text-white">Pointage automatique et intelligent</span>
+              <span className="text-white">Pointage sécurisé avec vérification faciale</span>
             </div>
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
@@ -49,7 +49,7 @@ export default async function LoginPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <span className="text-white">Analyse comportementale par IA</span>
+              <span className="text-white">Gestion des employés et des rôles</span>
             </div>
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
@@ -81,7 +81,7 @@ export default async function LoginPage() {
 
         {/* Footer */}
         <div className="text-violet-300 text-sm">
-          © 2026 Santec AI.  Tous droits réservés. 
+          © 2026 Santec RH. Tous droits réservés.
         </div>
       </div>
 

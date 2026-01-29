@@ -8,7 +8,7 @@ import {
   successResponse,
   errorResponse,
 } from "@/lib/api-helpers";
-import { prisma } from "@/lib/prisma";
+import { query } from "@/lib/mysql-direct";
 
 export const GET = withActiveStatus(async (context) => {
   const { user } = context;
@@ -24,119 +24,82 @@ export const GET = withActiveStatus(async (context) => {
     firstDayOfWeek.setDate(now.getDate() - now.getDay());
     firstDayOfWeek.setHours(0, 0, 0, 0);
 
-    // Attendance this month (count unique days with check-in)
-    const attendanceThisMonth = await prisma.pointage.groupBy({
-      by: ["userId"],
-      where: {
-        userId: user.id,
-        type: "IN",
-        timestamp: {
-          gte: firstDayOfMonth,
-          lte: lastDayOfMonth,
-        },
-      },
-      _count: true,
-    });
+    // Attendance this month (count check-ins)
+    const attendanceThisMonthResult = await query(
+      `SELECT COUNT(*) as count FROM Pointage 
+       WHERE user_id = ? AND type = 'IN' AND timestamp >= ? AND timestamp <= ?`,
+      [user.id, firstDayOfMonth, lastDayOfMonth]
+    ) as any[];
+    const attendanceThisMonth = attendanceThisMonthResult[0]?.count || 0;
 
     // Attendance this week
-    const attendanceThisWeek = await prisma.pointage.count({
-      where: {
-        userId: user.id,
-        type: "IN",
-        timestamp: {
-          gte: firstDayOfWeek,
-        },
-      },
-    });
+    const attendanceThisWeekResult = await query(
+      `SELECT COUNT(*) as count FROM Pointage 
+       WHERE user_id = ? AND type = 'IN' AND timestamp >= ?`,
+      [user.id, firstDayOfWeek]
+    ) as any[];
+    const attendanceThisWeek = attendanceThisWeekResult[0]?.count || 0;
 
     // Leave requests stats
-    const leavesStats = await prisma.demandeConge.groupBy({
-      by: ["status"],
-      where: {
-        userId: user.id,
-      },
-      _count: true,
+    const leavesStats = await query(
+      `SELECT status, COUNT(*) as count FROM demande_conge WHERE userId = ? GROUP BY status`,
+      [user.id]
+    ) as any[];
+
+    const leavesMap: Record<string, number> = {};
+    leavesStats.forEach((s: any) => {
+      leavesMap[s.status] = s.count;
     });
 
     const leaves = {
-      pending: leavesStats.find((s) => s.status === "EN_ATTENTE")?._count || 0,
-      approved: leavesStats.find((s) => s.status === "VALIDE")?._count || 0,
-      rejected: leavesStats.find((s) => s.status === "REFUSE")?._count || 0,
-      total: leavesStats.reduce((acc, s) => acc + s._count, 0),
+      pending: leavesMap['EN_ATTENTE'] || 0,
+      approved: leavesMap['VALIDE'] || 0,
+      rejected: leavesMap['REFUSE'] || 0,
+      total: Object.values(leavesMap).reduce((acc, count) => acc + count, 0),
     };
 
     // Get recent anomalies
-    const recentAnomalies = await prisma.anomaly.findMany({
-      where: {
-        pointage: {
-          userId: user.id,
-        },
-        status: {
-          in: ["PENDING", "INVESTIGATING"],
-        },
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-      take: 5,
-      select: {
-        id: true,
-        type: true,
-        description: true,
-        severity: true,
-        createdAt: true,
-      },
-    });
+    const recentAnomalies = await query(
+      `SELECT a.id, a.type, a.description, a.severity, a.createdAt
+       FROM Anomaly a
+       INNER JOIN Pointage p ON a.pointageId = p.id
+       WHERE p.user_id = ? AND a.status IN ('PENDING', 'INVESTIGATING')
+       ORDER BY a.createdAt DESC
+       LIMIT 5`,
+      [user.id]
+    ) as any[];
 
-    const anomaliesCount = await prisma.anomaly.count({
-      where: {
-        pointage: {
-          userId: user.id,
-        },
-        status: {
-          in: ["PENDING", "INVESTIGATING"],
-        },
-      },
-    });
+    // Anomalies count
+    const anomaliesCountResult = await query(
+      `SELECT COUNT(*) as count FROM Anomaly a
+       INNER JOIN Pointage p ON a.pointageId = p.id
+       WHERE p.user_id = ? AND a.status IN ('PENDING', 'INVESTIGATING')`,
+      [user.id]
+    ) as any[];
+    const anomaliesCount = anomaliesCountResult[0]?.count || 0;
 
     // Get last check-in/out
-    const lastCheckIn = await prisma.pointage.findFirst({
-      where: {
-        userId: user.id,
-        type: "IN",
-      },
-      orderBy: {
-        timestamp: "desc",
-      },
-      select: {
-        timestamp: true,
-      },
-    });
+    const lastCheckInResult = await query(
+      `SELECT timestamp FROM Pointage WHERE user_id = ? AND type = 'IN' ORDER BY timestamp DESC LIMIT 1`,
+      [user.id]
+    ) as any[];
 
-    const lastCheckOut = await prisma.pointage.findFirst({
-      where: {
-        userId: user.id,
-        type: "OUT",
-      },
-      orderBy: {
-        timestamp: "desc",
-      },
-      select: {
-        timestamp: true,
-      },
-    });
+    const lastCheckOutResult = await query(
+      `SELECT timestamp FROM Pointage WHERE user_id = ? AND type = 'OUT' ORDER BY timestamp DESC LIMIT 1`,
+      [user.id]
+    ) as any[];
 
     return successResponse({
       attendance: {
-        thisMonth: attendanceThisMonth[0]?._count || 0,
+        thisMonth: attendanceThisMonth,
         thisWeek: attendanceThisWeek,
-        lastCheckIn: lastCheckIn?.timestamp || null,
-        lastCheckOut: lastCheckOut?.timestamp || null,
+        lastCheckIn: lastCheckInResult[0]?.timestamp || null,
+        lastCheckOut: lastCheckOutResult[0]?.timestamp || null,
       },
       leaves,
       anomalies: {
         count: anomaliesCount,
-        recent: recentAnomalies.map((a) => ({
+        recent: recentAnomalies.map((a: any) => ({
           id: a.id,
           type: a.type,
           description: a.description,

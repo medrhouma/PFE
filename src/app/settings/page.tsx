@@ -4,10 +4,10 @@ import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  FiUser, FiShield, FiBell, FiMoon, FiGlobe, FiSmartphone,
-  FiClock, FiLock, FiMail, FiCamera, FiCheck, FiX, FiAlertCircle,
-  FiMonitor, FiSun, FiRefreshCw, FiTrash2, FiKey, FiEye, FiEyeOff, FiCalendar
-} from "react-icons/fi";
+  User, Shield, Bell, Moon, Globe, Smartphone,
+  Clock, Lock, Mail, Camera, Check, X, AlertCircle,
+  Monitor, Sun, RefreshCw, Trash2, Key, Eye, EyeOff, Calendar
+} from "lucide-react";
 import { 
   getTrustedDevices, 
   removeTrustedDevice, 
@@ -15,6 +15,7 @@ import {
   DeviceFingerprint 
 } from "@/lib/services/device-fingerprint";
 import { useLanguage, Language } from "@/contexts/LanguageContext";
+import { getSafeImageSrc } from "@/lib/utils";
 
 type SettingsTab = "general" | "security" | "notifications" | "appearance" | "devices";
 
@@ -61,11 +62,11 @@ export default function SettingsPage() {
   const userRole = session?.user?.role?.toUpperCase() || "USER";
 
   const settingsSections: SettingsSection[] = [
-    { id: "general", label: "Général", icon: <FiUser className="w-5 h-5" /> },
-    { id: "security", label: "Sécurité", icon: <FiShield className="w-5 h-5" /> },
-    { id: "notifications", label: "Notifications", icon: <FiBell className="w-5 h-5" /> },
-    { id: "appearance", label: "Apparence", icon: <FiMoon className="w-5 h-5" /> },
-    { id: "devices", label: "Appareils", icon: <FiSmartphone className="w-5 h-5" /> },
+    { id: "general", label: "Général", icon: <User className="w-5 h-5" /> },
+    { id: "security", label: "Sécurité", icon: <Shield className="w-5 h-5" /> },
+    { id: "notifications", label: "Notifications", icon: <Bell className="w-5 h-5" /> },
+    { id: "appearance", label: "Apparence", icon: <Moon className="w-5 h-5" /> },
+    { id: "devices", label: "Appareils", icon: <Smartphone className="w-5 h-5" /> },
   ];
 
   // User profile data
@@ -302,7 +303,7 @@ export default function SettingsPage() {
   if (status === "loading") {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <FiRefreshCw className="w-8 h-8 animate-spin text-violet-600" />
+        <RefreshCw className="w-8 h-8 animate-spin text-violet-600" />
       </div>
     );
   }
@@ -325,7 +326,7 @@ export default function SettingsPage() {
               ? "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800"
               : "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800"
           }`}>
-            {message.type === "success" ? <FiCheck className="w-5 h-5" /> : <FiAlertCircle className="w-5 h-5" />}
+            {message.type === "success" ? <Check className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
             {message.text}
           </div>
         )}
@@ -372,13 +373,17 @@ export default function SettingsPage() {
                       onChange={handlePhotoUpload}
                     />
                     <div className="flex items-center gap-4">
-                      {(userImage || session?.user?.image) ? (
-                        <img src={userImage || session?.user?.image || ""} alt="Profile" className="w-16 h-16 rounded-full object-cover border-2 border-white dark:border-gray-600 shadow-sm" />
-                      ) : (
-                        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white text-xl font-bold">
-                          {session?.user?.name?.charAt(0)?.toUpperCase() || "U"}
-                        </div>
-                      )}
+                      {getSafeImageSrc(userImage || session?.user?.image) ? (
+                        <img 
+                          src={getSafeImageSrc(userImage || session?.user?.image)!} 
+                          alt="Profile" 
+                          className="w-16 h-16 rounded-full object-cover border-2 border-white dark:border-gray-600 shadow-sm"
+                          onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }}
+                        />
+                      ) : null}
+                      <div className={`w-16 h-16 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white text-xl font-bold ${getSafeImageSrc(userImage || session?.user?.image) ? 'hidden' : ''}`}>
+                        {session?.user?.name?.charAt(0)?.toUpperCase() || "U"}
+                      </div>
                       <div>
                         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                           {session?.user?.name}
@@ -394,9 +399,9 @@ export default function SettingsPage() {
                         className="ml-auto px-4 py-2 text-sm font-medium text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-lg transition-colors disabled:opacity-50"
                       >
                         {loading ? (
-                          <FiRefreshCw className="w-4 h-4 inline mr-2 animate-spin" />
+                          <RefreshCw className="w-4 h-4 inline mr-2 animate-spin" />
                         ) : (
-                          <FiCamera className="w-4 h-4 inline mr-2" />
+                          <Camera className="w-4 h-4 inline mr-2" />
                         )}
                         {loading ? "Téléchargement..." : "Modifier photo"}
                       </button>
@@ -410,7 +415,7 @@ export default function SettingsPage() {
                     onMouseLeave={() => setLanguageDropdownOpen(false)}
                   >
                     <div className="flex items-center gap-3">
-                      <FiGlobe className="w-5 h-5 text-gray-400" />
+                      <Globe className="w-5 h-5 text-gray-400" />
                       <div>
                         <p className="font-medium text-gray-900 dark:text-white">Langue</p>
                         <p className="text-sm text-gray-500 dark:text-gray-400">Choisissez votre langue préférée</p>
@@ -444,7 +449,7 @@ export default function SettingsPage() {
                                 {lang.label}
                               </span>
                               {language === lang.code && (
-                                <FiCheck className="w-4 h-4 text-violet-600 dark:text-violet-400 ml-auto" />
+                                <Check className="w-4 h-4 text-violet-600 dark:text-violet-400 ml-auto" />
                               )}
                             </button>
                           ))}
@@ -456,7 +461,7 @@ export default function SettingsPage() {
                   {/* Timezone */}
                   <div className="flex items-center justify-between py-4 border-b border-gray-100 dark:border-gray-700">
                     <div className="flex items-center gap-3">
-                      <FiClock className="w-5 h-5 text-gray-400" />
+                      <Clock className="w-5 h-5 text-gray-400" />
                       <div>
                         <p className="font-medium text-gray-900 dark:text-white">Fuseau horaire</p>
                         <p className="text-sm text-gray-500 dark:text-gray-400">Définissez votre fuseau horaire local</p>
@@ -479,7 +484,7 @@ export default function SettingsPage() {
                   {/* Change Password */}
                   <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                      <FiLock className="w-5 h-5" />
+                      <Lock className="w-5 h-5" />
                       Changer le mot de passe
                     </h3>
                     <div className="space-y-4">
@@ -539,7 +544,7 @@ export default function SettingsPage() {
                         className="px-6 py-2 bg-violet-600 hover:bg-violet-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {loading ? (
-                          <FiRefreshCw className="w-5 h-5 animate-spin inline mr-2" />
+                          <RefreshCw className="w-5 h-5 animate-spin inline mr-2" />
                         ) : null}
                         Modifier le mot de passe
                       </button>
@@ -549,7 +554,7 @@ export default function SettingsPage() {
                   {/* Two-Factor Authentication */}
                   <div className="flex items-center justify-between py-4 border-b border-gray-100 dark:border-gray-700">
                     <div className="flex items-center gap-3">
-                      <FiKey className="w-5 h-5 text-gray-400" />
+                      <Key className="w-5 h-5 text-gray-400" />
                       <div>
                         <p className="font-medium text-gray-900 dark:text-white">Authentification à deux facteurs</p>
                         <p className="text-sm text-gray-500 dark:text-gray-400">Ajoutez une couche de sécurité supplémentaire</p>
@@ -563,7 +568,7 @@ export default function SettingsPage() {
                   {/* Login History */}
                   <div className="flex items-center justify-between py-4 border-b border-gray-100 dark:border-gray-700">
                     <div className="flex items-center gap-3">
-                      <FiClock className="w-5 h-5 text-gray-400" />
+                      <Clock className="w-5 h-5 text-gray-400" />
                       <div>
                         <p className="font-medium text-gray-900 dark:text-white">Historique des connexions</p>
                         <p className="text-sm text-gray-500 dark:text-gray-400">Voir vos dernières connexions</p>
@@ -577,7 +582,7 @@ export default function SettingsPage() {
                   {/* Account Info */}
                   <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl mt-6">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                      <FiCalendar className="w-5 h-5" />
+                      <Calendar className="w-5 h-5" />
                       Informations du compte
                     </h3>
                     <div className="space-y-3">
@@ -620,7 +625,7 @@ export default function SettingsPage() {
                   {/* Email Notifications */}
                   <div className="flex items-center justify-between py-4 border-b border-gray-100 dark:border-gray-700">
                     <div className="flex items-center gap-3">
-                      <FiMail className="w-5 h-5 text-gray-400" />
+                      <Mail className="w-5 h-5 text-gray-400" />
                       <div>
                         <p className="font-medium text-gray-900 dark:text-white">Notifications par email</p>
                         <p className="text-sm text-gray-500 dark:text-gray-400">Recevoir des notifications importantes par email</p>
@@ -643,7 +648,7 @@ export default function SettingsPage() {
                   {/* Push Notifications */}
                   <div className="flex items-center justify-between py-4 border-b border-gray-100 dark:border-gray-700">
                     <div className="flex items-center gap-3">
-                      <FiBell className="w-5 h-5 text-gray-400" />
+                      <Bell className="w-5 h-5 text-gray-400" />
                       <div>
                         <p className="font-medium text-gray-900 dark:text-white">Notifications push</p>
                         <p className="text-sm text-gray-500 dark:text-gray-400">Recevoir des notifications dans le navigateur</p>
@@ -666,7 +671,7 @@ export default function SettingsPage() {
                   {/* Sound Alerts */}
                   <div className="flex items-center justify-between py-4 border-b border-gray-100 dark:border-gray-700">
                     <div className="flex items-center gap-3">
-                      <FiBell className="w-5 h-5 text-gray-400" />
+                      <Bell className="w-5 h-5 text-gray-400" />
                       <div>
                         <p className="font-medium text-gray-900 dark:text-white">Alertes sonores</p>
                         <p className="text-sm text-gray-500 dark:text-gray-400">Jouer un son pour les nouvelles notifications</p>
@@ -700,9 +705,9 @@ export default function SettingsPage() {
                     <p className="font-medium text-gray-900 dark:text-white mb-4">Thème</p>
                     <div className="grid grid-cols-3 gap-4">
                       {[
-                        { id: "light", label: "Clair", icon: <FiSun className="w-6 h-6" /> },
-                        { id: "dark", label: "Sombre", icon: <FiMoon className="w-6 h-6" /> },
-                        { id: "system", label: "Système", icon: <FiMonitor className="w-6 h-6" /> },
+                        { id: "light", label: "Clair", icon: <Sun className="w-6 h-6" /> },
+                        { id: "dark", label: "Sombre", icon: <Moon className="w-6 h-6" /> },
+                        { id: "system", label: "Système", icon: <Monitor className="w-6 h-6" /> },
                       ].map((themeOption) => (
                         <button
                           key={themeOption.id}
@@ -728,7 +733,7 @@ export default function SettingsPage() {
                             {themeOption.label}
                           </p>
                           {theme === themeOption.id && (
-                            <FiCheck className="w-5 h-5 text-violet-500 mx-auto mt-2" />
+                            <Check className="w-5 h-5 text-violet-500 mx-auto mt-2" />
                           )}
                         </button>
                       ))}
@@ -751,7 +756,7 @@ export default function SettingsPage() {
                   <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl">
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                        <FiMonitor className="w-5 h-5 text-green-600 dark:text-green-400" />
+                        <Monitor className="w-5 h-5 text-green-600 dark:text-green-400" />
                       </div>
                       <div className="flex-1">
                         <p className="font-medium text-gray-900 dark:text-white">Cet appareil</p>
@@ -775,7 +780,7 @@ export default function SettingsPage() {
                         >
                           <div className="flex items-center gap-3">
                             <div className="p-2 bg-gray-100 dark:bg-gray-600 rounded-lg">
-                              <FiSmartphone className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                              <Smartphone className="w-5 h-5 text-gray-500 dark:text-gray-400" />
                             </div>
                             <div>
                               <p className="font-medium text-gray-900 dark:text-white">
@@ -790,14 +795,14 @@ export default function SettingsPage() {
                             onClick={() => handleRemoveTrustedDevice(device.id)}
                             className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                           >
-                            <FiTrash2 className="w-5 h-5" />
+                            <Trash2 className="w-5 h-5" />
                           </button>
                         </div>
                       ))}
                     </div>
                   ) : (
                     <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                      <FiSmartphone className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                      <Smartphone className="w-12 h-12 mx-auto mb-3 opacity-50" />
                       <p>Aucun autre appareil de confiance</p>
                     </div>
                   )}
@@ -810,3 +815,4 @@ export default function SettingsPage() {
     </div>
   );
 }
+

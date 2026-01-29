@@ -3,9 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { 
-  FiUsers, FiClock, FiCheckCircle, FiXCircle, FiCalendar,
-  FiActivity, FiBell, FiLogIn, FiLogOut, FiAlertCircle 
-} from 'react-icons/fi';
+  Users, Clock, CheckCircle, XCircle, Calendar,
+  Activity, Bell, LogIn, LogOut, AlertCircle 
+} from 'lucide-react';
 
 interface RecentActivity {
   id: string;
@@ -62,13 +62,13 @@ export default function RhDashboard() {
   const getActivityIcon = (type: string) => {
     switch (type) {
       case 'POINTAGE':
-        return <FiClock className="w-5 h-5 text-blue-600" />;
+        return <Clock className="w-5 h-5 text-blue-600" />;
       case 'CONGE':
-        return <FiCalendar className="w-5 h-5 text-purple-600" />;
+        return <Calendar className="w-5 h-5 text-purple-600" />;
       case 'PROFILE':
-        return <FiUsers className="w-5 h-5 text-green-600" />;
+        return <Users className="w-5 h-5 text-green-600" />;
       default:
-        return <FiActivity className="w-5 h-5 text-gray-600" />;
+        return <Activity className="w-5 h-5 text-gray-600" />;
     }
   };
 
@@ -121,7 +121,7 @@ export default function RhDashboard() {
               <p className="text-sm text-gray-500 dark:text-gray-400">Total Employés</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{stats.totalEmployees}</p>
             </div>
-            <FiUsers className="w-8 h-8 text-blue-600" />
+            <Users className="w-8 h-8 text-blue-600" />
           </div>
         </div>
 
@@ -131,7 +131,7 @@ export default function RhDashboard() {
               <p className="text-sm text-gray-500 dark:text-gray-400">Profils en attente</p>
               <p className="text-2xl font-bold text-orange-600 mt-1">{stats.pendingProfiles}</p>
             </div>
-            <FiAlertCircle className="w-8 h-8 text-orange-600" />
+            <AlertCircle className="w-8 h-8 text-orange-600" />
           </div>
         </div>
 
@@ -141,7 +141,7 @@ export default function RhDashboard() {
               <p className="text-sm text-gray-500 dark:text-gray-400">Congés en attente</p>
               <p className="text-2xl font-bold text-purple-600 mt-1">{stats.pendingConges}</p>
             </div>
-            <FiCalendar className="w-8 h-8 text-purple-600" />
+            <Calendar className="w-8 h-8 text-purple-600" />
           </div>
         </div>
 
@@ -151,7 +151,7 @@ export default function RhDashboard() {
               <p className="text-sm text-gray-500 dark:text-gray-400">Pointages aujourd'hui</p>
               <p className="text-2xl font-bold text-green-600 mt-1">{stats.todayPointages}</p>
             </div>
-            <FiClock className="w-8 h-8 text-green-600" />
+            <Clock className="w-8 h-8 text-green-600" />
           </div>
         </div>
       </div>
@@ -160,14 +160,14 @@ export default function RhDashboard() {
       <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div className="border-b border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-            <FiActivity className="w-5 h-5 text-blue-600" />
+            <Activity className="w-5 h-5 text-blue-600" />
             Activités en Temps Réel
           </h2>
           <button
             onClick={fetchDashboardData}
             className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
           >
-            <FiActivity className="w-4 h-4" />
+            <Activity className="w-4 h-4" />
             Actualiser
           </button>
         </div>
@@ -175,7 +175,7 @@ export default function RhDashboard() {
         <div className="divide-y divide-gray-200 dark:divide-gray-700 max-h-[600px] overflow-y-auto">
           {activities.length === 0 ? (
             <div className="p-8 text-center text-gray-500 dark:text-gray-400">
-              <FiActivity className="w-12 h-12 mx-auto mb-3 opacity-50" />
+              <Activity className="w-12 h-12 mx-auto mb-3 opacity-50" />
               <p>Aucune activité récente</p>
             </div>
           ) : (
@@ -213,7 +213,7 @@ export default function RhDashboard() {
                           <>
                             {activity.details.anomaly && (
                               <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400 text-xs rounded">
-                                <FiAlertCircle className="w-3 h-3" />
+                                <AlertCircle className="w-3 h-3" />
                                 Anomalie
                               </span>
                             )}
@@ -261,7 +261,7 @@ export default function RhDashboard() {
           href="/rh/conges"
           className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 hover:shadow-md transition-shadow"
         >
-          <FiCalendar className="w-8 h-8 text-purple-600 mb-3" />
+          <Calendar className="w-8 h-8 text-purple-600 mb-3" />
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
             Gestion des Congés
           </h3>
@@ -279,7 +279,7 @@ export default function RhDashboard() {
           href="/rh/profiles"
           className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 hover:shadow-md transition-shadow"
         >
-          <FiUsers className="w-8 h-8 text-blue-600 mb-3" />
+          <Users className="w-8 h-8 text-blue-600 mb-3" />
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
             Validation Profils
           </h3>
@@ -297,7 +297,7 @@ export default function RhDashboard() {
           href="/rh/notifications"
           className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 hover:shadow-md transition-shadow"
         >
-          <FiBell className="w-8 h-8 text-green-600 mb-3" />
+          <Bell className="w-8 h-8 text-green-600 mb-3" />
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
             Centre de Notifications
           </h3>
@@ -309,3 +309,4 @@ export default function RhDashboard() {
     </div>
   );
 }
+

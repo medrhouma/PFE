@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FiClock, FiCheckCircle, FiXCircle, FiUser } from 'react-icons/fi';
+import { Clock, CheckCircle, XCircle, User } from 'lucide-react';
 
 interface RecentActivity {
   id: string;
@@ -36,13 +36,13 @@ export default function RecentActivities() {
   const getActionIcon = (status: string) => {
     switch (status) {
       case 'EN_ATTENTE':
-        return <FiClock className="w-5 h-5 text-amber-500" />;
+        return <Clock className="w-5 h-5 text-amber-500" />;
       case 'APPROUVE':
-        return <FiCheckCircle className="w-5 h-5 text-green-500" />;
+        return <CheckCircle className="w-5 h-5 text-green-500" />;
       case 'REJETE':
-        return <FiXCircle className="w-5 h-5 text-red-500" />;
+        return <XCircle className="w-5 h-5 text-red-500" />;
       default:
-        return <FiUser className="w-5 h-5 text-gray-500" />;
+        return <User className="w-5 h-5 text-gray-500" />;
     }
   };
 
@@ -130,7 +130,7 @@ export default function RecentActivities() {
 
       {activities.length === 0 ? (
         <div className="text-center py-8">
-          <FiClock className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+          <Clock className="w-12 h-12 text-gray-300 mx-auto mb-3" />
           <p className="text-gray-500 dark:text-gray-400">Aucune activité récente</p>
         </div>
       ) : (
@@ -182,3 +182,4 @@ export default function RecentActivities() {
     </div>
   );
 }
+

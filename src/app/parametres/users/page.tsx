@@ -1,91 +1,133 @@
 "use client"
 import { useEffect, useState } from "react"
-import { FiUser, FiEdit3, FiTrash2, FiRefreshCcw } from "react-icons/fi"
+import { User, Edit3, Trash2, RefreshCw, Mail, Phone, Filter, LayoutGrid, List, Search, UserPlus, Briefcase } from "lucide-react"
 import AddUserModal from "@/components/users/AddUserModal"
 import EditUserModal from "@/components/users/EditUserModal"
 import ConfirmationModal from "@/components/ui/ConfirmationModal"
 import UserDossierModal from "@/components/users/UserDossierModal"
 import { usePermissions } from "@/contexts/PermissionsContext"
 import { useNotification } from "@/contexts/NotificationContext"
+import { useLanguage } from "@/contexts/LanguageContext"
+import { getSafeImageSrc } from "@/lib/utils"
 
-function UserProviderBadges({ providers = [] }: { providers: string[] }) {
-  return (
-    <div className="flex gap-2 flex-wrap">
-      {providers.map((p, i) => (
-        <span key={i}
-          className={`px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-2 transition-all duration-200
-            ${p === "Google" 
-              ? "bg-gradient-to-r from-red-100 to-yellow-100 dark:from-red-900/20 dark:to-yellow-900/20 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800/50" 
-              : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600"}
-          `}>
-          {p === "Google" ? (
-            <svg width="16" height="16" viewBox="0 0 48 48">
-              <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/>
-              <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/>
-              <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/>
-              <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/>
-            </svg>
-          ) : (
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-            </svg>
-          )}
-          {p}
-        </span>
-      ))}
-    </div>
-  )
+// Role configurations with colors and translations
+const roleConfig: Record<string, { gradient: string; bg: string; text: string; border: string; icon: string }> = {
+  SUPER_ADMIN: { 
+    gradient: 'from-red-500 to-orange-500', 
+    bg: 'bg-red-100 dark:bg-red-900/30', 
+    text: 'text-red-700 dark:text-red-300',
+    border: 'border-red-200 dark:border-red-800',
+    icon: '👑'
+  },
+  RH: { 
+    gradient: 'from-blue-500 to-indigo-500', 
+    bg: 'bg-blue-100 dark:bg-blue-900/30', 
+    text: 'text-blue-700 dark:text-blue-300',
+    border: 'border-blue-200 dark:border-blue-800',
+    icon: '💼'
+  },
+  USER: { 
+    gradient: 'from-green-500 to-emerald-500', 
+    bg: 'bg-green-100 dark:bg-green-900/30', 
+    text: 'text-green-700 dark:text-green-300',
+    border: 'border-green-200 dark:border-green-800',
+    icon: '👤'
+  }
 }
 
 export default function UsersPage() {
   const [users, setUsers] = useState<any[]>([])
   const [search, setSearch] = useState("")
+  const [roleFilter, setRoleFilter] = useState<string>("ALL")
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const [page, setPage] = useState(1)
+  const [loading, setLoading] = useState(true)
   const [showAddModal, setShowAddModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [userToDelete, setUserToDelete] = useState<string | null>(null)
   const [selectedUser, setSelectedUser] = useState<any>(null)
   const [showDossierModal, setShowDossierModal] = useState(false)
-  const { hasPermission, loading } = usePermissions()
+  const { hasPermission } = usePermissions()
   const { showNotification } = useNotification()
+  const { language } = useLanguage()
+
+  const isRTL = language === 'ar'
 
   const canAdd = hasPermission('parametres', 'ADD')
   const canEdit = hasPermission('parametres', 'EDIT')
   const canDelete = hasPermission('parametres', 'DELETE')
 
+  // Translations
+  const t = {
+    title: { fr: 'Gestion des Utilisateurs', en: 'User Management', ar: 'إدارة المستخدمين' },
+    subtitle: { fr: 'Gérez les comptes utilisateurs et leurs permissions', en: 'Manage user accounts and their permissions', ar: 'إدارة حسابات المستخدمين وصلاحياتهم' },
+    search: { fr: 'Rechercher un utilisateur...', en: 'Search for a user...', ar: 'البحث عن مستخدم...' },
+    addUser: { fr: 'Ajouter', en: 'Add User', ar: 'إضافة مستخدم' },
+    allRoles: { fr: 'Tous les rôles', en: 'All Roles', ar: 'جميع الأدوار' },
+    users: { fr: 'utilisateurs', en: 'users', ar: 'مستخدم' },
+    viewProfile: { fr: 'Voir le profil', en: 'View Profile', ar: 'عرض الملف الشخصي' },
+    edit: { fr: 'Modifier', en: 'Edit', ar: 'تعديل' },
+    delete: { fr: 'Supprimer', en: 'Delete', ar: 'حذف' },
+    noPhoto: { fr: 'Pas de photo', en: 'No photo', ar: 'لا توجد صورة' },
+    validated: { fr: 'Validé', en: 'Validated', ar: 'مصادق عليه' },
+    pending: { fr: 'En attente', en: 'Pending', ar: 'في انتظار' },
+    refresh: { fr: 'Actualiser', en: 'Refresh', ar: 'تحديث' },
+    loadError: { fr: 'Erreur de chargement', en: 'Loading error', ar: 'خطأ في التحميل' },
+    loadErrorMsg: { fr: 'Impossible de charger la liste des utilisateurs', en: 'Unable to load users list', ar: 'تعذر تحميل قائمة المستخدمين' }
+  }
+  const getText = (key: keyof typeof t) => t[key][language as keyof typeof t.title] || t[key].fr
+
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const response = await fetch("/api/users")
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`)
-        }
-        const data = await response.json()
-        if (Array.isArray(data)) {
-          setUsers(data)
-        } else {
-          console.error("API response is not an array:", data)
-          setUsers([])
-        }
-      } catch (err) {
-        console.error("Error fetching users:", err)
-        setUsers([])
-        showNotification({
-          type: 'error',
-          title: 'Erreur de chargement',
-          message: 'Impossible de charger la liste des utilisateurs',
-          duration: 5000
-        })
-      }
-    }
-    
     fetchUsers()
   }, [])
 
-  const filteredUsers = users.filter(u =>
-    (u.name + ' ' + (u.last_name || '') + u.email).toLowerCase().includes(search.toLowerCase())
-  )
+  const fetchUsers = async () => {
+    setLoading(true)
+    try {
+      const response = await fetch("/api/users")
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      const data = await response.json()
+      if (Array.isArray(data)) {
+        setUsers(data)
+      } else {
+        console.error("API response is not an array:", data)
+        setUsers([])
+      }
+    } catch (err) {
+      console.error("Error fetching users:", err)
+      setUsers([])
+      showNotification({
+        type: 'error',
+        title: getText('loadError'),
+        message: getText('loadErrorMsg'),
+        duration: 5000
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Apply filters
+  const filteredUsers = users.filter(u => {
+    const matchesSearch = (u.name + ' ' + u.email + ' ' + (u.nom || '') + ' ' + (u.prenom || '')).toLowerCase().includes(search.toLowerCase())
+    const matchesRole = roleFilter === 'ALL' || u.role === roleFilter
+    return matchesSearch && matchesRole
+  })
+
+  // Get user photo with fallback
+  const getUserPhoto = (user: any): string | null => {
+    return getSafeImageSrc(user.photo) || getSafeImageSrc(user.image) || null
+  }
+
+  // Get user initials for avatar
+  const getInitials = (user: any): string => {
+    const first = user.prenom?.[0] || user.name?.[0] || ''
+    const last = user.nom?.[0] || user.last_name?.[0] || ''
+    return (first + last).toUpperCase() || 'U'
+  }
 
   const handleDeleteUser = (userId: string) => {
     setUserToDelete(userId)
@@ -156,167 +198,323 @@ export default function UsersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+    <div className={`min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 ${isRTL ? 'rtl' : 'ltr'}`}>
       {/* Main Content */}
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         {/* Header Section */}
         <div className="mb-8 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 md:p-8">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                <div className="p-2 bg-violet-100 dark:bg-violet-900/20 rounded-lg">
-                  <svg className="w-6 h-6 text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                  </svg>
-                </div>
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Gestion des utilisateurs</h1>
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl shadow-lg">
+                <User className="w-8 h-8 text-white" />
               </div>
-              <p className="text-gray-600 dark:text-gray-400 ml-11">Gérez les comptes utilisateurs et leurs permissions</p>
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
+                  {getText('title')}
+                </h1>
+                <p className="text-gray-500 dark:text-gray-400 mt-1">{getText('subtitle')}</p>
+              </div>
             </div>
-            <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-              <span className="px-3 py-1 bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 rounded-full font-medium">
-                {filteredUsers.length} utilisateurs
-              </span>
-            </div>
-            {canAdd && (
-              <button 
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-violet-600 to-violet-700 hover:from-violet-700 hover:to-violet-800 text-white text-sm font-bold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
-                onClick={() => setShowAddModal(true)}
-                disabled={!canAdd}
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                Ajouter un utilisateur
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Search Bar Section */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
-          <div className="relative max-w-md">
-            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </div>
-            <input
-              className="w-full pl-12 pr-24 py-3 bg-white dark:bg-gray-700/50 border border-gray-300 dark:border-gray-600 rounded-xl text-base text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all duration-200"
-              placeholder="Rechercher un utilisateur..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-            />
-            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-              <kbd className="px-2.5 py-1 text-xs font-bold text-gray-500 bg-gray-100 dark:bg-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg">
-                ⌘ K
-              </kbd>
-            </div>
-          </div>
-        </div>
-
-        {/* Table */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
-                  <th className="text-left py-4 px-6 text-xs font-bold text-violet-600 dark:text-violet-400 uppercase tracking-wider">ID</th>
-                  <th className="text-left py-4 px-6 text-xs font-bold text-violet-600 dark:text-violet-400 uppercase tracking-wider">Prénom</th>
-                  <th className="text-left py-4 px-6 text-xs font-bold text-violet-600 dark:text-violet-400 uppercase tracking-wider">Nom</th>
-                  <th className="text-left py-4 px-6 text-xs font-bold text-violet-600 dark:text-violet-400 uppercase tracking-wider">Email</th>
-                  <th className="text-left py-4 px-6 text-xs font-bold text-violet-600 dark:text-violet-400 uppercase tracking-wider">Rôle</th>
-                  <th className="text-left py-4 px-6 text-xs font-bold text-violet-600 dark:text-violet-400 uppercase tracking-wider">Authentification</th>
-                  <th className="text-left py-4 px-6 text-xs font-bold text-violet-600 dark:text-violet-400 uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredUsers.map((user, idx) => (
-                  <tr key={user.id || `user-${idx}`} className="border-b border-gray-100 dark:border-gray-700 hover:bg-violet-50/30 dark:hover:bg-violet-900/10 transition-all duration-200 group">
-                    <td className="py-4 px-6 text-sm font-mono text-gray-500 dark:text-gray-400">#{idx + 1}</td>
-                    <td className="py-4 px-6 text-sm font-medium text-gray-900 dark:text-white">{user.name || '-'}</td>
-                    <td className="py-4 px-6 text-sm text-gray-900 dark:text-gray-200">{user.last_name || '-'}</td>
-                    <td className="py-4 px-6 text-sm text-gray-700 dark:text-gray-300 font-mono">{user.email}</td>
-                    <td className="py-4 px-6">
-                      <span className="px-3 py-1 bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 text-xs font-bold rounded-full">
-                        {user.role}
-                      </span>
-                    </td>
-                    <td className="py-4 px-6">
-                      <UserProviderBadges providers={user.providers || ["Credentials"]} />
-                    </td>
-                    <td className="py-4 px-6">
-                      <div className="flex items-center gap-2">
-                        {user.statut === 'APPROUVE' && (
-                          <button
-                            onClick={() => handleShowDossier(user)}
-                            className="p-2 rounded-lg bg-gradient-to-r from-green-100 to-green-200 dark:from-green-900/20 dark:to-green-900/10 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-900/30 transition-all duration-200 transform hover:scale-105"
-                            title="Voir le dossier complet"
-                          >
-                            <FiUser className="w-4 h-4" />
-                          </button>
-                        )}
-                        {canEdit && (
-                          <button 
-                            onClick={() => handleEditUser(user)}
-                            className="p-2 rounded-lg hover:bg-violet-100 dark:hover:bg-violet-900/20 text-violet-600 dark:text-violet-400 transition-all duration-200 transform hover:scale-105" 
-                            title="Modifier"
-                            disabled={!canEdit}
-                          >
-                            <FiEdit3 className="w-4 h-4" />
-                          </button>
-                        )}
-                        {canDelete && (
-                          <button 
-                            onClick={() => handleDeleteUser(user.id)}
-                            className="p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/20 text-red-500 dark:text-red-400 transition-all duration-200 transform hover:scale-105" 
-                            title="Supprimer"
-                            disabled={!canDelete}
-                          >
-                            <FiTrash2 className="w-4 h-4" />
-                          </button>
-                        )}
-                        {!canEdit && !canDelete && (
-                          <span className="text-xs text-gray-400 dark:text-gray-500 px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">Lecture seule</span>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Pagination */}
-          <div className="border-t border-gray-200 dark:border-gray-700 px-6 py-4 bg-gray-50 dark:bg-gray-700/30">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
-                <div className="flex items-center gap-2">
-                  <span>Page</span>
-                  <input 
-                    value={page} 
-                    readOnly 
-                    className="w-12 px-3 py-1.5 text-center border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm font-medium"
-                  />
-                </div>
-                <span className="text-gray-400">•</span>
-                <span>Total: <span className="font-bold text-violet-600 dark:text-violet-400">{filteredUsers.length}</span> utilisateurs</span>
+            
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Stats badge */}
+              <div className="px-4 py-2 bg-violet-100 dark:bg-violet-900/30 rounded-xl">
+                <span className="text-violet-700 dark:text-violet-300 font-bold">{filteredUsers.length}</span>
+                <span className="text-violet-600 dark:text-violet-400 ml-1">{getText('users')}</span>
               </div>
               
-              <div className="flex items-center gap-2">
-                <button className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-all duration-200 hover:shadow-sm">
-                  Précédent
+              {/* Refresh button */}
+              <button 
+                onClick={fetchUsers}
+                disabled={loading}
+                className="p-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-xl transition-all"
+                title={getText('refresh')}
+              >
+                <RefreshCw className={`w-5 h-5 text-gray-600 dark:text-gray-300 ${loading ? 'animate-spin' : ''}`} />
+              </button>
+              
+              {canAdd && (
+                <button 
+                  className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-bold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl"
+                  onClick={() => setShowAddModal(true)}
+                >
+                  <UserPlus className="w-5 h-5" />
+                  {getText('addUser')}
                 </button>
-                <button className="px-4 py-2 text-sm font-bold text-white bg-gradient-to-r from-violet-600 to-violet-700 border border-violet-600 rounded-lg shadow-sm">
-                  1
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Filters Section */}
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
+          <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+            {/* Search */}
+            <div className="relative w-full md:w-96">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                className="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                placeholder={getText('search')}
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+              />
+            </div>
+            
+            <div className="flex items-center gap-3">
+              {/* Role Filter */}
+              <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-700/50 rounded-xl px-3 py-2 border border-gray-200 dark:border-gray-600">
+                <Filter className="w-4 h-4 text-gray-500" />
+                <select
+                  value={roleFilter}
+                  onChange={(e) => setRoleFilter(e.target.value)}
+                  className="bg-transparent text-sm font-medium text-gray-700 dark:text-gray-300 focus:outline-none cursor-pointer"
+                >
+                  <option value="ALL">{getText('allRoles')}</option>
+                  <option value="SUPER_ADMIN">Super Admin</option>
+                  <option value="RH">RH</option>
+                  <option value="USER">Utilisateur</option>
+                </select>
+              </div>
+              
+              {/* View Toggle */}
+              <div className="flex items-center bg-gray-50 dark:bg-gray-700/50 rounded-xl p-1 border border-gray-200 dark:border-gray-600">
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-violet-600 text-white' : 'text-gray-500 hover:text-gray-700'}`}
+                >
+                  <LayoutGrid className="w-4 h-4" />
                 </button>
-                <button className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-all duration-200 hover:shadow-sm">
-                  Suivant
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-violet-600 text-white' : 'text-gray-500 hover:text-gray-700'}`}
+                >
+                  <List className="w-4 h-4" />
                 </button>
               </div>
             </div>
           </div>
         </div>
+
+        {/* Loading State */}
+        {loading && (
+          <div className="flex items-center justify-center py-20">
+            <div className="flex flex-col items-center gap-4">
+              <div className="w-16 h-16 border-4 border-violet-200 border-t-violet-600 rounded-full animate-spin"></div>
+              <p className="text-gray-500 dark:text-gray-400">Chargement...</p>
+            </div>
+          </div>
+        )}
+
+        {/* Grid View */}
+        {!loading && viewMode === 'grid' && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {filteredUsers.map((user) => {
+              const config = roleConfig[user.role] || roleConfig.USER
+              const photoSrc = getUserPhoto(user)
+              
+              return (
+                <div
+                  key={user.id}
+                  className={`bg-white dark:bg-gray-800 rounded-2xl shadow-sm border-2 ${config.border} overflow-hidden hover:shadow-xl transition-all duration-300 group cursor-pointer`}
+                  onClick={() => user.hasEmployeeProfile && handleShowDossier(user)}
+                >
+                  {/* Card Header with gradient */}
+                  <div className={`h-20 bg-gradient-to-r ${config.gradient} relative`}>
+                    {/* Role badge */}
+                    <div className={`absolute top-3 right-3 px-3 py-1 bg-white/90 dark:bg-gray-800/90 rounded-full text-xs font-bold ${config.text} flex items-center gap-1`}>
+                      <span>{config.icon}</span>
+                      {user.role}
+                    </div>
+                    
+                    {/* Status badge */}
+                    {user.statut && (
+                      <div className={`absolute top-3 left-3 px-2 py-1 rounded-full text-xs font-medium ${
+                        user.statut === 'APPROUVE' 
+                          ? 'bg-green-500 text-white' 
+                          : 'bg-yellow-500 text-white'
+                      }`}>
+                        {user.statut === 'APPROUVE' ? '✓' : '⏳'}
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Photo */}
+                  <div className="flex justify-center -mt-12 px-6">
+                    {photoSrc ? (
+                      <img 
+                        src={photoSrc}
+                        alt={`${user.name || user.prenom}`}
+                        className="w-24 h-24 rounded-2xl object-cover border-4 border-white dark:border-gray-800 shadow-lg group-hover:scale-105 transition-transform"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement
+                          target.style.display = 'none'
+                          target.nextElementSibling?.classList.remove('hidden')
+                        }}
+                      />
+                    ) : null}
+                    <div className={`w-24 h-24 rounded-2xl ${config.bg} flex items-center justify-center border-4 border-white dark:border-gray-800 shadow-lg group-hover:scale-105 transition-transform ${photoSrc ? 'hidden' : ''}`}>
+                      <span className={`text-3xl font-bold ${config.text}`}>{getInitials(user)}</span>
+                    </div>
+                  </div>
+                  
+                  {/* User Info */}
+                  <div className="p-6 pt-4 text-center">
+                    <h3 className="font-bold text-lg text-gray-900 dark:text-white truncate">
+                      {user.prenom || user.name} {user.nom || user.last_name}
+                    </h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 truncate mt-1 flex items-center justify-center gap-1">
+                      <Mail className="w-4 h-4" />
+                      {user.email}
+                    </p>
+                    
+                    {user.telephone && (
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 flex items-center justify-center gap-1">
+                        <Phone className="w-4 h-4" />
+                        {user.telephone}
+                      </p>
+                    )}
+                    
+                    {user.typeContrat && (
+                      <div className={`inline-flex items-center gap-1 mt-3 px-3 py-1 rounded-full text-xs font-medium ${config.bg} ${config.text}`}>
+                        <Briefcase className="w-3 h-3" />
+                        {user.typeContrat}
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Actions */}
+                  <div className="px-6 pb-6 flex justify-center gap-2">
+                    {user.hasEmployeeProfile && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleShowDossier(user) }}
+                        className="px-4 py-2 bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 rounded-xl text-sm font-medium hover:bg-violet-200 dark:hover:bg-violet-900/50 transition-colors flex items-center gap-1"
+                      >
+                        <User className="w-4 h-4" />
+                        {getText('viewProfile')}
+                      </button>
+                    )}
+                    {canEdit && (
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); handleEditUser(user) }}
+                        className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 transition-colors"
+                        title={getText('edit')}
+                      >
+                        <Edit3 className="w-5 h-5" />
+                      </button>
+                    )}
+                    {canDelete && (
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); handleDeleteUser(user.id) }}
+                        className="p-2 rounded-xl hover:bg-red-100 dark:hover:bg-red-900/20 text-red-500 transition-colors"
+                        title={getText('delete')}
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+
+        {/* List View */}
+        {!loading && viewMode === 'list' && (
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
+                    <th className="text-left py-4 px-6 text-xs font-bold text-violet-600 dark:text-violet-400 uppercase">#</th>
+                    <th className="text-left py-4 px-6 text-xs font-bold text-violet-600 dark:text-violet-400 uppercase">Photo</th>
+                    <th className="text-left py-4 px-6 text-xs font-bold text-violet-600 dark:text-violet-400 uppercase">Nom</th>
+                    <th className="text-left py-4 px-6 text-xs font-bold text-violet-600 dark:text-violet-400 uppercase">Email</th>
+                    <th className="text-left py-4 px-6 text-xs font-bold text-violet-600 dark:text-violet-400 uppercase">Rôle</th>
+                    <th className="text-left py-4 px-6 text-xs font-bold text-violet-600 dark:text-violet-400 uppercase">Contrat</th>
+                    <th className="text-left py-4 px-6 text-xs font-bold text-violet-600 dark:text-violet-400 uppercase">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredUsers.map((user, idx) => {
+                    const config = roleConfig[user.role] || roleConfig.USER
+                    const photoSrc = getUserPhoto(user)
+                    
+                    return (
+                      <tr 
+                        key={user.id} 
+                        className="border-b border-gray-100 dark:border-gray-700 hover:bg-violet-50/30 dark:hover:bg-violet-900/10 transition-all cursor-pointer"
+                        onClick={() => user.hasEmployeeProfile && handleShowDossier(user)}
+                      >
+                        <td className="py-4 px-6 text-sm font-mono text-gray-500">#{idx + 1}</td>
+                        <td className="py-4 px-6">
+                          {photoSrc ? (
+                            <img src={photoSrc} alt="" className="w-10 h-10 rounded-xl object-cover" />
+                          ) : (
+                            <div className={`w-10 h-10 rounded-xl ${config.bg} flex items-center justify-center`}>
+                              <span className={`font-bold ${config.text}`}>{getInitials(user)}</span>
+                            </div>
+                          )}
+                        </td>
+                        <td className="py-4 px-6 font-medium text-gray-900 dark:text-white">
+                          {user.prenom || user.name} {user.nom || user.last_name}
+                        </td>
+                        <td className="py-4 px-6 text-sm text-gray-600 dark:text-gray-400">{user.email}</td>
+                        <td className="py-4 px-6">
+                          <span className={`px-3 py-1 rounded-full text-xs font-bold ${config.bg} ${config.text}`}>
+                            {config.icon} {user.role}
+                          </span>
+                        </td>
+                        <td className="py-4 px-6 text-sm text-gray-600 dark:text-gray-400">
+                          {user.typeContrat || '-'}
+                        </td>
+                        <td className="py-4 px-6">
+                          <div className="flex items-center gap-2">
+                            {user.hasEmployeeProfile && (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleShowDossier(user) }}
+                                className="p-2 rounded-lg bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300 hover:bg-green-200"
+                                title={getText('viewProfile')}
+                              >
+                                <User className="w-4 h-4" />
+                              </button>
+                            )}
+                            {canEdit && (
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); handleEditUser(user) }}
+                                className="p-2 rounded-lg hover:bg-violet-100 dark:hover:bg-violet-900/20 text-violet-600"
+                              >
+                                <Edit3 className="w-4 h-4" />
+                              </button>
+                            )}
+                            {canDelete && (
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); handleDeleteUser(user.id) }}
+                                className="p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/20 text-red-500"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Empty state */}
+        {!loading && filteredUsers.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-20">
+            <div className="w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
+              <User className="w-12 h-12 text-gray-400" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-700 dark:text-gray-300">Aucun utilisateur trouvé</h3>
+            <p className="text-gray-500 dark:text-gray-400 mt-2">Essayez de modifier vos filtres</p>
+          </div>
+        )}
       </div>
 
       {/* Dossier complet modal */}

@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
       // Récupérer les 20 derniers pointages using raw SQL
       const pointages: any[] = await query(
         `SELECT id, type, timestamp, status, anomaly_detected, anomaly_reason
-         FROM pointages 
+         FROM Pointage 
          WHERE user_id = ? 
          ORDER BY timestamp DESC 
          LIMIT 20`,

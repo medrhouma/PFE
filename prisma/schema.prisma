@@ -57,7 +57,7 @@ model User {
   email         String      @unique
   emailVerified DateTime?   @map("email_verified")
   password      String?
-  image         String?                                // url photo (Google)
+  image         String?     @db.LongText           // url photo (Google) or base64 for uploaded photos
   sexe          Sexe?
   rib           String?     @db.VarChar(24)
   adresse       String?
@@ -122,6 +122,21 @@ model PasswordResetToken {
 
   @@unique([email, token])
   @@map("password_reset_tokens")
+}
+
+// ========== OTP VERIFICATION ==========
+model OTPToken {
+  id        String   @id @default(cuid())
+  email     String
+  code      String   // 6-digit OTP code (hashed)
+  expires   DateTime
+  verified  Boolean  @default(false)
+  attempts  Int      @default(0) // Track failed attempts
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([email, code])
+  @@index([email])
+  @@map("otp_tokens")
 }
 
 // ========== ROLE & PERMISSIONS ==========
@@ -242,8 +257,8 @@ model Employe {
   adresse       String?
   telephone     String?
   dateEmbauche  DateTime?      @map("date_embauche")
-  photo         String?        @db.Text // URL or base64 of photo
-  cv            String?        @db.Text // URL or base64 of CV
+  photo         String?        @db.LongText // URL or base64 of photo
+  cv            String?        @db.LongText // URL or base64 of CV
   typeContrat   ContratType?   @map("type_contrat")
   position      String?        // Job position
   department    String?        // Department

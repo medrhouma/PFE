@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useNotification } from '@/contexts/NotificationContext';
-import { FiUser, FiCalendar, FiMail, FiPhone, FiMapPin, FiFileText, FiCheckCircle, FiXCircle, FiAlertCircle, FiDownload, FiEye } from 'react-icons/fi';
+import { User, Calendar, Mail, Phone, MapPin, FileText, CheckCircle, XCircle, AlertCircle, Download, Eye } from 'lucide-react';
+import { getSafeImageSrc } from '@/lib/utils';
 
 interface DocumentFile {
   name: string;
@@ -124,7 +125,7 @@ export default function ProfilesValidationPage() {
   };
 
   const getDocumentIcon = (type?: string) => {
-    return <FiFileText className="w-4 h-4" />;
+    return <FileText className="w-4 h-4" />;
   };
 
   const formatDate = (date: string | null) => {
@@ -158,7 +159,7 @@ export default function ProfilesValidationPage() {
               <p className="text-sm text-gray-500 dark:text-gray-400">En attente</p>
               <p className="text-2xl font-bold text-orange-600 mt-1">{employees.length}</p>
             </div>
-            <FiAlertCircle className="w-8 h-8 text-orange-600" />
+            <AlertCircle className="w-8 h-8 text-orange-600" />
           </div>
         </div>
       </div>
@@ -174,7 +175,7 @@ export default function ProfilesValidationPage() {
         <div className="overflow-x-auto">
           {employees.length === 0 ? (
             <div className="p-8 text-center text-gray-500 dark:text-gray-400">
-              <FiCheckCircle className="w-12 h-12 mx-auto mb-3 opacity-50" />
+              <CheckCircle className="w-12 h-12 mx-auto mb-3 opacity-50" />
               <p>Aucun profil en attente de validation</p>
             </div>
           ) : (
@@ -188,19 +189,19 @@ export default function ProfilesValidationPage() {
                     <div className="flex items-start gap-4 flex-1">
                       {/* Photo */}
                       <div className="relative">
-                        {employee.photo ? (
+                        {getSafeImageSrc(employee.photo) ? (
                           <img
-                            src={employee.photo}
+                            src={getSafeImageSrc(employee.photo)!}
                             alt={`${employee.prenom} ${employee.nom}`}
                             className="w-16 h-16 rounded-full object-cover border-2 border-gray-200 dark:border-gray-600"
+                            onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }}
                           />
-                        ) : (
-                          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-xl border-2 border-gray-200 dark:border-gray-600">
-                            {employee.prenom?.charAt(0)}{employee.nom?.charAt(0)}
-                          </div>
-                        )}
+                        ) : null}
+                        <div className={`w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-xl border-2 border-gray-200 dark:border-gray-600 ${getSafeImageSrc(employee.photo) ? 'hidden' : ''}`}>
+                          {employee.prenom?.charAt(0)}{employee.nom?.charAt(0)}
+                        </div>
                         <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-orange-500 rounded-full border-2 border-white dark:border-gray-800 flex items-center justify-center">
-                          <FiAlertCircle className="w-3 h-3 text-white" />
+                          <AlertCircle className="w-3 h-3 text-white" />
                         </div>
                       </div>
 
@@ -212,27 +213,27 @@ export default function ProfilesValidationPage() {
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-600 dark:text-gray-400">
                           <div className="flex items-center gap-2">
-                            <FiMail className="w-4 h-4" />
+                            <Mail className="w-4 h-4" />
                             {employee.email}
                           </div>
                           
                           {employee.telephone && (
                             <div className="flex items-center gap-2">
-                              <FiPhone className="w-4 h-4" />
+                              <Phone className="w-4 h-4" />
                               {employee.telephone}
                             </div>
                           )}
                           
                           {employee.birthday && (
                             <div className="flex items-center gap-2">
-                              <FiCalendar className="w-4 h-4" />
+                              <Calendar className="w-4 h-4" />
                               {formatDate(employee.birthday)}
                             </div>
                           )}
                           
                           {employee.adresse && (
                             <div className="flex items-center gap-2">
-                              <FiMapPin className="w-4 h-4" />
+                              <MapPin className="w-4 h-4" />
                               {employee.adresse}
                             </div>
                           )}
@@ -260,7 +261,7 @@ export default function ProfilesValidationPage() {
                           
                           {employee.cv && (
                             <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs rounded flex items-center gap-1">
-                              <FiFileText className="w-3 h-3" />
+                              <FileText className="w-3 h-3" />
                               CV disponible
                             </span>
                           )}
@@ -282,7 +283,7 @@ export default function ProfilesValidationPage() {
                                 >
                                   {getDocumentIcon(doc.type)}
                                   {doc.name}
-                                  <FiDownload className="w-3 h-3 ml-1" />
+                                  <Download className="w-3 h-3 ml-1" />
                                 </a>
                               ))}
                             </div>
@@ -298,7 +299,7 @@ export default function ProfilesValidationPage() {
                         className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
                         title="Voir les détails"
                       >
-                        <FiEye className="w-5 h-5" />
+                        <Eye className="w-5 h-5" />
                       </button>
                       
                       <button
@@ -306,7 +307,7 @@ export default function ProfilesValidationPage() {
                         disabled={processing}
                         className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        <FiCheckCircle className="w-4 h-4" />
+                        <CheckCircle className="w-4 h-4" />
                         Approuver
                       </button>
                       
@@ -315,7 +316,7 @@ export default function ProfilesValidationPage() {
                         disabled={processing}
                         className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        <FiXCircle className="w-4 h-4" />
+                        <XCircle className="w-4 h-4" />
                         Rejeter
                       </button>
                     </div>
@@ -339,24 +340,24 @@ export default function ProfilesValidationPage() {
                 onClick={() => setSelectedEmployee(null)}
                 className="p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
               >
-                <FiXCircle className="w-5 h-5" />
+                <XCircle className="w-5 h-5" />
               </button>
             </div>
             
             <div className="p-6 space-y-6">
               {/* Photo et nom */}
               <div className="flex items-center gap-4">
-                {selectedEmployee.photo ? (
+                {getSafeImageSrc(selectedEmployee.photo) ? (
                   <img
-                    src={selectedEmployee.photo}
+                    src={getSafeImageSrc(selectedEmployee.photo)!}
                     alt={`${selectedEmployee.prenom} ${selectedEmployee.nom}`}
                     className="w-24 h-24 rounded-full object-cover border-4 border-gray-200 dark:border-gray-600"
+                    onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }}
                   />
-                ) : (
-                  <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-3xl border-4 border-gray-200 dark:border-gray-600">
-                    {selectedEmployee.prenom?.charAt(0)}{selectedEmployee.nom?.charAt(0)}
-                  </div>
-                )}
+                ) : null}
+                <div className={`w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-3xl border-4 border-gray-200 dark:border-gray-600 ${getSafeImageSrc(selectedEmployee.photo) ? 'hidden' : ''}`}>
+                  {selectedEmployee.prenom?.charAt(0)}{selectedEmployee.nom?.charAt(0)}
+                </div>
                 
                 <div>
                   <h4 className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -414,7 +415,7 @@ export default function ProfilesValidationPage() {
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
                   >
-                    <FiEye className="w-4 h-4" />
+                    <Eye className="w-4 h-4" />
                     Voir le CV
                   </a>
                 </div>
@@ -429,7 +430,7 @@ export default function ProfilesValidationPage() {
                   disabled={processing}
                   className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <FiCheckCircle className="w-5 h-5" />
+                  <CheckCircle className="w-5 h-5" />
                   Approuver ce profil
                 </button>
                 
@@ -440,7 +441,7 @@ export default function ProfilesValidationPage() {
                   disabled={processing}
                   className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <FiXCircle className="w-5 h-5" />
+                  <XCircle className="w-5 h-5" />
                   Rejeter ce profil
                 </button>
               </div>
@@ -451,3 +452,4 @@ export default function ProfilesValidationPage() {
     </div>
   );
 }
+

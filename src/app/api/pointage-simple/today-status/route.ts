@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
     try {
       // Query check-in using raw SQL
       const checkInResult: any[] = await query(
-        `SELECT id, timestamp FROM pointages 
+        `SELECT id, timestamp FROM Pointage 
          WHERE user_id = ? AND type = 'IN' 
          AND timestamp >= ? AND timestamp <= ?
          ORDER BY timestamp DESC LIMIT 1`,
@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
       );
 
       const checkOutResult: any[] = await query(
-        `SELECT id, timestamp FROM pointages 
+        `SELECT id, timestamp FROM Pointage 
          WHERE user_id = ? AND type = 'OUT' 
          AND timestamp >= ? AND timestamp <= ?
          ORDER BY timestamp DESC LIMIT 1`,

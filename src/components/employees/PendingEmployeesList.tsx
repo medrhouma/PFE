@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useNotification } from '@/contexts/NotificationContext';
+import { getSafeImageSrc } from '@/lib/utils';
 
 interface DocumentFile {
   name: string;
@@ -224,13 +225,14 @@ export default function PendingEmployeesList() {
               </div>
 
               {/* Photo */}
-              {selectedEmployee.photo && (
+              {getSafeImageSrc(selectedEmployee.photo) && (
                 <div>
                   <label className="text-sm font-medium text-gray-500 block mb-2">Photo</label>
                   <img 
-                    src={selectedEmployee.photo} 
+                    src={getSafeImageSrc(selectedEmployee.photo)!} 
                     alt="Photo employé" 
                     className="w-32 h-32 object-cover rounded-lg"
+                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
                   />
                 </div>
               )}

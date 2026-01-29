@@ -4,10 +4,21 @@
  */
 
 import { query } from "@/lib/mysql-direct";
-import { prisma } from "@/lib/prisma";
 import { emailService } from "@/lib/services/email-service";
 import { pushService } from "@/lib/services/push-service";
-import { NotificationType, NotificationPriority } from "@prisma/client";
+
+// Define types locally instead of importing from @prisma/client
+type NotificationType = 
+  | "PROFILE_APPROVED" 
+  | "PROFILE_REJECTED" 
+  | "PROFILE_SUBMITTED"
+  | "LEAVE_REQUEST"
+  | "POINTAGE_SUCCESS"
+  | "POINTAGE_ANOMALY"
+  | "RH_ACTION_REQUIRED"
+  | "SYSTEM_ALERT";
+
+type NotificationPriority = "NORMAL" | "HIGH" | "URGENT";
 
 interface CreateNotificationParams {
   userId: string;
@@ -45,13 +56,9 @@ class NotificationService {
    */
   async getRHUsers(): Promise<string[]> {
     try {
-      const users = await prisma.user.findMany({
-        where: {
-          roleEnum: { in: ['RH', 'SUPER_ADMIN'] },
-          status: 'ACTIVE'
-        },
-        select: { id: true }
-      });
+      const users = await query(
+        `SELECT id FROM User WHERE role IN ('RH', 'SUPER_ADMIN') AND status = 'ACTIVE'`
+      ) as any[];
       return users.map(u => u.id);
     } catch (error) {
       console.error("❌ Failed to get RH users:", error);
@@ -64,13 +71,9 @@ class NotificationService {
    */
   async getAdminUsers(): Promise<string[]> {
     try {
-      const users = await prisma.user.findMany({
-        where: {
-          roleEnum: 'SUPER_ADMIN',
-          status: 'ACTIVE'
-        },
-        select: { id: true }
-      });
+      const users = await query(
+        `SELECT id FROM User WHERE role = 'SUPER_ADMIN' AND status = 'ACTIVE'`
+      ) as any[];
       return users.map(u => u.id);
     } catch (error) {
       console.error("❌ Failed to get admin users:", error);
@@ -488,6 +491,17 @@ class NotificationService {
   async delete(notificationId: string) {
     await query(`DELETE FROM notifications WHERE id = ?`, [notificationId]);
     return { success: true };
+  }
+
+  /**
+   * Get notification by ID
+   */
+  async getById(notificationId: string) {
+    const notifications: any = await query(
+      `SELECT * FROM notifications WHERE id = ? LIMIT 1`,
+      [notificationId]
+    );
+    return notifications?.[0] || null;
   }
 
   /**

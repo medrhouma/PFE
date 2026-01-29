@@ -2,19 +2,19 @@
 
 import { useEffect, useState } from "react";
 import { 
-  FiRefreshCw, 
-  FiHome, 
-  FiAlertTriangle, 
-  FiChevronDown, 
-  FiChevronUp, 
-  FiCopy, 
-  FiCheck, 
-  FiZap, 
-  FiWifi, 
-  FiServer, 
-  FiLock, 
-  FiClock 
-} from "react-icons/fi";
+  RefreshCw, 
+  Home, 
+  AlertTriangle, 
+  ChevronDown, 
+  ChevronUp, 
+  Copy, 
+  Check, 
+  Zap, 
+  Wifi, 
+  Server, 
+  Lock, 
+  Clock 
+} from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 interface ErrorProps {
@@ -127,10 +127,10 @@ export default function Error({ error, reset }: ErrorProps) {
   };
 
   const causes = [
-    { icon: FiWifi, text: t.causes.network, color: "text-blue-500" },
-    { icon: FiServer, text: t.causes.server, color: "text-orange-500" },
-    { icon: FiClock, text: t.causes.timeout, color: "text-yellow-500" },
-    { icon: FiLock, text: t.causes.permission, color: "text-red-500" }
+    { icon: Wifi, text: t.causes.network, color: "text-blue-500" },
+    { icon: Server, text: t.causes.server, color: "text-orange-500" },
+    { icon: Clock, text: t.causes.timeout, color: "text-yellow-500" },
+    { icon: Lock, text: t.causes.permission, color: "text-red-500" }
   ];
 
   return (
@@ -159,13 +159,13 @@ export default function Error({ error, reset }: ErrorProps) {
               
               {/* Icon container */}
               <div className="relative w-20 h-20 bg-gradient-to-br from-red-500 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg shadow-red-500/30 animate-bounce-gentle">
-                <FiAlertTriangle className="w-10 h-10 text-white animate-shake" />
+                <AlertTriangle className="w-10 h-10 text-white animate-shake" />
               </div>
             </div>
 
             {/* Error code */}
             <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-red-100 dark:bg-red-900/30 rounded-full mb-4">
-              <FiZap className="w-4 h-4 text-red-600 dark:text-red-400" />
+              <Zap className="w-4 h-4 text-red-600 dark:text-red-400" />
               <span className="text-sm font-mono font-medium text-red-600 dark:text-red-400">
                 ERROR 500
               </span>
@@ -192,7 +192,7 @@ export default function Error({ error, reset }: ErrorProps) {
                 className="group relative inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white font-semibold rounded-xl shadow-lg shadow-red-500/25 hover:shadow-xl hover:shadow-red-500/30 transition-all duration-300 hover:scale-105 active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed overflow-hidden"
               >
                 <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
-                <FiRefreshCw className={`w-5 h-5 ${isRetrying ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-500'}`} />
+                <RefreshCw className={`w-5 h-5 ${isRetrying ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-500'}`} />
                 {t.tryAgain}
               </button>
               
@@ -200,7 +200,7 @@ export default function Error({ error, reset }: ErrorProps) {
                 href="/home"
                 className="group inline-flex items-center justify-center gap-2 px-6 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-semibold rounded-xl transition-all duration-300 hover:scale-105 active:scale-95"
               >
-                <FiHome className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+                <Home className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
                 {t.goHome}
               </a>
             </div>
@@ -236,12 +236,12 @@ export default function Error({ error, reset }: ErrorProps) {
               >
                 {showDetails ? (
                   <>
-                    <FiChevronUp className="w-4 h-4" />
+                    <ChevronUp className="w-4 h-4" />
                     {t.hideDetails}
                   </>
                 ) : (
                   <>
-                    <FiChevronDown className="w-4 h-4" />
+                    <ChevronDown className="w-4 h-4" />
                     {t.showDetails}
                   </>
                 )}
@@ -265,9 +265,9 @@ export default function Error({ error, reset }: ErrorProps) {
                         className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
                       >
                         {copied ? (
-                          <FiCheck className="w-4 h-4 text-green-500" />
+                          <Check className="w-4 h-4 text-green-500" />
                         ) : (
-                          <FiCopy className="w-4 h-4 text-gray-500" />
+                          <Copy className="w-4 h-4 text-gray-500" />
                         )}
                       </button>
                     </div>
@@ -295,7 +295,7 @@ export default function Error({ error, reset }: ErrorProps) {
         {/* Tips card */}
         <div className="mt-6 bg-white/60 dark:bg-gray-800/60 backdrop-blur-lg rounded-2xl border border-gray-200/50 dark:border-gray-700/50 p-5 animate-fadeIn animation-delay-300">
           <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
-            <FiZap className="w-4 h-4 text-yellow-500" />
+            <Zap className="w-4 h-4 text-yellow-500" />
             {t.tips.title}
           </h3>
           <ul className="grid grid-cols-2 gap-2 text-sm text-gray-600 dark:text-gray-400">

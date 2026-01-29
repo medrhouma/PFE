@@ -39,9 +39,22 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   return (
     <NotificationContext.Provider value={{ showNotification }}>
       {children}
-      <div className="fixed top-6 right-6 z-50 space-y-3 pointer-events-none" suppressHydrationWarning>
-        {notifications.map(notification => (
-          <div key={notification.id} className="pointer-events-auto" suppressHydrationWarning>
+      {/* Notification Container - More visible positioning */}
+      <div 
+        className="fixed top-24 right-6 z-[9999] flex flex-col gap-4 pointer-events-none max-w-md"
+        style={{ maxHeight: 'calc(100vh - 120px)' }}
+        suppressHydrationWarning
+      >
+        {notifications.map((notification, index) => (
+          <div 
+            key={notification.id} 
+            className="pointer-events-auto animate-slide-in"
+            style={{ 
+              animationDelay: `${index * 100}ms`,
+              transform: `translateY(${index * 4}px)` 
+            }}
+            suppressHydrationWarning
+          >
             <NotificationToast
               {...notification}
               onClose={removeNotification}
@@ -49,6 +62,23 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
           </div>
         ))}
       </div>
+      
+      {/* Animation styles */}
+      <style jsx global>{`
+        @keyframes slide-in {
+          from {
+            opacity: 0;
+            transform: translateX(100px) scale(0.9);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0) scale(1);
+          }
+        }
+        .animate-slide-in {
+          animation: slide-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+      `}</style>
     </NotificationContext.Provider>
   )
 }

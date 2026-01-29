@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { query, execute } from "@/lib/mysql-direct";
 import { notificationService } from "@/lib/services/notification-service";
 
 export async function POST(req: NextRequest) {
@@ -46,32 +46,24 @@ export async function POST(req: NextRequest) {
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
 
-      const existingCheckIn = await prisma.pointage.findFirst({
-        where: {
-          userId: session.user.id,
-          type: 'IN',
-          timestamp: {
-            gte: today,
-            lt: tomorrow
-          }
-        },
-        select: { id: true }
-      });
+      const existingCheckIns: any[] = await query(
+        `SELECT id FROM Pointage 
+         WHERE user_id = ? AND type = 'IN' 
+         AND timestamp >= ? AND timestamp < ?
+         LIMIT 1`,
+        [session.user.id, today.toISOString(), tomorrow.toISOString()]
+      );
 
-      if (existingCheckIn) {
+      if (existingCheckIns && existingCheckIns.length > 0) {
         // Vérifier si ce check-in n'a pas de check-out correspondant
-        const hasCheckOut = await prisma.pointage.count({
-          where: {
-            userId: session.user.id,
-            type: 'OUT',
-            timestamp: {
-              gte: today,
-              lt: tomorrow
-            }
-          }
-        });
+        const checkOuts: any[] = await query(
+          `SELECT COUNT(*) as count FROM Pointage 
+           WHERE user_id = ? AND type = 'OUT' 
+           AND timestamp >= ? AND timestamp < ?`,
+          [session.user.id, today.toISOString(), tomorrow.toISOString()]
+        );
 
-        if (hasCheckOut === 0) {
+        if (!checkOuts[0]?.count || checkOuts[0].count === 0) {
           anomalyDetected = true;
           anomalyReason = "Check-in déjà effectué aujourd'hui sans check-out";
         }
@@ -81,23 +73,29 @@ export async function POST(req: NextRequest) {
       // Continue même si la vérification échoue
     }
 
-    // Insérer le pointage avec Prisma
-    await prisma.pointage.create({
-      data: {
-        id: pointageId,
-        userId: session.user.id,
-        type: 'IN',
-        timestamp: timestamp,
-        status: anomalyDetected ? 'PENDING_REVIEW' : 'VALID',
-        ipAddress: ipAddress,
-        geolocation: geolocation ? JSON.stringify(geolocation) : null,
-        capturedPhoto: capturedPhoto || null,
-        faceVerified: faceVerified || false,
-        verificationScore: verificationScore || null,
-        anomalyDetected: anomalyDetected,
-        anomalyReason: anomalyReason
-      }
-    });
+    // Insérer le pointage avec mysql-direct
+    try {
+      await execute(
+        `INSERT INTO Pointage (id, user_id, type, timestamp, status, ip_address, geolocation, captured_photo, face_verified, verification_score, anomaly_detected, anomaly_reason, created_at, updated_at)
+         VALUES (?, ?, 'IN', ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+        [
+          pointageId,
+          session.user.id,
+          timestamp,
+          anomalyDetected ? 'PENDING' : 'VALID',
+          ipAddress,
+          geolocation ? JSON.stringify(geolocation) : null,
+          capturedPhoto || null,
+          faceVerified ? 1 : 0,
+          verificationScore || null,
+          anomalyDetected ? 1 : 0,
+          anomalyReason
+        ]
+      );
+    } catch (insertError) {
+      console.error("Error inserting pointage:", insertError);
+      throw insertError;
+    }
 
     // Send notifications
     try {
@@ -113,13 +111,10 @@ export async function POST(req: NextRequest) {
       }
 
       // Notify RH and SUPER_ADMIN for all pointages (success or anomaly)
-      const rhUsers = await prisma.user.findMany({
-        where: {
-          roleEnum: { in: ['RH', 'SUPER_ADMIN'] },
-          status: 'ACTIVE'
-        },
-        select: { id: true }
-      });
+      const rhUsers: any[] = await query(
+        `SELECT id FROM User WHERE role IN ('RH', 'SUPER_ADMIN') AND status = 'ACTIVE'`,
+        []
+      );
 
       if (rhUsers && rhUsers.length > 0) {
         const rhUserIds = rhUsers.map(rh => rh.id);

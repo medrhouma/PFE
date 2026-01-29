@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { query, execute } from "@/lib/mysql-direct";
+import { sanitizeImageFromAPI } from "@/lib/utils";
 
 /**
  * GET /api/users/me
@@ -18,14 +19,13 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get user from database - simplified query without role join first
+    // Get user from database - using correct column names
     let users: any[] = [];
     try {
       users = await query(
         `SELECT 
-          u.id, u.name, u.last_name, u.email, u.image, u.sexe, u.telephone, u.adresse,
-          u.rib, u.date_embauche, u.type_contrat, u.roleEnum, u.status, u.is_active,
-          u.createdAt, u.updatedAt, u.email_verified, u.roleId,
+          u.id, u.name, u.email, u.image, u.role, u.status,
+          u.createdAt, u.updatedAt, u.emailVerified,
           CASE WHEN u.password IS NOT NULL THEN 'credentials' ELSE 'oauth' END as authMethod
          FROM User u
          WHERE u.id = ?`,
@@ -57,29 +57,27 @@ export async function GET(request: NextRequest) {
 
     const user = users[0];
 
-    // Try to get role info from RoleEntity table (mapped to 'roles')
-    let roleName = user.roleEnum || "USER";
+    // Try to get role info from Role table
+    let roleName = user.role || "USER";
     let roleDescription = null;
-    if (user.roleId) {
-      try {
-        const roles: any[] = await query(
-          `SELECT name, description FROM roles WHERE id = ?`,
-          [user.roleId]
-        );
-        if (roles.length > 0) {
-          roleName = roles[0].name;
-          roleDescription = roles[0].description;
-        }
-      } catch (e) {
-        // roles table might not exist, use roleEnum
+    try {
+      const roles: any[] = await query(
+        `SELECT name, description FROM Role WHERE name = ?`,
+        [user.role]
+      );
+      if (roles.length > 0) {
+        roleName = roles[0].name;
+        roleDescription = roles[0].description;
       }
+    } catch (e) {
+      // Role table might not exist, use role from user
     }
 
     // Get account providers
     let providers: string[] = [];
     try {
       const accounts: any[] = await query(
-        `SELECT provider FROM accounts WHERE user_id = ?`,
+        `SELECT provider FROM Account WHERE userId = ?`,
         [session.user.id]
       );
       providers = accounts.map(a => a.provider);
@@ -91,7 +89,7 @@ export async function GET(request: NextRequest) {
     let employee = null;
     try {
       const employees: any[] = await query(
-        `SELECT id, nom, prenom, email, birthday, sexe, telephone, adresse, position, department, 
+        `SELECT id, nom, prenom, email, birthday, sexe, telephone, adresse, rib,
                 date_embauche, type_contrat, status, created_at, photo, cv
          FROM Employe WHERE user_id = ?`,
         [session.user.id]
@@ -100,35 +98,45 @@ export async function GET(request: NextRequest) {
         employee = employees[0];
       }
     } catch (e) {
-      // Employee table might not exist
+      console.error("Error fetching employee:", e);
+      // Employee table might not exist or different structure
     }
 
-    // Format the response
+    // Sanitize image fields to prevent ERR_INVALID_URL errors
+    const safeUserImage = sanitizeImageFromAPI(user.image);
+    const safeEmployeePhoto = employee ? sanitizeImageFromAPI(employee.photo) : null;
+    const safeEmployeeCv = employee ? sanitizeImageFromAPI(employee.cv) : null;
+
+    // Format the response with sanitized images
     const response = {
       id: user.id,
       name: user.name,
-      lastName: user.last_name,
+      lastName: employee?.nom || null,
       email: user.email,
-      image: user.image,
-      sexe: user.sexe,
-      telephone: user.telephone,
-      adresse: user.adresse,
-      rib: user.rib,
-      dateEmbauche: user.date_embauche,
-      typeContrat: user.type_contrat,
+      image: safeUserImage,
+      sexe: employee?.sexe || null,
+      telephone: employee?.telephone || null,
+      adresse: employee?.adresse || null,
+      rib: employee?.rib || null,
+      dateEmbauche: employee?.date_embauche || null,
+      typeContrat: employee?.type_contrat || null,
       role: {
         name: roleName,
         description: roleDescription
       },
-      roleEnum: user.roleEnum,
-      isActive: user.is_active,
+      roleEnum: user.role || 'USER',
+      isActive: user.status === 'ACTIVE',
       status: user.status,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
-      emailVerified: user.email_verified,
+      emailVerified: user.emailVerified,
       authMethod: user.authMethod,
       providers: providers.length > 0 ? providers : (user.authMethod === 'credentials' ? ['credentials'] : ['google']),
-      employee: employee
+      employee: employee ? {
+        ...employee,
+        photo: safeEmployeePhoto,
+        cv: safeEmployeeCv
+      } : null
     };
 
     return NextResponse.json(response);
@@ -160,60 +168,104 @@ export async function PUT(request: NextRequest) {
     const body = await request.json();
     const { name, lastName, image, telephone, adresse, sexe } = body;
 
-    // Build update data dynamically
-    const updates: string[] = [];
-    const params: any[] = [];
+    let hasChanges = false;
+
+    // Build update data for User table (name and image only - lastName stored in Employe)
+    const userUpdates: string[] = [];
+    const userParams: any[] = [];
 
     if (name !== undefined) {
-      updates.push("name = ?");
-      params.push(name);
-    }
-    if (lastName !== undefined) {
-      updates.push("last_name = ?");
-      params.push(lastName);
+      userUpdates.push("name = ?");
+      userParams.push(name);
     }
     if (image !== undefined) {
-      updates.push("image = ?");
-      params.push(image);
-    }
-    if (telephone !== undefined) {
-      updates.push("telephone = ?");
-      params.push(telephone);
-    }
-    if (adresse !== undefined) {
-      updates.push("adresse = ?");
-      params.push(adresse);
-    }
-    if (sexe !== undefined) {
-      updates.push("sexe = ?");
-      params.push(sexe);
+      userUpdates.push("image = ?");
+      userParams.push(image);
+      
+      // Also update Employee photo field if it exists
+      try {
+        const existingEmp: any[] = await query(
+          `SELECT id FROM Employe WHERE user_id = ?`,
+          [session.user.id]
+        );
+        if (existingEmp.length > 0) {
+          await execute(
+            `UPDATE Employe SET photo = ?, updated_at = NOW() WHERE user_id = ?`,
+            [image, session.user.id]
+          );
+        }
+      } catch (e) {
+        console.error("Error updating employee photo:", e);
+      }
     }
 
-    if (updates.length === 0) {
+    // Update User table if there are changes
+    if (userUpdates.length > 0) {
+      hasChanges = true;
+      userParams.push(session.user.id);
+      await execute(
+        `UPDATE User SET ${userUpdates.join(", ")}, updatedAt = NOW() WHERE id = ?`,
+        userParams
+      );
+    }
+
+    // Update Employe table for employee-specific fields
+    if (telephone !== undefined || adresse !== undefined || sexe !== undefined || name !== undefined || lastName !== undefined) {
+      // First check if employee record exists
+      const existingEmployee: any[] = await query(
+        `SELECT id FROM Employe WHERE user_id = ?`,
+        [session.user.id]
+      );
+
+      if (existingEmployee.length > 0) {
+        const employeeUpdates: string[] = [];
+        const employeeParams: any[] = [];
+
+        if (telephone !== undefined) {
+          employeeUpdates.push("telephone = ?");
+          employeeParams.push(telephone);
+        }
+        if (adresse !== undefined) {
+          employeeUpdates.push("adresse = ?");
+          employeeParams.push(adresse);
+        }
+        if (sexe !== undefined) {
+          employeeUpdates.push("sexe = ?");
+          employeeParams.push(sexe);
+        }
+        if (name !== undefined) {
+          employeeUpdates.push("prenom = ?");
+          employeeParams.push(name);
+        }
+        if (lastName !== undefined) {
+          employeeUpdates.push("nom = ?");
+          employeeParams.push(lastName);
+        }
+
+        if (employeeUpdates.length > 0) {
+          hasChanges = true;
+          employeeParams.push(session.user.id);
+          try {
+            await execute(
+              `UPDATE Employe SET ${employeeUpdates.join(", ")}, updated_at = NOW() WHERE user_id = ?`,
+              employeeParams
+            );
+          } catch (e) {
+            console.error("Error updating Employe:", e);
+          }
+        }
+      } else if (telephone !== undefined || adresse !== undefined || sexe !== undefined) {
+        // Employee record doesn't exist, but we want to update employee fields
+        // These will be stored when the employee profile is created
+        console.log("No employee record found for user, employee fields will be saved when profile is created");
+      }
+    }
+
+    if (!hasChanges) {
       return NextResponse.json(
         { error: "Aucune modification fournie" },
         { status: 400 }
       );
-    }
-
-    // Use updatedAt (mapped to updated_at in DB) - try both column names
-    params.push(session.user.id);
-
-    try {
-      await execute(
-        `UPDATE User SET ${updates.join(", ")}, updatedAt = NOW() WHERE id = ?`,
-        params
-      );
-    } catch (e: any) {
-      // If updatedAt doesn't work, try updated_at
-      if (e.code === 'ER_BAD_FIELD_ERROR') {
-        await execute(
-          `UPDATE User SET ${updates.join(", ")} WHERE id = ?`,
-          params
-        );
-      } else {
-        throw e;
-      }
     }
 
     return NextResponse.json({

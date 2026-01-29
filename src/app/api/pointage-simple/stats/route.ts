@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
           COUNT(CASE WHEN type = 'IN' THEN 1 END) as totalCheckIns,
           COUNT(CASE WHEN type = 'OUT' THEN 1 END) as totalCheckOuts,
           COUNT(CASE WHEN anomaly_detected = 1 THEN 1 END) as anomalies
-         FROM pointages 
+         FROM Pointage 
          WHERE user_id = ? 
          AND timestamp >= ? 
          AND timestamp <= ?`,

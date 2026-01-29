@@ -4,7 +4,7 @@
  */
 
 import { withRole, successResponse, errorResponse } from "@/lib/api-helpers";
-import { prisma } from "@/lib/prisma";
+import { query } from "@/lib/mysql-direct";
 
 export const GET = withRole(["RH", "SUPER_ADMIN"], async (context) => {
   try {
@@ -14,56 +14,54 @@ export const GET = withRole(["RH", "SUPER_ADMIN"], async (context) => {
     tomorrow.setDate(tomorrow.getDate() + 1);
 
     // Employee stats
-    const [totalEmployees, activeEmployees, pendingEmployees, suspendedEmployees] =
-      await Promise.all([
-        prisma.user.count(),
-        prisma.user.count({ where: { status: "ACTIVE" } }),
-        prisma.user.count({ where: { status: "PENDING" } }),
-        prisma.user.count({ where: { status: "SUSPENDED" } }),
-      ]);
+    const [totalResult, activeResult, pendingResult, suspendedResult] = await Promise.all([
+      query(`SELECT COUNT(*) as count FROM User`) as Promise<any[]>,
+      query(`SELECT COUNT(*) as count FROM User WHERE status = 'ACTIVE'`) as Promise<any[]>,
+      query(`SELECT COUNT(*) as count FROM User WHERE status = 'PENDING'`) as Promise<any[]>,
+      query(`SELECT COUNT(*) as count FROM User WHERE status = 'SUSPENDED'`) as Promise<any[]>,
+    ]);
 
-    // Attendance today
-    const attendanceToday = await prisma.pointage.groupBy({
-      by: ["userId"],
-      where: {
-        type: "IN",
-        timestamp: {
-          gte: today,
-          lt: tomorrow,
-        },
-      },
-      _count: true,
-    });
+    const totalEmployees = totalResult[0]?.count || 0;
+    const activeEmployees = activeResult[0]?.count || 0;
+    const pendingEmployees = pendingResult[0]?.count || 0;
+    const suspendedEmployees = suspendedResult[0]?.count || 0;
+
+    // Attendance today - count unique users who checked in
+    const attendanceToday = await query(
+      `SELECT COUNT(DISTINCT user_id) as count FROM Pointage 
+       WHERE type = 'IN' AND timestamp >= ? AND timestamp < ?`,
+      [today, tomorrow]
+    ) as any[];
 
     // Leave requests stats
-    const leavesStats = await prisma.demandeConge.groupBy({
-      by: ["status"],
-      _count: true,
+    const leavesStats = await query(
+      `SELECT status, COUNT(*) as count FROM demande_conge GROUP BY status`
+    ) as any[];
+
+    const leavesMap: Record<string, number> = {};
+    leavesStats.forEach((s: any) => {
+      leavesMap[s.status] = s.count;
     });
 
     const leaves = {
-      pending: leavesStats.find((s) => s.status === "EN_ATTENTE")?._count || 0,
-      approved: leavesStats.find((s) => s.status === "VALIDE")?._count || 0,
-      rejected: leavesStats.find((s) => s.status === "REFUSE")?._count || 0,
-      total: leavesStats.reduce((acc, s) => acc + s._count, 0),
+      pending: leavesMap['EN_ATTENTE'] || 0,
+      approved: leavesMap['VALIDE'] || 0,
+      rejected: leavesMap['REFUSE'] || 0,
+      total: Object.values(leavesMap).reduce((acc, count) => acc + count, 0),
     };
 
     // Anomalies count
-    const anomaliesCount = await prisma.anomaly.count({
-      where: {
-        status: {
-          in: ["PENDING", "INVESTIGATING"],
-        },
-      },
-    });
+    const anomaliesResult = await query(
+      `SELECT COUNT(*) as count FROM Anomaly WHERE status IN ('PENDING', 'INVESTIGATING')`
+    ) as any[];
+    const anomaliesCount = anomaliesResult[0]?.count || 0;
 
     // Notifications count
-    const notificationsCount = await prisma.notification.count({
-      where: {
-        userId: context.user.id,
-        isRead: false,
-      },
-    });
+    const notificationsResult = await query(
+      `SELECT COUNT(*) as count FROM notifications WHERE user_id = ? AND is_read = 0`,
+      [context.user.id]
+    ) as any[];
+    const notificationsCount = notificationsResult[0]?.count || 0;
 
     return successResponse({
       employees: {
@@ -74,7 +72,7 @@ export const GET = withRole(["RH", "SUPER_ADMIN"], async (context) => {
       },
       attendance: {
         today: {
-          present: attendanceToday.length,
+          present: attendanceToday[0]?.count || 0,
           total: activeEmployees,
         },
         thisWeek: 0, // TODO: Calculate

@@ -82,9 +82,29 @@ export async function POST(request: NextRequest) {
     const requireMatch = process.env.FACE_VERIFY_REQUIRE_MATCH === "true";
     const threshold = Number(process.env.FACE_VERIFY_THRESHOLD || 0.75);
 
-    // Mock provider for development/testing
+    // Mock provider for development/testing only
     if (provider === "mock" || !provider || provider === "") {
-      // Log successful face verification
+      // Block mock mode in production
+      if (process.env.NODE_ENV === "production") {
+        console.error("❌ Mock face verification attempted in production");
+        await auditLogger.log({
+          userId: session.user.id!,
+          action: "FACE_VERIFY_MOCK_BLOCKED",
+          entityType: "Security",
+          ipAddress: ip,
+          userAgent,
+          severity: "ERROR",
+          metadata: JSON.stringify({ reason: "Mock provider blocked in production" })
+        });
+        
+        return withSecurityHeaders(NextResponse.json({
+          verified: false,
+          reason: "SERVICE_UNAVAILABLE",
+          message: "Service de vérification faciale temporairement indisponible. Veuillez contacter l'administrateur."
+        }, { status: 503 }));
+      }
+
+      // Development mode - return mock success
       await auditLogger.logFaceVerification(
         session.user.id!,
         true,

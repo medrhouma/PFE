@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
-import { pool } from "@/lib/db"
 import { query } from "@/lib/mysql-direct"
+import { sanitizeImageFromAPI } from "@/lib/utils"
 
 async function hasPermission(email: string, module: string, action: string): Promise<boolean> {
   try {
@@ -54,43 +54,67 @@ export async function GET() {
 
     console.log("Fetching users for", session.user.role, ":", session.user.email)
 
-    // Query from User table - only select existing columns
-    const [rows] = await pool.execute(
-      `SELECT 
+    // Use mysql-direct for more reliable queries
+    const rows = await query(`
+      SELECT 
         u.id, 
         u.name, 
         u.email, 
-        u.password,
         u.role, 
         u.image,
-        GROUP_CONCAT(DISTINCT a.provider) as providers
+        u.status,
+        e.nom,
+        e.prenom,
+        e.telephone,
+        e.adresse,
+        e.sexe,
+        e.birthday,
+        e.photo,
+        e.cv,
+        e.rib,
+        e.type_contrat as typeContrat,
+        e.date_embauche as dateEmbauche,
+        e.status as statut,
+        e.autres_documents
        FROM User u
-       LEFT JOIN Account a ON u.id = a.userId
-       GROUP BY u.id
-       ORDER BY u.id DESC`
-    )
+       LEFT JOIN Employe e ON u.id = e.user_id
+       ORDER BY u.createdAt DESC
+    `) as any[]
 
-    console.log("Found users:", (rows as any[]).length)
+    console.log("Found users:", rows?.length || 0)
 
-    // Format providers into array and split name
-    const formattedUsers = (rows as any[]).map(user => {
-      // Split name into first and last name if it contains a space
+    // Format providers into array and include employee data
+    // Sanitize all image fields to prevent ERR_INVALID_URL
+    const formattedUsers = (rows || []).map(user => {
+      // Use employee name if available, otherwise split user name
       const fullName = user.name || ''
       const nameParts = fullName.trim().split(' ')
-      const firstName = nameParts[0] || ''
-      const lastName = nameParts.slice(1).join(' ') || ''
+      const firstName = user.prenom || nameParts[0] || ''
+      const lastName = user.nom || nameParts.slice(1).join(' ') || ''
       
       return {
         id: user.id,
         name: firstName,
         last_name: lastName,
+        nom: user.nom,
+        prenom: user.prenom,
         email: user.email,
         role: user.role,
-        image: user.image,
-        password: user.password,
-        providers: user.providers ? user.providers.split(',').map((p: string) => 
-          p === 'google' ? 'Google' : 'Credentials'
-        ) : (user.password ? ['Credentials'] : ['Google'])
+        image: sanitizeImageFromAPI(user.image),
+        status: user.status,
+        telephone: user.telephone,
+        adresse: user.adresse,
+        sexe: user.sexe,
+        birthday: user.birthday,
+        photo: sanitizeImageFromAPI(user.photo),
+        cv: sanitizeImageFromAPI(user.cv),
+        rib: user.rib,
+        typeContrat: user.typeContrat,
+        dateEmbauche: user.dateEmbauche,
+        statut: user.statut,
+        autres_documents: user.autres_documents,
+        hasEmployeeProfile: !!user.nom || !!user.prenom,
+        providers: ['Credentials']
       }
     })
 

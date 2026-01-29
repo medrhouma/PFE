@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useCookieConsent, CookiePreferences } from "@/contexts/CookieConsentContext";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { FiX, FiCheck, FiShield, FiActivity, FiTarget, FiSettings } from "react-icons/fi";
+import { X, Check, Shield, Activity, Target, Settings } from "lucide-react";
 
 interface CookieCategory {
   id: keyof Omit<CookiePreferences, "necessary">;
@@ -98,19 +98,19 @@ export function CookieSettingsModal() {
   const categories: (CookieCategory & { labelKey: string; descKey: string })[] = [
     {
       id: "functional",
-      icon: <FiSettings className="w-5 h-5" />,
+      icon: <Settings className="w-5 h-5" />,
       labelKey: "functional",
       descKey: "functionalDesc",
     },
     {
       id: "analytics",
-      icon: <FiActivity className="w-5 h-5" />,
+      icon: <Activity className="w-5 h-5" />,
       labelKey: "analytics",
       descKey: "analyticsDesc",
     },
     {
       id: "marketing",
-      icon: <FiTarget className="w-5 h-5" />,
+      icon: <Target className="w-5 h-5" />,
       labelKey: "marketing",
       descKey: "marketingDesc",
     },
@@ -167,7 +167,7 @@ export function CookieSettingsModal() {
           <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center">
-                <FiShield className="w-5 h-5 text-white" />
+                <Shield className="w-5 h-5 text-white" />
               </div>
               <div>
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white">
@@ -182,7 +182,7 @@ export function CookieSettingsModal() {
               onClick={closeSettings}
               className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
             >
-              <FiX className="w-5 h-5 text-gray-500" />
+              <X className="w-5 h-5 text-gray-500" />
             </button>
           </div>
 
@@ -193,7 +193,7 @@ export function CookieSettingsModal() {
               <div className="flex items-start justify-between">
                 <div className="flex items-start gap-3">
                   <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
-                    <FiShield className="w-5 h-5 text-green-600 dark:text-green-400" />
+                    <Shield className="w-5 h-5 text-green-600 dark:text-green-400" />
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
@@ -288,7 +288,7 @@ export function CookieSettingsModal() {
               onClick={handleSave}
               className="px-6 py-2.5 bg-gradient-to-r from-violet-600 to-purple-600 text-white font-medium rounded-xl hover:from-violet-700 hover:to-purple-700 transition-all shadow-lg shadow-violet-500/25 flex items-center gap-2"
             >
-              <FiCheck className="w-4 h-4" />
+              <Check className="w-4 h-4" />
               {t.save}
             </button>
           </div>
