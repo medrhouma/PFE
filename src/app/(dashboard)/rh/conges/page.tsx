@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { useSession } from "next-auth/react"
 import { useNotification } from "@/contexts/NotificationContext"
 import { Button } from "@/components/ui/Button"
-import { FiCalendar, FiCheck, FiX, FiUser, FiClock, FiMessageSquare } from "react-icons/fi"
+import { Calendar, Check, X, User, Clock, MessageSquare } from "lucide-react"
 
 interface LeaveRequest {
   id: string
@@ -24,6 +24,7 @@ export default function RHCongesPage() {
   const { showNotification } = useNotification()
   const [requests, setRequests] = useState<LeaveRequest[]>([])
   const [loading, setLoading] = useState(false)
+  const [initialLoading, setInitialLoading] = useState(true)
   const [selectedRequest, setSelectedRequest] = useState<LeaveRequest | null>(null)
   const [showModal, setShowModal] = useState(false)
   const [actionType, setActionType] = useState<"APPROVED" | "REJECTED">("APPROVED")
@@ -44,9 +45,21 @@ export default function RHCongesPage() {
         setRequests(Array.isArray(data) ? data : [])
       } else {
         console.error("❌ Failed to fetch requests:", response.status)
+        showNotification({
+          type: "error",
+          title: "Erreur",
+          message: "Impossible de charger les demandes de congé"
+        })
       }
     } catch (error) {
       console.error("Error fetching requests:", error)
+      showNotification({
+        type: "error",
+        title: "Erreur",
+        message: "Erreur de connexion au serveur"
+      })
+    } finally {
+      setInitialLoading(false)
     }
   }
 
@@ -163,273 +176,432 @@ export default function RHCongesPage() {
     )
   }
 
+  // Loading state
+  if (initialLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-100 dark:from-gray-950 dark:via-gray-900 dark:to-slate-900 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-center h-64">
+            <div className="flex flex-col items-center gap-4">
+              <div className="animate-spin rounded-full h-12 w-12 border-4 border-emerald-500 border-t-transparent"></div>
+              <p className="text-gray-500 dark:text-gray-400">Chargement des demandes...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className="max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-          Gestion des congés
-        </h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-2">
-          Approuvez ou rejetez les demandes de congé des employés
-        </p>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border-l-4 border-blue-500">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Total</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{requests.length}</p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-100 dark:from-gray-950 dark:via-gray-900 dark:to-slate-900 p-6">
+      <div className="max-w-7xl mx-auto">
+        {/* Professional Header */}
+        <div className="mb-8">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-600 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/30">
+                <Calendar className="w-7 h-7 text-white" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                  Gestion des Congés
+                </h1>
+                <p className="text-gray-600 dark:text-gray-400 mt-1">
+                  Gérez les demandes de congé des employés
+                </p>
+              </div>
             </div>
-            <FiCalendar className="w-10 h-10 text-blue-500" />
+            <div className="flex gap-3">
+              <Button
+                onClick={fetchRequests}
+                className="bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all"
+              >
+                <Clock className="w-5 h-5 mr-2" />
+                Actualiser
+              </Button>
+            </div>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border-l-4 border-amber-500 cursor-pointer hover:shadow-xl transition-shadow"
-          onClick={() => setFilter("pending")}>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">En attente</p>
-              <p className="text-2xl font-bold text-amber-600">{pendingCount}</p>
-            </div>
-            <FiClock className="w-10 h-10 text-amber-500" />
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border-l-4 border-green-500 cursor-pointer hover:shadow-xl transition-shadow"
-          onClick={() => setFilter("approved")}>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Approuvés</p>
-              <p className="text-2xl font-bold text-green-600">{approvedCount}</p>
-            </div>
-            <FiCheck className="w-10 h-10 text-green-500" />
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border-l-4 border-red-500 cursor-pointer hover:shadow-xl transition-shadow"
-          onClick={() => setFilter("rejected")}>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Refusés</p>
-              <p className="text-2xl font-bold text-red-600">{rejectedCount}</p>
-            </div>
-            <FiX className="w-10 h-10 text-red-500" />
-          </div>
-        </div>
-      </div>
-
-      {/* Filter Tabs */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 mb-6">
-        <div className="flex gap-2">
-          <button
+        {/* Modern Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+          <div 
             onClick={() => setFilter("all")}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              filter === "all"
-                ? "bg-violet-600 text-white"
-                : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-            }`}
+            className="group cursor-pointer bg-white dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 p-6 border border-gray-100 dark:border-gray-700/50 relative overflow-hidden"
           >
-            Toutes ({requests.length})
-          </button>
-          <button
-            onClick={() => setFilter("pending")}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              filter === "pending"
-                ? "bg-amber-600 text-white"
-                : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-            }`}
-          >
-            En attente ({pendingCount})
-          </button>
-          <button
-            onClick={() => setFilter("approved")}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              filter === "approved"
-                ? "bg-green-600 text-white"
-                : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-            }`}
-          >
-            Approuvés ({approvedCount})
-          </button>
-          <button
-            onClick={() => setFilter("rejected")}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              filter === "rejected"
-                ? "bg-red-600 text-white"
-                : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-            }`}
-          >
-            Refusés ({rejectedCount})
-          </button>
-        </div>
-      </div>
-
-      {/* Requests List */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
-        {filteredRequests.length === 0 ? (
-          <div className="p-12 text-center">
-            <FiCalendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500 dark:text-gray-400">
-              Aucune demande {filter !== "all" && `${filter === "pending" ? "en attente" : filter === "approved" ? "approuvée" : "refusée"}`}
-            </p>
+            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 rounded-full -translate-y-8 translate-x-8" />
+            <div className="relative">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30 group-hover:scale-110 transition-transform">
+                  <Calendar className="w-6 h-6 text-white" />
+                </div>
+                <span className="text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30 px-2 py-1 rounded-full">Total</span>
+              </div>
+              <p className="text-4xl font-bold text-gray-900 dark:text-white mb-1">{requests.length}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Demandes</p>
+            </div>
           </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gradient-to-r from-violet-600 to-purple-600 text-white">
-                <tr>
-                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase">Employé</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase">Type</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase">Période</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase">Durée</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase">Motif</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase">Statut</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase">Demandé le</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                {filteredRequests.map((request) => (
-                  <tr key={request.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-violet-600 rounded-full flex items-center justify-center text-white font-semibold">
-                          {request.userName?.charAt(0) || request.userEmail?.charAt(0) || "U"}
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-gray-900 dark:text-white">
-                            {request.userName || "N/A"}
-                          </p>
-                          <p className="text-xs text-gray-500">{request.userEmail}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${getTypeColor(request.type)}`}>
-                        {getTypeLabel(request.type)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
-                      <div className="flex flex-col">
-                        <span>{new Date(request.startDate).toLocaleDateString('fr-FR')}</span>
-                        <span className="text-xs text-gray-500">au</span>
-                        <span>{new Date(request.endDate).toLocaleDateString('fr-FR')}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm font-semibold text-gray-900 dark:text-white">
-                      {request.duration} jour{request.duration > 1 ? 's' : ''}
-                    </td>
-                    <td className="px-6 py-4 max-w-xs">
-                      <p className="text-sm text-gray-700 dark:text-gray-300 truncate" title={request.reason}>
-                        {request.reason || "Aucun motif"}
-                      </p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(request.status)}`}>
-                        {getStatusLabel(request.status)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
-                      {new Date(request.createdAt).toLocaleDateString('fr-FR')}
-                    </td>
-                    <td className="px-6 py-4">
-                      {request.status === "EN_ATTENTE" ? (
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => openModal(request, "APPROVED")}
-                            className="p-2 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg transition-colors"
-                            title="Approuver"
-                          >
-                            <FiCheck className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => openModal(request, "REJECTED")}
-                            className="p-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg transition-colors"
-                            title="Refuser"
-                          >
-                            <FiX className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ) : (
-                        <span className="text-sm text-gray-500">-</span>
-                      )}
-                    </td>
+
+          <div 
+            onClick={() => setFilter("pending")}
+            className="group cursor-pointer bg-white dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 p-6 border border-gray-100 dark:border-gray-700/50 relative overflow-hidden"
+          >
+            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-amber-500/10 to-orange-500/10 rounded-full -translate-y-8 translate-x-8" />
+            <div className="relative">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/30 group-hover:scale-110 transition-transform">
+                  <Clock className="w-6 h-6 text-white" />
+                </div>
+                {pendingCount > 0 && (
+                  <span className="text-xs font-semibold text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 px-2 py-1 rounded-full animate-pulse">Action requise</span>
+                )}
+              </div>
+              <p className="text-4xl font-bold text-amber-600 dark:text-amber-400 mb-1">{pendingCount}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">En attente</p>
+            </div>
+          </div>
+
+          <div 
+            onClick={() => setFilter("approved")}
+            className="group cursor-pointer bg-white dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 p-6 border border-gray-100 dark:border-gray-700/50 relative overflow-hidden"
+          >
+            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-emerald-500/10 to-green-500/10 rounded-full -translate-y-8 translate-x-8" />
+            <div className="relative">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-green-500 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/30 group-hover:scale-110 transition-transform">
+                  <Check className="w-6 h-6 text-white" />
+                </div>
+                <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30 px-2 py-1 rounded-full">Traité</span>
+              </div>
+              <p className="text-4xl font-bold text-emerald-600 dark:text-emerald-400 mb-1">{approvedCount}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Approuvés</p>
+            </div>
+          </div>
+
+          <div 
+            onClick={() => setFilter("rejected")}
+            className="group cursor-pointer bg-white dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 p-6 border border-gray-100 dark:border-gray-700/50 relative overflow-hidden"
+          >
+            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-rose-500/10 to-red-500/10 rounded-full -translate-y-8 translate-x-8" />
+            <div className="relative">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-rose-500 to-red-500 rounded-xl flex items-center justify-center shadow-lg shadow-rose-500/30 group-hover:scale-110 transition-transform">
+                  <X className="w-6 h-6 text-white" />
+                </div>
+                <span className="text-xs font-semibold text-rose-600 dark:text-rose-400 bg-rose-100 dark:bg-rose-900/30 px-2 py-1 rounded-full">Traité</span>
+              </div>
+              <p className="text-4xl font-bold text-rose-600 dark:text-rose-400 mb-1">{rejectedCount}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Refusés</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Modern Filter Tabs */}
+        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700/50 p-6 mb-6">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-10 h-10 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 rounded-xl flex items-center justify-center">
+              <Calendar className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+            </div>
+            <div>
+              <h3 className="font-bold text-gray-900 dark:text-white">Filtrer par statut</h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Sélectionnez un statut pour filtrer</p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={() => setFilter("all")}
+              className={`px-5 py-2.5 rounded-xl font-medium transition-all duration-200 ${
+                filter === "all"
+                  ? "bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg shadow-violet-500/30 scale-105"
+                  : "bg-gray-100 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+              }`}
+            >
+              Toutes ({requests.length})
+            </button>
+            <button
+              onClick={() => setFilter("pending")}
+              className={`px-5 py-2.5 rounded-xl font-medium transition-all duration-200 flex items-center gap-2 ${
+                filter === "pending"
+                  ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/30 scale-105"
+                  : "bg-gray-100 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+              }`}
+            >
+              En attente ({pendingCount})
+              {pendingCount > 0 && filter !== "pending" && (
+                <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
+              )}
+            </button>
+            <button
+              onClick={() => setFilter("approved")}
+              className={`px-5 py-2.5 rounded-xl font-medium transition-all duration-200 ${
+                filter === "approved"
+                  ? "bg-gradient-to-r from-emerald-500 to-green-500 text-white shadow-lg shadow-emerald-500/30 scale-105"
+                  : "bg-gray-100 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+              }`}
+            >
+              Approuvés ({approvedCount})
+            </button>
+            <button
+              onClick={() => setFilter("rejected")}
+              className={`px-5 py-2.5 rounded-xl font-medium transition-all duration-200 ${
+                filter === "rejected"
+                  ? "bg-gradient-to-r from-rose-500 to-red-500 text-white shadow-lg shadow-rose-500/30 scale-105"
+                  : "bg-gray-100 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+              }`}
+            >
+              Refusés ({rejectedCount})
+            </button>
+          </div>
+        </div>
+
+        {/* Professional Requests Table */}
+        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700/50 overflow-hidden">
+          <div className="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-gray-800 dark:via-gray-700 dark:to-gray-800 p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center">
+                  <Calendar className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white">
+                    {filteredRequests.length} demande{filteredRequests.length > 1 ? 's' : ''}
+                  </h3>
+                  <p className="text-gray-300 text-sm">Liste des demandes de congé</p>
+                </div>
+              </div>
+              {pendingCount > 0 && (
+                <span className="px-3 py-1.5 bg-amber-500/20 text-amber-300 rounded-full text-sm font-medium animate-pulse">
+                  {pendingCount} en attente
+                </span>
+              )}
+            </div>
+          </div>
+
+          {filteredRequests.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-24 bg-gradient-to-br from-gray-50 to-white dark:from-gray-800/50 dark:to-gray-800">
+              <div className="w-20 h-20 bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded-full flex items-center justify-center mb-6">
+                <Calendar className="w-10 h-10 text-gray-400 dark:text-gray-500" />
+              </div>
+              <p className="text-xl font-bold text-gray-900 dark:text-white mb-2">Aucune demande</p>
+              <p className="text-gray-500 dark:text-gray-400 text-center max-w-md">
+                {filter !== "all" ? `Aucune demande ${filter === "pending" ? "en attente" : filter === "approved" ? "approuvée" : "refusée"}` : "Aucune demande de congé pour le moment"}
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 dark:bg-gray-700/50">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Employé</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Type</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Période</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Durée</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Motif</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Statut</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Demandé le</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
+                  {filteredRequests.map((request) => (
+                    <tr key={request.id} className="group hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">
+                      <td className="px-6 py-5">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-violet-500/30">
+                            {request.userName?.charAt(0) || request.userEmail?.charAt(0) || "U"}
+                          </div>
+                          <div>
+                            <p className="font-semibold text-gray-900 dark:text-white">
+                              {request.userName || "N/A"}
+                            </p>
+                            <p className="text-xs text-gray-500">{request.userEmail}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-5">
+                        <span className={`inline-flex items-center px-3 py-1.5 rounded-xl text-xs font-semibold ${getTypeColor(request.type)}`}>
+                          {getTypeLabel(request.type)}
+                        </span>
+                      </td>
+                      <td className="px-6 py-5">
+                        <div className="flex flex-col gap-1">
+                          <span className="text-sm font-medium text-gray-900 dark:text-white">
+                            {new Date(request.startDate).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                          </span>
+                          <span className="flex items-center gap-1 text-xs text-gray-500">
+                            <span className="w-3 h-px bg-gray-400" /> au <span className="w-3 h-px bg-gray-400" />
+                          </span>
+                          <span className="text-sm font-medium text-gray-900 dark:text-white">
+                            {new Date(request.endDate).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-5">
+                        <div className="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 dark:bg-gray-700/50 rounded-lg">
+                          <span className="text-lg font-bold text-gray-900 dark:text-white">{request.duration}</span>
+                          <span className="text-xs text-gray-500">jour{request.duration > 1 ? 's' : ''}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-5 max-w-xs">
+                        <p className="text-sm text-gray-700 dark:text-gray-300 truncate" title={request.reason}>
+                          {request.reason || <span className="text-gray-400 italic">Aucun motif</span>}
+                        </p>
+                      </td>
+                      <td className="px-6 py-5">
+                        <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold ${
+                          request.status === "VALIDE" 
+                            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+                            : request.status === "REFUSE"
+                            ? "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400"
+                            : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                        }`}>
+                          {request.status === "VALIDE" && <Check className="w-3 h-3" />}
+                          {request.status === "REFUSE" && <X className="w-3 h-3" />}
+                          {request.status === "EN_ATTENTE" && <Clock className="w-3 h-3" />}
+                          {getStatusLabel(request.status)}
+                        </span>
+                      </td>
+                      <td className="px-6 py-5 text-sm text-gray-700 dark:text-gray-300">
+                        {new Date(request.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}
+                      </td>
+                      <td className="px-6 py-5">
+                        {request.status === "EN_ATTENTE" ? (
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => openModal(request, "APPROVED")}
+                              className="group/btn inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-xl text-sm font-semibold shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:shadow-emerald-500/40 hover:scale-105 transition-all duration-200"
+                              title="Approuver"
+                            >
+                              <Check className="w-4 h-4" />
+                              <span className="hidden lg:inline">Approuver</span>
+                            </button>
+                            <button
+                              onClick={() => openModal(request, "REJECTED")}
+                              className="group/btn inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-rose-500 to-red-600 text-white rounded-xl text-sm font-semibold shadow-lg shadow-rose-500/30 hover:shadow-xl hover:shadow-rose-500/40 hover:scale-105 transition-all duration-200"
+                              title="Refuser"
+                            >
+                              <X className="w-4 h-4" />
+                              <span className="hidden lg:inline">Refuser</span>
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-gray-400 text-sm italic">Traité</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* Modern Modal */}
+        {showModal && selectedRequest && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200">
+              {/* Modal Header */}
+              <div className={`p-6 ${
+                actionType === "APPROVED" 
+                  ? "bg-gradient-to-r from-emerald-500 to-green-600" 
+                  : "bg-gradient-to-r from-rose-500 to-red-600"
+              }`}>
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                    {actionType === "APPROVED" ? <Check className="w-6 h-6 text-white" /> : <X className="w-6 h-6 text-white" />}
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-white">
+                      {actionType === "APPROVED" ? "Approuver" : "Refuser"} la demande
+                    </h3>
+                    <p className="text-white/80 text-sm">Confirmer l'action</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-6">
+                {/* Request Info Card */}
+                <div className="mb-6 p-5 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700/50 dark:to-gray-700 rounded-xl border border-gray-200 dark:border-gray-600">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold shadow-lg shadow-violet-500/30">
+                      {selectedRequest.userName?.charAt(0) || "U"}
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-900 dark:text-white">{selectedRequest.userName}</p>
+                      <p className="text-xs text-gray-500">{selectedRequest.userEmail}</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex items-center gap-2 text-sm">
+                      <Calendar className="w-4 h-4 text-gray-400" />
+                      <span className="text-gray-700 dark:text-gray-300">{getTypeLabel(selectedRequest.type)}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <Clock className="w-4 h-4 text-gray-400" />
+                      <span className="font-semibold text-gray-900 dark:text-white">{selectedRequest.duration} jour{selectedRequest.duration > 1 ? 's' : ''}</span>
+                    </div>
+                  </div>
+                  <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600 text-sm text-gray-600 dark:text-gray-400">
+                    {new Date(selectedRequest.startDate).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })} → {new Date(selectedRequest.endDate).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                  </div>
+                </div>
+
+                {/* Comment Input */}
+                <div className="mb-6">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    <MessageSquare className="w-4 h-4" />
+                    Commentaire {actionType === "REJECTED" && <span className="text-rose-500">*</span>}
+                  </label>
+                  <textarea
+                    value={comments}
+                    onChange={(e) => setComments(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent dark:bg-gray-700/50 transition-all resize-none"
+                    rows={3}
+                    placeholder={actionType === "APPROVED" ? "Message optionnel pour l'employé..." : "Raison du refus (obligatoire)..."}
+                    required={actionType === "REJECTED"}
+                  />
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-3">
+                  <Button
+                    onClick={handleAction}
+                    disabled={loading || (actionType === "REJECTED" && !comments.trim())}
+                    className={`flex-1 py-3 font-semibold shadow-lg transition-all hover:scale-[1.02] ${
+                      actionType === "APPROVED"
+                        ? "bg-gradient-to-r from-emerald-500 to-green-600 hover:shadow-emerald-500/40"
+                        : "bg-gradient-to-r from-rose-500 to-red-600 hover:shadow-rose-500/40"
+                    }`}
+                  >
+                    {loading ? (
+                      <span className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        Traitement...
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-2">
+                        {actionType === "APPROVED" ? <Check className="w-4 h-4" /> : <X className="w-4 h-4" />}
+                        {actionType === "APPROVED" ? "Approuver" : "Refuser"}
+                      </span>
+                    )}
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setShowModal(false)
+                      setSelectedRequest(null)
+                      setComments("")
+                    }}
+                    disabled={loading}
+                    className="flex-1 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-semibold transition-all"
+                  >
+                    Annuler
+                  </Button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>
-
-      {/* Modal */}
-      {showModal && selectedRequest && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full p-6 animate-in fade-in slide-in-from-bottom-4 duration-200">
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-              {actionType === "APPROVED" ? "Approuver" : "Refuser"} la demande
-            </h3>
-            
-            <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <FiUser className="w-4 h-4 text-gray-500" />
-                <span className="text-sm font-medium">{selectedRequest.userName}</span>
-              </div>
-              <div className="flex items-center gap-2 mb-2">
-                <FiCalendar className="w-4 h-4 text-gray-500" />
-                <span className="text-sm">{getTypeLabel(selectedRequest.type)}</span>
-              </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">
-                {new Date(selectedRequest.startDate).toLocaleDateString('fr-FR')} - {new Date(selectedRequest.endDate).toLocaleDateString('fr-FR')}
-                <span className="ml-2">({selectedRequest.duration} jour{selectedRequest.duration > 1 ? 's' : ''})</span>
-              </div>
-            </div>
-
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                <FiMessageSquare className="w-4 h-4 inline mr-1" />
-                Commentaire {actionType === "REJECTED" && <span className="text-red-500">*</span>}
-              </label>
-              <textarea
-                value={comments}
-                onChange={(e) => setComments(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-violet-500 dark:bg-gray-700"
-                rows={3}
-                placeholder={actionType === "APPROVED" ? "Message optionnel pour l'employé" : "Raison du refus (obligatoire)"}
-                required={actionType === "REJECTED"}
-              />
-            </div>
-
-            <div className="flex gap-3">
-              <Button
-                onClick={handleAction}
-                disabled={loading || (actionType === "REJECTED" && !comments.trim())}
-                className={`flex-1 ${
-                  actionType === "APPROVED"
-                    ? "bg-green-600 hover:bg-green-700"
-                    : "bg-red-600 hover:bg-red-700"
-                }`}
-              >
-                {loading ? "Traitement..." : actionType === "APPROVED" ? "Approuver" : "Refuser"}
-              </Button>
-              <Button
-                onClick={() => {
-                  setShowModal(false)
-                  setSelectedRequest(null)
-                  setComments("")
-                }}
-                disabled={loading}
-                className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700"
-              >
-                Annuler
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

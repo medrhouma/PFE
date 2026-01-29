@@ -4,14 +4,15 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
 import { 
-  FiUser, FiSettings, FiShield, FiGlobe, FiMoon, FiBell, 
-  FiLogOut, FiChevronRight, FiCheck, FiMonitor, FiSun,
-  FiLock, FiSmartphone, FiClock, FiMail, FiEdit3, FiCamera,
-  FiUsers, FiFileText, FiCalendar, FiActivity, FiDatabase,
-  FiKey, FiSliders, FiHelpCircle, FiLifeBuoy, FiMessageCircle,
-  FiAlertCircle, FiRefreshCw, FiDownload
-} from "react-icons/fi";
+  User, Settings, Shield, Globe, Moon, Bell, 
+  LogOut, ChevronRight, Check, Monitor, Sun,
+  Lock, Smartphone, Clock, Mail, Edit3, Camera,
+  Users, FileText, Calendar, Activity, Database,
+  Key, SlidersHorizontal, HelpCircle, LifeBuoy, MessageCircle,
+  AlertCircle, RefreshCw, Download
+} from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { getSafeImageSrc } from "@/lib/utils";
 
 interface ProfileMenuProps {
   compact?: boolean;
@@ -46,17 +47,41 @@ interface SubMenuItem {
  * - Smooth animations
  */
 export function ProfileMenu({ compact = false }: ProfileMenuProps) {
-  const { data: session } = useSession();
+  const { data: session, update: updateSession } = useSession();
   const { language, setLanguage: setGlobalLanguage, t, isRTL } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [activeSubmenu, setActiveSubmenu] = useState<string | null>(null);
   const [theme, setTheme] = useState<ThemeMode>("system");
+  const [userImage, setUserImage] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const submenuTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const userRole = session?.user?.role?.toUpperCase() || "USER";
   const isAdmin = userRole === "SUPER_ADMIN" || userRole === "ADMIN";
   const isRH = userRole === "RH" || isAdmin;
+
+  // Fetch user profile to get the latest image
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        const response = await fetch('/api/users/me');
+        if (response.ok) {
+          const userData = await response.json();
+          // Try employee photo first, then user image
+          const image = userData.employee?.photo || userData.image;
+          if (image) {
+            setUserImage(image);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching user profile:', error);
+      }
+    };
+
+    if (session?.user) {
+      fetchUserProfile();
+    }
+  }, [session?.user]);
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -124,77 +149,100 @@ export function ProfileMenu({ compact = false }: ProfileMenuProps) {
     }
   };
 
+  // Language options
+  const languageOptions: { code: Language; label: string; flag: string }[] = [
+    { code: "fr", label: "Français", flag: "🇫🇷" },
+    { code: "en", label: "English", flag: "🇬🇧" },
+  ];
+
+  // Handle language change
+  const handleLanguageChange = async (lang: Language) => {
+    await setGlobalLanguage(lang);
+    setActiveSubmenu(null);
+  };
+
   // Settings submenu configuration
   const settingsSubmenus: SubMenuConfig[] = [
     {
       id: "general",
       label: "Général",
-      icon: <FiSliders className="w-4 h-4" />,
+      icon: <SlidersHorizontal className="w-4 h-4" />,
       items: [
-        { id: "edit-profile", label: "Modifier le profil", icon: <FiEdit3 className="w-4 h-4" />, href: "/profile" },
-        { id: "change-photo", label: "Changer la photo", icon: <FiCamera className="w-4 h-4" />, href: "/profile?tab=photo" },
-        { id: "language", label: "Langue", icon: <FiGlobe className="w-4 h-4" />, badge: language.toUpperCase() },
-        { id: "timezone", label: "Fuseau horaire", icon: <FiClock className="w-4 h-4" />, description: "Europe/Paris" },
-        { id: "email-prefs", label: "Préférences email", icon: <FiMail className="w-4 h-4" />, href: "/settings?tab=notifications" },
+        { id: "edit-profile", label: "Modifier le profil", icon: <Edit3 className="w-4 h-4" />, href: "/profile" },
+        { id: "change-photo", label: "Changer la photo", icon: <Camera className="w-4 h-4" />, href: "/profile?tab=photo" },
+        { id: "timezone", label: "Fuseau horaire", icon: <Clock className="w-4 h-4" />, description: "Europe/Paris" },
+        { id: "email-prefs", label: "Préférences email", icon: <Mail className="w-4 h-4" />, href: "/settings?tab=notifications" },
       ]
     },
     {
       id: "security",
       label: "Sécurité",
-      icon: <FiShield className="w-4 h-4" />,
+      icon: <Shield className="w-4 h-4" />,
       items: [
-        { id: "change-password", label: "Changer mot de passe", icon: <FiLock className="w-4 h-4" />, href: "/settings?tab=security" },
-        { id: "active-sessions", label: "Sessions actives", icon: <FiMonitor className="w-4 h-4" />, href: "/settings?tab=devices" },
-        { id: "trusted-devices", label: "Appareils de confiance", icon: <FiSmartphone className="w-4 h-4" />, href: "/settings?tab=devices" },
-        { id: "2fa", label: "Double authentification", icon: <FiKey className="w-4 h-4" />, badge: "Désactivé", href: "/settings?tab=security" },
-        { id: "login-history", label: "Historique connexions", icon: <FiClock className="w-4 h-4" />, href: "/settings?tab=security" },
-        { id: "face-reset", label: "Réinitialiser Face ID", icon: <FiRefreshCw className="w-4 h-4" />, href: "/settings?tab=security" },
-        { id: "cookie-settings", label: "Paramètres cookies", icon: <FiShield className="w-4 h-4" />, href: "/parametres/cookies" },
+        { id: "change-password", label: "Changer mot de passe", icon: <Lock className="w-4 h-4" />, href: "/settings?tab=security" },
+        { id: "active-sessions", label: "Sessions actives", icon: <Monitor className="w-4 h-4" />, href: "/settings?tab=devices" },
+        { id: "trusted-devices", label: "Appareils de confiance", icon: <Smartphone className="w-4 h-4" />, href: "/settings?tab=devices" },
+        { id: "2fa", label: "Double authentification", icon: <Key className="w-4 h-4" />, badge: "Désactivé", href: "/settings?tab=security" },
+        { id: "login-history", label: "Historique connexions", icon: <Clock className="w-4 h-4" />, href: "/settings?tab=security" },
+        { id: "face-reset", label: "Réinitialiser Face ID", icon: <RefreshCw className="w-4 h-4" />, href: "/settings?tab=security" },
+        { id: "cookie-settings", label: "Paramètres cookies", icon: <Shield className="w-4 h-4" />, href: "/parametres/cookies" },
       ]
     },
     {
       id: "notifications",
       label: "Notifications",
-      icon: <FiBell className="w-4 h-4" />,
+      icon: <Bell className="w-4 h-4" />,
       items: [
-        { id: "attendance-alerts", label: "Alertes pointage", icon: <FiActivity className="w-4 h-4" />, href: "/settings?tab=notifications" },
-        { id: "rh-decisions", label: "Décisions RH", icon: <FiUsers className="w-4 h-4" />, href: "/settings?tab=notifications" },
-        { id: "anomalies", label: "Anomalies", icon: <FiAlertCircle className="w-4 h-4" />, href: "/settings?tab=notifications" },
-        { id: "email-notif", label: "Notifications email", icon: <FiMail className="w-4 h-4" />, badge: "Actif", href: "/settings?tab=notifications" },
-        { id: "sound-alerts", label: "Alertes sonores", icon: <FiBell className="w-4 h-4" />, href: "/settings?tab=notifications" },
+        { id: "attendance-alerts", label: "Alertes pointage", icon: <Activity className="w-4 h-4" />, href: "/settings?tab=notifications" },
+        { id: "rh-decisions", label: "Décisions RH", icon: <Users className="w-4 h-4" />, href: "/settings?tab=notifications" },
+        { id: "anomalies", label: "Anomalies", icon: <AlertCircle className="w-4 h-4" />, href: "/settings?tab=notifications" },
+        { id: "email-notif", label: "Notifications email", icon: <Mail className="w-4 h-4" />, badge: "Actif", href: "/settings?tab=notifications" },
+        { id: "sound-alerts", label: "Alertes sonores", icon: <Bell className="w-4 h-4" />, href: "/settings?tab=notifications" },
       ]
     },
     {
       id: "appearance",
       label: "Apparence",
-      icon: <FiMoon className="w-4 h-4" />,
+      icon: <Moon className="w-4 h-4" />,
       items: [
-        { id: "theme-light", label: "Mode clair", icon: <FiSun className="w-4 h-4" />, onClick: () => handleThemeChange("light") },
-        { id: "theme-dark", label: "Mode sombre", icon: <FiMoon className="w-4 h-4" />, onClick: () => handleThemeChange("dark") },
-        { id: "theme-system", label: "Système", icon: <FiMonitor className="w-4 h-4" />, onClick: () => handleThemeChange("system") },
+        { id: "theme-light", label: "Mode clair", icon: <Sun className="w-4 h-4" />, onClick: () => handleThemeChange("light") },
+        { id: "theme-dark", label: "Mode sombre", icon: <Moon className="w-4 h-4" />, onClick: () => handleThemeChange("dark") },
+        { id: "theme-system", label: "Système", icon: <Monitor className="w-4 h-4" />, onClick: () => handleThemeChange("system") },
       ]
     }
   ];
 
   // RH-specific settings
   const rhSettings: SubMenuItem[] = [
-    { id: "employee-approvals", label: "Approbations employés", icon: <FiUsers className="w-4 h-4" />, href: "/rh/approvals", roles: ["RH", "ADMIN", "SUPER_ADMIN"] },
-    { id: "anomaly-thresholds", label: "Seuils d'anomalie", icon: <FiSliders className="w-4 h-4" />, href: "/parametres/anomalies", roles: ["RH", "ADMIN", "SUPER_ADMIN"] },
-    { id: "attendance-rules", label: "Règles de pointage", icon: <FiClock className="w-4 h-4" />, href: "/parametres/pointage", roles: ["RH", "ADMIN", "SUPER_ADMIN"] },
-    { id: "work-schedules", label: "Plannings", icon: <FiCalendar className="w-4 h-4" />, href: "/parametres/plannings", roles: ["RH", "ADMIN", "SUPER_ADMIN"] },
-    { id: "leave-policies", label: "Politiques de congés", icon: <FiFileText className="w-4 h-4" />, href: "/parametres/conges", roles: ["RH", "ADMIN", "SUPER_ADMIN"] },
+    { id: "employee-approvals", label: "Approbations employés", icon: <Users className="w-4 h-4" />, href: "/rh/approvals", roles: ["RH", "ADMIN", "SUPER_ADMIN"] },
+    { id: "anomaly-thresholds", label: "Seuils d'anomalie", icon: <SlidersHorizontal className="w-4 h-4" />, href: "/parametres/anomalies", roles: ["RH", "ADMIN", "SUPER_ADMIN"] },
+    { id: "attendance-rules", label: "Règles de pointage", icon: <Clock className="w-4 h-4" />, href: "/parametres/pointage", roles: ["RH", "ADMIN", "SUPER_ADMIN"] },
+    { id: "work-schedules", label: "Plannings", icon: <Calendar className="w-4 h-4" />, href: "/parametres/plannings", roles: ["RH", "ADMIN", "SUPER_ADMIN"] },
+    { id: "leave-policies", label: "Politiques de congés", icon: <FileText className="w-4 h-4" />, href: "/parametres/conges", roles: ["RH", "ADMIN", "SUPER_ADMIN"] },
   ];
 
   // Admin-specific settings
   const adminSettings: SubMenuItem[] = [
-    { id: "role-management", label: "Gestion des rôles", icon: <FiUsers className="w-4 h-4" />, href: "/parametres/roles", roles: ["ADMIN", "SUPER_ADMIN"] },
-    { id: "permissions", label: "Système de permissions", icon: <FiShield className="w-4 h-4" />, href: "/parametres/permissions", roles: ["SUPER_ADMIN"] },
-    { id: "system-logs", label: "Journaux système", icon: <FiFileText className="w-4 h-4" />, href: "/parametres/logs", roles: ["ADMIN", "SUPER_ADMIN"] },
-    { id: "audit-logs", label: "Journaux d'audit", icon: <FiActivity className="w-4 h-4" />, href: "/parametres/audit", roles: ["SUPER_ADMIN"] },
-    { id: "global-security", label: "Sécurité globale", icon: <FiLock className="w-4 h-4" />, href: "/parametres/security", roles: ["SUPER_ADMIN"] },
-    { id: "api-keys", label: "Clés API", icon: <FiKey className="w-4 h-4" />, href: "/parametres/api", roles: ["SUPER_ADMIN"] },
-    { id: "backup-restore", label: "Sauvegarde & Restauration", icon: <FiDownload className="w-4 h-4" />, href: "/parametres/backup", roles: ["SUPER_ADMIN"] },
+    { id: "role-management", label: "Gestion des rôles", icon: <Users className="w-4 h-4" />, href: "/parametres/roles", roles: ["ADMIN", "SUPER_ADMIN"] },
+    { id: "permissions", label: "Système de permissions", icon: <Shield className="w-4 h-4" />, href: "/parametres/permissions", roles: ["SUPER_ADMIN"] },
+    { id: "system-logs", label: "Journaux système", icon: <FileText className="w-4 h-4" />, href: "/parametres/logs", roles: ["ADMIN", "SUPER_ADMIN"] },
+    { id: "audit-logs", label: "Journaux d'audit", icon: <Activity className="w-4 h-4" />, href: "/parametres/audit", roles: ["SUPER_ADMIN"] },
+    { id: "global-security", label: "Sécurité globale", icon: <Lock className="w-4 h-4" />, href: "/parametres/security", roles: ["SUPER_ADMIN"] },
+    { id: "api-keys", label: "Clés API", icon: <Key className="w-4 h-4" />, href: "/parametres/api", roles: ["SUPER_ADMIN"] },
+    { id: "backup-restore", label: "Sauvegarde & Restauration", icon: <Download className="w-4 h-4" />, href: "/parametres/backup", roles: ["SUPER_ADMIN"] },
   ];
+
+  const safeImage = getSafeImageSrc(userImage) || getSafeImageSrc(session?.user?.image);
+  const [imageError, setImageError] = useState(false);
+
+  // Reset image error when safeImage changes
+  useEffect(() => {
+    setImageError(false);
+  }, [safeImage]);
+
+  const handleImageError = () => {
+    setImageError(true);
+  };
 
   return (
     <div ref={menuRef} className="relative">
@@ -205,11 +253,12 @@ export function ProfileMenu({ compact = false }: ProfileMenuProps) {
       >
         {/* Avatar */}
         <div className="relative">
-          {session?.user?.image ? (
+          {safeImage && !imageError ? (
             <img
-              src={session.user.image}
+              src={safeImage}
               alt="Profile"
               className="w-10 h-10 rounded-full object-cover border-2 border-gray-200 dark:border-gray-600"
+              onError={handleImageError}
             />
           ) : (
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white font-bold">
@@ -249,11 +298,12 @@ export function ProfileMenu({ compact = false }: ProfileMenuProps) {
           {/* User Info Header */}
           <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
             <div className="flex items-center gap-3">
-              {session?.user?.image ? (
+              {safeImage && !imageError ? (
                 <img
-                  src={session.user.image}
+                  src={safeImage}
                   alt="Profile"
                   className="w-12 h-12 rounded-full object-cover"
+                  onError={handleImageError}
                 />
               ) : (
                 <div className="w-12 h-12 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg">
@@ -281,9 +331,63 @@ export function ProfileMenu({ compact = false }: ProfileMenuProps) {
               className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
               onClick={() => setIsOpen(false)}
             >
-              <FiUser className="w-4 h-4 text-gray-400" />
+              <User className="w-4 h-4 text-gray-400" />
               Mon Profil
             </Link>
+
+            {/* Language Switcher */}
+            <div 
+              className="relative"
+              onMouseEnter={() => handleSubmenuEnter("language")}
+              onMouseLeave={handleSubmenuLeave}
+            >
+              <button
+                className="w-full flex items-center justify-between px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <Globe className="w-4 h-4 text-gray-400" />
+                  Langue
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full font-medium">
+                    {language.toUpperCase()}
+                  </span>
+                  <ChevronRight className="w-4 h-4 text-gray-400" />
+                </div>
+              </button>
+
+              {/* Language Submenu */}
+              {activeSubmenu === "language" && (
+                <div 
+                  className="absolute right-full top-0 mr-1 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 py-2 z-[110]"
+                  onMouseEnter={() => handleSubmenuEnter("language")}
+                  onMouseLeave={handleSubmenuLeave}
+                >
+                  <p className="px-4 py-2 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                    Sélectionner une langue
+                  </p>
+                  {languageOptions.map((lang) => (
+                    <button
+                      key={lang.code}
+                      onClick={() => handleLanguageChange(lang.code)}
+                      className={`w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors ${
+                        language === lang.code
+                          ? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400"
+                          : "text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="text-lg">{lang.flag}</span>
+                        <span>{lang.label}</span>
+                      </div>
+                      {language === lang.code && (
+                        <Check className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
 
             {/* Settings with Submenu */}
             <div 
@@ -295,10 +399,10 @@ export function ProfileMenu({ compact = false }: ProfileMenuProps) {
                 className="w-full flex items-center justify-between px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
               >
                 <div className="flex items-center gap-3">
-                  <FiSettings className="w-4 h-4 text-gray-400" />
+                  <Settings className="w-4 h-4 text-gray-400" />
                   Paramètres
                 </div>
-                <FiChevronRight className="w-4 h-4 text-gray-400" />
+                <ChevronRight className="w-4 h-4 text-gray-400" />
               </button>
 
               {/* Settings Submenu */}
@@ -331,7 +435,7 @@ export function ProfileMenu({ compact = false }: ProfileMenuProps) {
                               </span>
                             )}
                             {item.id === `theme-${theme}` && (
-                              <FiCheck className="w-4 h-4 text-green-500" />
+                              <Check className="w-4 h-4 text-green-500" />
                             )}
                           </Link>
                         ) : (
@@ -350,7 +454,7 @@ export function ProfileMenu({ compact = false }: ProfileMenuProps) {
                               </span>
                             )}
                             {item.id === `theme-${theme}` && (
-                              <FiCheck className="w-4 h-4 text-green-500" />
+                              <Check className="w-4 h-4 text-green-500" />
                             )}
                           </button>
                         )
@@ -411,7 +515,7 @@ export function ProfileMenu({ compact = false }: ProfileMenuProps) {
                   className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                   onClick={() => setIsOpen(false)}
                 >
-                  <FiFileText className="w-4 h-4 text-gray-400" />
+                  <FileText className="w-4 h-4 text-gray-400" />
                   Mes Documents
                 </Link>
                 <Link
@@ -419,7 +523,7 @@ export function ProfileMenu({ compact = false }: ProfileMenuProps) {
                   className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                   onClick={() => setIsOpen(false)}
                 >
-                  <FiClock className="w-4 h-4 text-gray-400" />
+                  <Clock className="w-4 h-4 text-gray-400" />
                   Mon Pointage
                 </Link>
                 <Link
@@ -427,7 +531,7 @@ export function ProfileMenu({ compact = false }: ProfileMenuProps) {
                   className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                   onClick={() => setIsOpen(false)}
                 >
-                  <FiCalendar className="w-4 h-4 text-gray-400" />
+                  <Calendar className="w-4 h-4 text-gray-400" />
                   Mes Congés
                 </Link>
               </>
@@ -460,7 +564,7 @@ export function ProfileMenu({ compact = false }: ProfileMenuProps) {
               className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
               onClick={() => setIsOpen(false)}
             >
-              <FiHelpCircle className="w-4 h-4 text-gray-400" />
+              <HelpCircle className="w-4 h-4 text-gray-400" />
               Aide & Support
             </Link>
           </div>
@@ -471,7 +575,7 @@ export function ProfileMenu({ compact = false }: ProfileMenuProps) {
               onClick={() => signOut({ callbackUrl: "/login" })}
               className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
             >
-              <FiLogOut className="w-4 h-4" />
+              <LogOut className="w-4 h-4" />
               Déconnexion
             </button>
           </div>

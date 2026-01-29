@@ -6,7 +6,7 @@
 "use client";
 
 import { ReactNode } from "react";
-import { FiArrowUp, FiArrowDown, FiMinus } from "react-icons/fi";
+import { ArrowUp, ArrowDown, Minus } from "lucide-react";
 
 interface QuickStatCardProps {
   title: string;
@@ -91,9 +91,9 @@ export default function QuickStatCard({
 
   const TrendIcon = () => {
     if (!trend) return null;
-    if (trend.direction === "up") return <FiArrowUp className="w-4 h-4" />;
-    if (trend.direction === "down") return <FiArrowDown className="w-4 h-4" />;
-    return <FiMinus className="w-4 h-4" />;
+    if (trend.direction === "up") return <ArrowUp className="w-4 h-4" />;
+    if (trend.direction === "down") return <ArrowDown className="w-4 h-4" />;
+    return <Minus className="w-4 h-4" />;
   };
 
   return (

@@ -1,6 +1,6 @@
 "use client"
 
-import { FiAlertTriangle, FiX } from "react-icons/fi"
+import { AlertTriangle, X } from "lucide-react"
 import { useNotification } from "@/contexts/NotificationContext"
 
 interface ConfirmationModalProps {
@@ -82,14 +82,14 @@ export default function ConfirmationModal({
         <div className="p-6">
           <div className="flex items-center justify-between mb-4">
             <div className={`p-3 rounded-xl ${styles.icon} bg-black/20`}>
-              <FiAlertTriangle className="w-6 h-6" />
+              <AlertTriangle className="w-6 h-6" />
             </div>
             <button
               onClick={handleCancel}
               className="p-2 rounded-lg hover:bg-black/20 transition-colors"
               aria-label="Fermer"
             >
-              <FiX className={`w-5 h-5 ${styles.icon}`} />
+              <X className={`w-5 h-5 ${styles.icon}`} />
             </button>
           </div>
           

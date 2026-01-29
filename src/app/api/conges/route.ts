@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { query } from "@/lib/mysql-direct";
 import { notificationService } from "@/lib/services/notification-service";
+import { emailService } from "@/lib/services/email-service";
 import { auditLogger } from "@/lib/services/audit-logger";
 import { checkRateLimit, getClientIP } from "@/lib/security-middleware";
 
@@ -76,9 +77,38 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Calculer la durée en jours
+    // Validate leave type
+    const validTypes = ['PAID', 'UNPAID', 'MATERNITE', 'MALADIE', 'PREAVIS'];
+    if (!validTypes.includes(type)) {
+      return NextResponse.json(
+        { error: "Type de congé invalide" },
+        { status: 400 }
+      );
+    }
+
+    // Parse and validate dates
     const start = new Date(startDate);
     const end = new Date(endDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Check if dates are valid
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      return NextResponse.json(
+        { error: "Format de date invalide" },
+        { status: 400 }
+      );
+    }
+
+    // Check if start date is not in the past (allow today)
+    if (start < today) {
+      return NextResponse.json(
+        { error: "La date de début ne peut pas être dans le passé" },
+        { status: 400 }
+      );
+    }
+
+    // Calculate duration
     const durationMs = end.getTime() - start.getTime();
     const duration = Math.ceil(durationMs / (1000 * 60 * 60 * 24)) + 1;
 
@@ -164,6 +194,27 @@ export async function POST(req: NextRequest) {
             demandeId
           );
           console.log(`✅ Notified ${superAdmins.length} Super Admins`);
+        }
+
+        // Send email notifications to RH
+        const rhEmail = process.env.RH_EMAIL || "rayenchraiet2000@gmail.com";
+        const formattedStartDate = start.toLocaleDateString('fr-FR');
+        const formattedEndDate = end.toLocaleDateString('fr-FR');
+        
+        try {
+          console.log(`📧 Sending email notification to RH: ${rhEmail}`);
+          await emailService.sendLeaveRequestNotificationEmail(
+            rhEmail,
+            userName,
+            type,
+            formattedStartDate,
+            formattedEndDate,
+            duration,
+            reason || ""
+          );
+          console.log(`✅ Email sent to RH`);
+        } catch (emailError) {
+          console.error("❌ Error sending email:", emailError);
         }
       } else {
         console.warn("⚠️ No RH or SUPER_ADMIN users found!");

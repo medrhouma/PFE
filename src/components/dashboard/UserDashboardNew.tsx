@@ -2,7 +2,7 @@
 
 import { useSession } from "next-auth/react"
 import Link from "next/link"
-import { FiCalendar, FiClock, FiFileText, FiTrendingUp, FiUser, FiAward, FiTarget, FiActivity } from "react-icons/fi"
+import { Calendar, Clock, FileText, TrendingUp, User, Award, Target, Activity } from "lucide-react"
 import { useEffect, useState } from "react"
 
 export default function UserDashboard() {
@@ -38,7 +38,7 @@ export default function UserDashboard() {
     {
       title: "Demande de congé",
       description: "Soumettre une nouvelle demande",
-      icon: FiCalendar,
+      icon: Calendar,
       href: "/conges",
       color: "from-purple-500 to-purple-600",
       bgColor: "bg-purple-50 dark:bg-purple-900/20",
@@ -47,7 +47,7 @@ export default function UserDashboard() {
     {
       title: "Pointage",
       description: "Enregistrer arrivée/départ",
-      icon: FiClock,
+      icon: Clock,
       href: "/pointage",
       color: "from-blue-500 to-blue-600",
       bgColor: "bg-blue-50 dark:bg-blue-900/20",
@@ -56,7 +56,7 @@ export default function UserDashboard() {
     {
       title: "Documents",
       description: "Mes documents RH",
-      icon: FiFileText,
+      icon: FileText,
       href: "/documents",
       color: "from-teal-500 to-teal-600",
       bgColor: "bg-teal-50 dark:bg-teal-900/20",
@@ -65,7 +65,7 @@ export default function UserDashboard() {
     {
       title: "Mon Profil",
       description: "Informations personnelles",
-      icon: FiUser,
+      icon: User,
       href: "/profile",
       color: "from-orange-500 to-orange-600",
       bgColor: "bg-orange-50 dark:bg-orange-900/20",
@@ -77,7 +77,7 @@ export default function UserDashboard() {
     {
       title: "Congés approuvés",
       value: stats.approvedLeaves,
-      icon: FiAward,
+      icon: Award,
       color: "from-green-500 to-emerald-600",
       bgColor: "bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20",
       iconBg: "bg-green-500",
@@ -86,7 +86,7 @@ export default function UserDashboard() {
     {
       title: "En attente",
       value: stats.pendingLeaves,
-      icon: FiClock,
+      icon: Clock,
       color: "from-amber-500 to-orange-600",
       bgColor: "bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20",
       iconBg: "bg-amber-500",
@@ -95,7 +95,7 @@ export default function UserDashboard() {
     {
       title: "Total jours",
       value: stats.totalDays,
-      icon: FiTarget,
+      icon: Target,
       color: "from-purple-500 to-violet-600",
       bgColor: "bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-900/20 dark:to-violet-900/20",
       iconBg: "bg-purple-500",
@@ -104,7 +104,7 @@ export default function UserDashboard() {
     {
       title: "Performance",
       value: "98%",
-      icon: FiActivity,
+      icon: Activity,
       color: "from-cyan-500 to-blue-600",
       bgColor: "bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-900/20 dark:to-blue-900/20",
       iconBg: "bg-cyan-500",
@@ -125,11 +125,11 @@ export default function UserDashboard() {
           <div className="relative z-10">
             <div className="flex items-center gap-4 mb-4">
               <div className="w-16 h-16 bg-white/20 backdrop-blur-xl rounded-2xl flex items-center justify-center shadow-xl">
-                <FiUser className="w-8 h-8 text-white" />
+                <User className="w-8 h-8 text-white" />
               </div>
               <div>
                 <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
-                  Bienvenue, {session?.user?.name || "Employé"}! 👋
+                  Bienvenue, {session?.user?.name || "Employé"}
                 </h1>
                 <p className="text-purple-100 text-lg">
                   Votre espace personnel de gestion
@@ -168,7 +168,7 @@ export default function UserDashboard() {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-              <FiTrendingUp className="w-7 h-7 text-purple-600" />
+              <TrendingUp className="w-7 h-7 text-purple-600" />
               Actions rapides
             </h2>
           </div>
@@ -206,7 +206,7 @@ export default function UserDashboard() {
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="bg-gradient-to-r from-purple-600 to-indigo-600 px-6 py-4">
             <h3 className="text-xl font-bold text-white flex items-center gap-2">
-              <FiUser className="w-5 h-5" />
+              <User className="w-5 h-5" />
               Informations personnelles
             </h3>
           </div>
@@ -216,7 +216,7 @@ export default function UserDashboard() {
               <div className="space-y-4">
                 <div className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
                   <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
-                    <FiUser className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                    <User className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                   </div>
                   <div>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Nom complet</p>
@@ -226,7 +226,7 @@ export default function UserDashboard() {
 
                 <div className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
                   <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
-                    <FiFileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                    <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                   </div>
                   <div>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Email</p>
@@ -238,7 +238,7 @@ export default function UserDashboard() {
               <div className="space-y-4">
                 <div className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
                   <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
-                    <FiAward className="w-5 h-5 text-green-600 dark:text-green-400" />
+                    <Award className="w-5 h-5 text-green-600 dark:text-green-400" />
                   </div>
                   <div>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Rôle</p>
@@ -248,7 +248,7 @@ export default function UserDashboard() {
 
                 <div className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
                   <div className="w-10 h-10 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex items-center justify-center">
-                    <FiActivity className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                    <Activity className="w-5 h-5 text-amber-600 dark:text-amber-400" />
                   </div>
                   <div>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Statut</p>

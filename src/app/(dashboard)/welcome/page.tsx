@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { FiCheckCircle, FiClock, FiFileText, FiUsers, FiArrowRight } from "react-icons/fi";
+import { CheckCircle, Clock, FileText, Users, ArrowRight } from "lucide-react";
 
 export default function WelcomePage() {
   const router = useRouter();
@@ -22,7 +22,7 @@ export default function WelcomePage() {
         {/* Success Animation */}
         <div className="mb-8 animate-bounce">
           <div className="mx-auto w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-2xl">
-            <FiCheckCircle className="w-16 h-16 text-green-500" />
+            <CheckCircle className="w-16 h-16 text-green-500" />
           </div>
         </div>
 
@@ -39,7 +39,7 @@ export default function WelcomePage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
           <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20 hover:bg-white/20 transition-all">
             <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center mx-auto mb-4">
-              <FiClock className="w-6 h-6 text-white" />
+              <Clock className="w-6 h-6 text-white" />
             </div>
             <h3 className="text-lg font-semibold text-white mb-2">Pointage</h3>
             <p className="text-sm text-violet-100">
@@ -49,7 +49,7 @@ export default function WelcomePage() {
 
           <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20 hover:bg-white/20 transition-all">
             <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center mx-auto mb-4">
-              <FiFileText className="w-6 h-6 text-white" />
+              <FileText className="w-6 h-6 text-white" />
             </div>
             <h3 className="text-lg font-semibold text-white mb-2">Congés</h3>
             <p className="text-sm text-violet-100">
@@ -59,7 +59,7 @@ export default function WelcomePage() {
 
           <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20 hover:bg-white/20 transition-all">
             <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center mx-auto mb-4">
-              <FiUsers className="w-6 h-6 text-white" />
+              <Users className="w-6 h-6 text-white" />
             </div>
             <h3 className="text-lg font-semibold text-white mb-2">Profil</h3>
             <p className="text-sm text-violet-100">
@@ -74,7 +74,7 @@ export default function WelcomePage() {
           className="group px-8 py-4 bg-white text-violet-600 rounded-xl font-semibold shadow-xl hover:shadow-2xl transition-all transform hover:scale-105 inline-flex items-center gap-3"
         >
           Accéder à la plateforme
-          <FiArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+          <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
         </button>
 
         {/* Auto-redirect notice */}

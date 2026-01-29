@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { query, execute } from "@/lib/mysql-direct";
 import { notificationService } from "@/lib/services/notification-service";
 
 export async function POST(req: NextRequest) {
@@ -29,33 +29,31 @@ export async function POST(req: NextRequest) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const lastCheckIn = await prisma.pointage.findFirst({
-      where: {
-        userId: session.user.id,
-        type: 'IN',
-        timestamp: { gte: today }
-      },
-      orderBy: { timestamp: 'desc' },
-      select: { id: true, timestamp: true }
-    });
+    const lastCheckIns: any[] = await query(
+      `SELECT id, timestamp FROM Pointage 
+       WHERE user_id = ? AND type = 'IN' AND timestamp >= ?
+       ORDER BY timestamp DESC LIMIT 1`,
+      [session.user.id, today.toISOString()]
+    );
 
-    if (!lastCheckIn) {
+    if (!lastCheckIns || lastCheckIns.length === 0) {
       return NextResponse.json(
         { error: "Aucun check-in trouvé pour aujourd'hui" },
         { status: 400 }
       );
     }
 
-    // Vérifier si ce check-in a déjà un check-out
-    const existingCheckOut = await prisma.pointage.findFirst({
-      where: {
-        userId: session.user.id,
-        type: 'OUT',
-        timestamp: { gte: lastCheckIn.timestamp }
-      }
-    });
+    const lastCheckIn = lastCheckIns[0];
 
-    if (existingCheckOut) {
+    // Vérifier si ce check-in a déjà un check-out
+    const existingCheckOuts: any[] = await query(
+      `SELECT id FROM Pointage 
+       WHERE user_id = ? AND type = 'OUT' AND timestamp >= ?
+       LIMIT 1`,
+      [session.user.id, new Date(lastCheckIn.timestamp).toISOString()]
+    );
+
+    if (existingCheckOuts && existingCheckOuts.length > 0) {
       return NextResponse.json(
         { error: "Un check-out existe déjà pour ce check-in" },
         { status: 400 }
@@ -92,25 +90,26 @@ export async function POST(req: NextRequest) {
       anomalyReason = "Durée de travail excessive (plus de 12 heures)";
     }
 
-    // Insérer le check-out avec Prisma
-    await prisma.pointage.create({
-      data: {
-        id: pointageId,
-        userId: session.user.id,
-        type: 'OUT',
-        timestamp: timestamp,
-        status: anomalyDetected ? 'PENDING_REVIEW' : 'VALID',
-        ipAddress: ipAddress,
-        geolocation: geolocation ? JSON.stringify(geolocation) : null,
-        capturedPhoto: capturedPhoto || null,
-        faceVerified: faceVerified || false,
-        verificationScore: verificationScore || null,
-        anomalyDetected: anomalyDetected,
-        anomalyReason: anomalyReason,
-        notes: `Check-in ID: ${checkInId}, Durée: ${hoursWorked.toFixed(2)}h`
-      }
-    });
-
+    // Insérer le check-out avec mysql-direct
+    await execute(
+      `INSERT INTO Pointage (id, user_id, type, timestamp, status, ip_address, geolocation, captured_photo, face_verified, verification_score, anomaly_detected, anomaly_reason, hours_worked, check_in_id, created_at, updated_at)
+       VALUES (?, ?, 'OUT', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+      [
+        pointageId,
+        session.user.id,
+        timestamp,
+        anomalyDetected ? 'PENDING' : 'VALID',
+        ipAddress,
+        geolocation ? JSON.stringify(geolocation) : null,
+        capturedPhoto || null,
+        faceVerified ? 1 : 0,
+        verificationScore || null,
+        anomalyDetected ? 1 : 0,
+        anomalyReason,
+        hoursWorked,
+        checkInId
+      ]
+    );
 
     // Send notifications
     try {
@@ -128,37 +127,32 @@ export async function POST(req: NextRequest) {
         );
       }
 
-        // Notify RH and SUPER_ADMIN for all pointages (success or anomaly)
-        const rhUsers = await prisma.user.findMany({
-          where: {
-            roleEnum: { in: ['RH', 'SUPER_ADMIN'] },
-            status: 'ACTIVE'
-          },
-          select: { id: true }
-        });
+      // Notify RH and SUPER_ADMIN for all pointages (success or anomaly)
+      const rhUsers: any[] = await query(
+        `SELECT id FROM User WHERE role IN ('RH', 'SUPER_ADMIN') AND status = 'ACTIVE'`,
+        []
+      );
 
-        if (rhUsers && rhUsers.length > 0) {
-          const rhUserIds = rhUsers.map(rh => rh.id);
-          const userName = session.user.name || session.user.email || "Utilisateur";
+      if (rhUsers && rhUsers.length > 0) {
+        const rhUserIds = rhUsers.map(rh => rh.id);
+        const userName = session.user.name || session.user.email || "Utilisateur";
 
-          if (anomalyDetected) {
-            await notificationService.notifyRHPointageAnomaly(
-              rhUserIds,
-              userName,
-              "CHECK_OUT_ANOMALY",
-              anomalyReason || "Anomalie détectée lors du pointage"
-            );
-          } else {
-            // Note: Uncomment below to notify RH of successful pointages
-            // This can generate many notifications. Only enable if needed.
-            await notificationService.notifyRHPointageSuccess(
-              rhUserIds,
-              userName,
-              "check-out",
-              timestamp.toISOString()
-            );
-          }
+        if (anomalyDetected) {
+          await notificationService.notifyRHPointageAnomaly(
+            rhUserIds,
+            userName,
+            "CHECK_OUT_ANOMALY",
+            anomalyReason || "Anomalie détectée lors du pointage"
+          );
+        } else {
+          await notificationService.notifyRHPointageSuccess(
+            rhUserIds,
+            userName,
+            "check-out",
+            timestamp.toISOString()
+          );
         }
+      }
     } catch (notifError) {
       console.error("Error sending notification:", notifError);
       // Continue even if notification fails

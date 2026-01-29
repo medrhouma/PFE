@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { withAuth, SessionUser } from "@/lib/rbac";
-import { prisma } from "@/lib/prisma";
+import { query } from "@/lib/mysql-direct";
 
 export async function GET(
   req: NextRequest,
@@ -15,52 +15,41 @@ export async function GET(
   return withAuth(
     async (request: NextRequest, user: SessionUser) => {
       try {
-        // Get complete employee profile with all relations
-        const employee = await prisma.employe.findUnique({
-          where: { id },
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                lastName: true,
-                email: true,
-                emailVerified: true,
-                telephone: true,
-                adresse: true,
-                roleEnum: true,
-                status: true,
-                createdAt: true,
-                updatedAt: true,
-              },
-            },
-            rhDecisions: {
-              include: {
-                decider: {
-                  select: {
-                    id: true,
-                    name: true,
-                    email: true,
-                  },
-                },
-              },
-              orderBy: { createdAt: "desc" },
-            },
-          },
-        });
+        // Get complete employee profile
+        const employees = await query(
+          `SELECT e.*, u.id as user_id, u.name, u.last_name, u.email, u.emailVerified, 
+                  u.telephone as user_telephone, u.adresse as user_adresse, u.role, u.status as user_status,
+                  u.created_at, u.updated_at
+           FROM Employe e
+           LEFT JOIN User u ON e.userId = u.id
+           WHERE e.id = ? LIMIT 1`,
+          [id]
+        ) as any[];
 
-        if (!employee) {
+        if (!employees || employees.length === 0) {
           return NextResponse.json(
             { error: "Employee not found" },
             { status: 404 }
           );
         }
 
+        const employee = employees[0];
+
+        // Get RH decisions with decider info
+        const rhDecisions = await query(
+          `SELECT rd.*, d.id as decider_id, d.name as decider_name, d.email as decider_email
+           FROM RHDecision rd
+           LEFT JOIN User d ON rd.deciderId = d.id
+           WHERE rd.employeId = ?
+           ORDER BY rd.createdAt DESC`,
+          [id]
+        ) as any[];
+
         // Get employee documents
-        const dossiers = await prisma.dossierEmploye.findMany({
-          where: { userId: employee.userId },
-          orderBy: { dateObtention: "desc" },
-        });
+        const dossiers = await query(
+          `SELECT * FROM DossierEmploye WHERE userId = ? ORDER BY dateObtention DESC`,
+          [employee.userId]
+        ) as any[];
 
         // Parse autres_documents if exists
         let autresDocuments = [];
@@ -72,14 +61,40 @@ export async function GET(
           }
         }
 
+        // Format user data
+        const userData = {
+          id: employee.user_id,
+          name: employee.name,
+          lastName: employee.last_name,
+          email: employee.email,
+          emailVerified: employee.emailVerified,
+          telephone: employee.user_telephone,
+          adresse: employee.user_adresse,
+          roleEnum: employee.role,
+          status: employee.user_status,
+          createdAt: employee.created_at,
+          updatedAt: employee.updated_at,
+        };
+
+        // Format RH decisions with decider
+        const formattedDecisions = rhDecisions.map((rd: any) => ({
+          ...rd,
+          decider: rd.decider_id ? {
+            id: rd.decider_id,
+            name: rd.decider_name,
+            email: rd.decider_email,
+          } : null,
+        }));
+
         // Return complete dossier
         return NextResponse.json({
           employee: {
             ...employee,
+            user: userData,
             autresDocuments, // Parsed JSON
           },
           dossiers, // Official documents (diplomes, certificats, etc.)
-          history: employee.rhDecisions, // Decision history
+          history: formattedDecisions, // Decision history
           stats: {
             totalDocuments: dossiers.length + autresDocuments.length,
             hasPhoto: !!employee.photo,

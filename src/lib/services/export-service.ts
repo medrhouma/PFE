@@ -5,7 +5,6 @@
  */
 
 import { query } from "@/lib/mysql-direct";
-import { prisma } from "@/lib/prisma";
 
 export interface ExportOptions {
   format: 'excel' | 'csv' | 'pdf';
@@ -192,7 +191,7 @@ class ExportService {
       const pointages = await query(`
         SELECT 
           p.id,
-          CONCAT(COALESCE(u.name, ''), ' ', COALESCE(u.last_name, '')) as employeeName,
+          COALESCE(u.name, '') as employeeName,
           p.type,
           DATE_FORMAT(p.timestamp, '%d/%m/%Y %H:%i:%s') as timestamp,
           p.status,
@@ -200,7 +199,7 @@ class ExportService {
           p.anomaly_detected as anomalyDetected,
           p.anomaly_reason as anomalyReason,
           p.ip_address as ipAddress
-        FROM pointages p
+        FROM Pointage p
         LEFT JOIN User u ON p.user_id = u.id
         ${whereClause}
         ORDER BY p.timestamp DESC
@@ -274,7 +273,7 @@ class ExportService {
       const conges = await query(`
         SELECT 
           c.id,
-          CONCAT(COALESCE(u.name, ''), ' ', COALESCE(u.last_name, '')) as employeeName,
+          COALESCE(u.name, '') as employeeName,
           c.type,
           DATE_FORMAT(c.date_debut, '%d/%m/%Y') as dateDebut,
           DATE_FORMAT(c.date_fin, '%d/%m/%Y') as dateFin,
@@ -374,7 +373,7 @@ class ExportService {
       const logs = await query(`
         SELECT 
           a.id,
-          CONCAT(COALESCE(u.name, 'System'), ' ', COALESCE(u.last_name, '')) as userName,
+          COALESCE(u.name, 'System') as userName,
           a.action,
           a.entity_type as entityType,
           a.entity_id as entityId,
@@ -436,14 +435,14 @@ class ExportService {
       const report = await query(`
         SELECT 
           u.id as userId,
-          CONCAT(COALESCE(u.name, ''), ' ', COALESCE(u.last_name, '')) as employeeName,
+          COALESCE(u.name, '') as employeeName,
           DATE(p.timestamp) as date,
           MIN(CASE WHEN p.type = 'IN' THEN TIME(p.timestamp) END) as firstIn,
           MAX(CASE WHEN p.type = 'OUT' THEN TIME(p.timestamp) END) as lastOut,
           COUNT(CASE WHEN p.type = 'IN' THEN 1 END) as checkIns,
           COUNT(CASE WHEN p.type = 'OUT' THEN 1 END) as checkOuts,
           SUM(CASE WHEN p.anomaly_detected = 1 THEN 1 ELSE 0 END) as anomalies
-        FROM pointages p
+        FROM Pointage p
         LEFT JOIN User u ON p.user_id = u.id
         WHERE DATE(p.timestamp) BETWEEN ? AND ?
         ${userFilter}

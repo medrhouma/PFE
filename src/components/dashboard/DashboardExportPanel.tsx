@@ -8,7 +8,7 @@
 import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { useQuickExport } from "@/hooks/useExport";
-import { FiDownload, FiCalendar, FiUsers, FiClock, FiFileText, FiChevronDown } from "react-icons/fi";
+import { Download, Calendar, Users, Clock, FileText, ChevronDown } from "lucide-react";
 
 interface ExportPanelProps {
   className?: string;
@@ -54,7 +54,7 @@ export default function DashboardExportPanel({
         >
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-              <FiDownload className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              <Download className="w-5 h-5 text-blue-600 dark:text-blue-400" />
             </div>
             <div className="text-left">
               <p className="font-semibold text-gray-900 dark:text-white">Exporter des données</p>
@@ -63,7 +63,7 @@ export default function DashboardExportPanel({
               </p>
             </div>
           </div>
-          <FiChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+          <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
         </button>
 
         {/* Expanded content */}
@@ -98,7 +98,7 @@ export default function DashboardExportPanel({
                 disabled={isExporting}
                 className="flex items-center justify-center gap-2 px-3 py-2 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors text-sm font-medium"
               >
-                <FiClock className="w-4 h-4" />
+                <Clock className="w-4 h-4" />
                 Mes pointages
               </button>
 
@@ -107,7 +107,7 @@ export default function DashboardExportPanel({
                 disabled={isExporting}
                 className="flex items-center justify-center gap-2 px-3 py-2 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors text-sm font-medium"
               >
-                <FiCalendar className="w-4 h-4" />
+                <Calendar className="w-4 h-4" />
                 Mes congés
               </button>
 
@@ -118,7 +118,7 @@ export default function DashboardExportPanel({
                     disabled={isExporting}
                     className="flex items-center justify-center gap-2 px-3 py-2 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors text-sm font-medium"
                   >
-                    <FiUsers className="w-4 h-4" />
+                    <Users className="w-4 h-4" />
                     Employés
                   </button>
 
@@ -127,7 +127,7 @@ export default function DashboardExportPanel({
                     disabled={isExporting}
                     className="flex items-center justify-center gap-2 px-3 py-2 bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded-lg hover:bg-orange-100 dark:hover:bg-orange-900/50 transition-colors text-sm font-medium"
                   >
-                    <FiFileText className="w-4 h-4" />
+                    <FileText className="w-4 h-4" />
                     Rapport mensuel
                   </button>
                 </>
@@ -159,7 +159,7 @@ export default function DashboardExportPanel({
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg">
-            <FiDownload className="w-6 h-6 text-white" />
+            <Download className="w-6 h-6 text-white" />
           </div>
           <div>
             <h3 className="text-lg font-bold text-gray-900 dark:text-white">
@@ -208,7 +208,7 @@ export default function DashboardExportPanel({
           className="flex items-center gap-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-all group"
         >
           <div className="w-12 h-12 rounded-lg bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center group-hover:scale-110 transition-transform">
-            <FiClock className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+            <Clock className="w-6 h-6 text-blue-600 dark:text-blue-400" />
           </div>
           <div className="text-left">
             <p className="font-semibold text-gray-900 dark:text-white">
@@ -227,7 +227,7 @@ export default function DashboardExportPanel({
           className="flex items-center gap-4 p-4 bg-green-50 dark:bg-green-900/20 rounded-xl hover:bg-green-100 dark:hover:bg-green-900/40 transition-all group"
         >
           <div className="w-12 h-12 rounded-lg bg-green-100 dark:bg-green-900/50 flex items-center justify-center group-hover:scale-110 transition-transform">
-            <FiCalendar className="w-6 h-6 text-green-600 dark:text-green-400" />
+            <Calendar className="w-6 h-6 text-green-600 dark:text-green-400" />
           </div>
           <div className="text-left">
             <p className="font-semibold text-gray-900 dark:text-white">
@@ -248,7 +248,7 @@ export default function DashboardExportPanel({
               className="flex items-center gap-4 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl hover:bg-purple-100 dark:hover:bg-purple-900/40 transition-all group"
             >
               <div className="w-12 h-12 rounded-lg bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <FiUsers className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                <Users className="w-6 h-6 text-purple-600 dark:text-purple-400" />
               </div>
               <div className="text-left">
                 <p className="font-semibold text-gray-900 dark:text-white">
@@ -266,7 +266,7 @@ export default function DashboardExportPanel({
               className="flex items-center gap-4 p-4 bg-orange-50 dark:bg-orange-900/20 rounded-xl hover:bg-orange-100 dark:hover:bg-orange-900/40 transition-all group"
             >
               <div className="w-12 h-12 rounded-lg bg-orange-100 dark:bg-orange-900/50 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <FiFileText className="w-6 h-6 text-orange-600 dark:text-orange-400" />
+                <FileText className="w-6 h-6 text-orange-600 dark:text-orange-400" />
               </div>
               <div className="text-left">
                 <p className="font-semibold text-gray-900 dark:text-white">
@@ -292,7 +292,7 @@ export default function DashboardExportPanel({
             className="flex items-center gap-4 p-4 bg-red-50 dark:bg-red-900/20 rounded-xl hover:bg-red-100 dark:hover:bg-red-900/40 transition-all group sm:col-span-2"
           >
             <div className="w-12 h-12 rounded-lg bg-red-100 dark:bg-red-900/50 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <FiFileText className="w-6 h-6 text-red-600 dark:text-red-400" />
+              <FileText className="w-6 h-6 text-red-600 dark:text-red-400" />
             </div>
             <div className="text-left">
               <p className="font-semibold text-gray-900 dark:text-white">

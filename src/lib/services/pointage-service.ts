@@ -3,7 +3,7 @@
  * Manages employee attendance with security and anomaly detection
  */
 
-import { prisma } from "@/lib/prisma";
+import { query, execute } from "@/lib/mysql-direct";
 import { auditLogger } from "./audit-logger";
 import { notificationService } from "./notification-service";
 
@@ -46,21 +46,35 @@ class PointageService {
       }
       
       // Create pointage
-      const pointage = await prisma.pointage.create({
-        data: {
-          userId: params.userId,
-          type: params.type,
-          deviceFingerprintId,
-          ipAddress: params.ipAddress,
-          geolocation: params.geolocation ? JSON.stringify(params.geolocation) : null,
-          capturedPhoto: params.capturedPhoto,
-          faceVerified: params.faceVerified || false,
-          verificationScore: params.verificationScore,
-          anomalyDetected: anomalyCheck.hasAnomaly,
-          anomalyReason: anomalyCheck.reason,
-          status: anomalyCheck.hasAnomaly ? "PENDING_REVIEW" : "VALID",
-        },
-      });
+      const pointageId = `ptg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const status = anomalyCheck.hasAnomaly ? "PENDING_REVIEW" : "VALID";
+      
+      await execute(
+        `INSERT INTO Pointage (id, user_id, type, deviceFingerprintId, ip_address, geolocation, capturedPhoto, face_verified, verificationScore, anomaly_detected, anomaly_reason, status, timestamp)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+        [
+          pointageId,
+          params.userId,
+          params.type,
+          deviceFingerprintId || null,
+          params.ipAddress || null,
+          params.geolocation ? JSON.stringify(params.geolocation) : null,
+          params.capturedPhoto || null,
+          params.faceVerified ? 1 : 0,
+          params.verificationScore || null,
+          anomalyCheck.hasAnomaly ? 1 : 0,
+          anomalyCheck.reason || null,
+          status
+        ]
+      );
+      
+      const pointage = {
+        id: pointageId,
+        userId: params.userId,
+        type: params.type,
+        status,
+        anomalyDetected: anomalyCheck.hasAnomaly,
+      };
       
       // Create anomaly record if detected
       if (anomalyCheck.hasAnomaly) {
@@ -68,8 +82,8 @@ class PointageService {
           type: anomalyCheck.anomalyType!,
           severity: anomalyCheck.severity!,
           entityType: "pointage",
-          entityId: pointage.id,
-          pointageId: pointage.id,
+          entityId: pointageId,
+          pointageId: pointageId,
           description: anomalyCheck.reason!,
           metadata: {
             userId: params.userId,
@@ -92,7 +106,7 @@ class PointageService {
         userId: params.userId,
         action: `POINTAGE_${params.type}`,
         entityType: "Pointage",
-        entityId: pointage.id,
+        entityId: pointageId,
         metadata: {
           anomalyDetected: anomalyCheck.hasAnomaly,
           faceVerified: params.faceVerified,
@@ -135,15 +149,12 @@ class PointageService {
     
     // Check 3: Duplicate pointage (same type within 5 minutes)
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-    const recentPointage = await prisma.pointage.findFirst({
-      where: {
-        userId: params.userId,
-        type: params.type,
-        timestamp: { gte: fiveMinutesAgo },
-      },
-    });
+    const recentPointages = await query(
+      `SELECT id FROM Pointage WHERE user_id = ? AND type = ? AND timestamp >= ? LIMIT 1`,
+      [params.userId, params.type, fiveMinutesAgo]
+    ) as any[];
     
-    if (recentPointage) {
+    if (recentPointages.length > 0) {
       return {
         hasAnomaly: true,
         anomalyType: "DUPLICATE_POINTAGE",
@@ -154,12 +165,12 @@ class PointageService {
     
     // Check 4: Missing check-out (if checking IN but last was also IN)
     if (params.type === "IN") {
-      const lastPointage = await prisma.pointage.findFirst({
-        where: { userId: params.userId },
-        orderBy: { timestamp: "desc" },
-      });
+      const lastPointages = await query(
+        `SELECT id, type FROM Pointage WHERE user_id = ? ORDER BY timestamp DESC LIMIT 1`,
+        [params.userId]
+      ) as any[];
       
-      if (lastPointage && lastPointage.type === "IN") {
+      if (lastPointages.length > 0 && lastPointages[0].type === "IN") {
         return {
           hasAnomaly: true,
           anomalyType: "MISSING_CHECKOUT",
@@ -171,18 +182,16 @@ class PointageService {
     
     // Check 5: Multiple devices (more than 3 different devices in last 7 days)
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    const deviceCount = await prisma.deviceFingerprint.count({
-      where: {
-        userId: params.userId,
-        lastSeen: { gte: sevenDaysAgo },
-      },
-    });
+    const deviceCountResult = await query(
+      `SELECT COUNT(*) as count FROM DeviceFingerprint WHERE userId = ? AND lastSeen >= ?`,
+      [params.userId, sevenDaysAgo]
+    ) as any[];
     
-    if (deviceCount > 3) {
+    if (deviceCountResult[0]?.count > 3) {
       return {
         hasAnomaly: true,
         anomalyType: "MULTIPLE_DEVICES",
-        reason: `Utilisation de ${deviceCount} appareils différents en 7 jours`,
+        reason: `Utilisation de ${deviceCountResult[0].count} appareils différents en 7 jours`,
         severity: "MEDIUM",
       };
     }
@@ -201,35 +210,39 @@ class PointageService {
     const fpData = JSON.parse(fingerprint);
     
     // Try to find existing fingerprint
-    const existing = await prisma.deviceFingerprint.findFirst({
-      where: {
-        userId,
-        fingerprint,
-      },
-    });
+    const existing = await query(
+      `SELECT id FROM DeviceFingerprint WHERE userId = ? AND fingerprint = ? LIMIT 1`,
+      [userId, fingerprint]
+    ) as any[];
     
-    if (existing) {
+    if (existing.length > 0) {
       // Update last seen
-      return await prisma.deviceFingerprint.update({
-        where: { id: existing.id },
-        data: { lastSeen: new Date() },
-      });
+      await execute(
+        `UPDATE DeviceFingerprint SET lastSeen = NOW() WHERE id = ?`,
+        [existing[0].id]
+      );
+      return { id: existing[0].id };
     }
     
     // Create new fingerprint
-    return await prisma.deviceFingerprint.create({
-      data: {
+    const deviceId = `dev_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    await execute(
+      `INSERT INTO DeviceFingerprint (id, userId, fingerprint, userAgent, platform, browser, screenResolution, timezone, language, isTrusted, firstSeen, lastSeen)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, NOW(), NOW())`,
+      [
+        deviceId,
         userId,
         fingerprint,
         userAgent,
-        platform: fpData.platform,
-        browser: fpData.browser,
-        screenResolution: fpData.screenResolution,
-        timezone: fpData.timezone,
-        language: fpData.language,
-        isTrusted: false, // RH must approve trusted devices
-      },
-    });
+        fpData.platform || null,
+        fpData.browser || null,
+        fpData.screenResolution || null,
+        fpData.timezone || null,
+        fpData.language || null,
+      ]
+    );
+    
+    return { id: deviceId };
   }
 
   /**
@@ -244,40 +257,56 @@ class PointageService {
     description: string;
     metadata?: any;
   }) {
-    return await prisma.anomaly.create({
-      data: {
-        type: params.type as any,
-        severity: params.severity,
-        entityType: params.entityType,
-        entityId: params.entityId,
-        pointageId: params.pointageId,
-        description: params.description,
-        metadata: params.metadata ? JSON.stringify(params.metadata) : null,
-        status: "PENDING",
-      },
-    });
+    const anomalyId = `anom_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    await execute(
+      `INSERT INTO Anomaly (id, type, severity, entityType, entityId, pointageId, description, metadata, status, createdAt)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'PENDING', NOW())`,
+      [
+        anomalyId,
+        params.type,
+        params.severity,
+        params.entityType,
+        params.entityId,
+        params.pointageId || null,
+        params.description,
+        params.metadata ? JSON.stringify(params.metadata) : null,
+      ]
+    );
+    return { id: anomalyId };
   }
 
   /**
    * Get user pointages
    */
   async getUserPointages(userId: string, startDate?: Date, endDate?: Date) {
-    const where: any = { userId };
+    let sql = `SELECT p.*, df.* FROM Pointage p
+               LEFT JOIN DeviceFingerprint df ON p.deviceFingerprintId = df.id
+               WHERE p.user_id = ?`;
+    const params: any[] = [userId];
     
-    if (startDate || endDate) {
-      where.timestamp = {};
-      if (startDate) where.timestamp.gte = startDate;
-      if (endDate) where.timestamp.lte = endDate;
+    if (startDate) {
+      sql += ` AND p.timestamp >= ?`;
+      params.push(startDate);
+    }
+    if (endDate) {
+      sql += ` AND p.timestamp <= ?`;
+      params.push(endDate);
     }
     
-    return await prisma.pointage.findMany({
-      where,
-      orderBy: { timestamp: "desc" },
-      include: {
-        deviceFingerprint: true,
-        anomalies: true,
-      },
-    });
+    sql += ` ORDER BY p.timestamp DESC`;
+    
+    const pointages = await query(sql, params) as any[];
+    
+    // Get anomalies for each pointage
+    for (const p of pointages) {
+      const anomalies = await query(
+        `SELECT * FROM Anomaly WHERE pointageId = ?`,
+        [p.id]
+      ) as any[];
+      p.anomalies = anomalies;
+    }
+    
+    return pointages;
   }
 
   /**
@@ -285,19 +314,16 @@ class PointageService {
    */
   async getUserStats(userId: string, month?: number, year?: number) {
     const now = new Date();
-    const targetMonth = month || now.getMonth();
-    const targetYear = year || now.getFullYear();
+    const targetMonth = month ?? now.getMonth();
+    const targetYear = year ?? now.getFullYear();
     
     const startDate = new Date(targetYear, targetMonth, 1);
     const endDate = new Date(targetYear, targetMonth + 1, 0, 23, 59, 59);
     
-    const pointages = await prisma.pointage.findMany({
-      where: {
-        userId,
-        timestamp: { gte: startDate, lte: endDate },
-      },
-      orderBy: { timestamp: "asc" },
-    });
+    const pointages = await query(
+      `SELECT * FROM Pointage WHERE user_id = ? AND timestamp >= ? AND timestamp <= ? ORDER BY timestamp ASC`,
+      [userId, startDate, endDate]
+    ) as any[];
     
     // Calculate worked hours
     let totalHours = 0;
@@ -305,9 +331,9 @@ class PointageService {
     
     for (const p of pointages) {
       if (p.type === "IN") {
-        currentCheckIn = p.timestamp;
+        currentCheckIn = new Date(p.timestamp);
       } else if (p.type === "OUT" && currentCheckIn) {
-        const diff = p.timestamp.getTime() - currentCheckIn.getTime();
+        const diff = new Date(p.timestamp).getTime() - currentCheckIn.getTime();
         totalHours += diff / (1000 * 60 * 60);
         currentCheckIn = null;
       }
@@ -317,10 +343,10 @@ class PointageService {
       month: targetMonth,
       year: targetYear,
       totalPointages: pointages.length,
-      totalCheckIns: pointages.filter((p) => p.type === "IN").length,
-      totalCheckOuts: pointages.filter((p) => p.type === "OUT").length,
+      totalCheckIns: pointages.filter((p: any) => p.type === "IN").length,
+      totalCheckOuts: pointages.filter((p: any) => p.type === "OUT").length,
       totalHours: Math.round(totalHours * 100) / 100,
-      anomalies: pointages.filter((p) => p.anomalyDetected).length,
+      anomalies: pointages.filter((p: any) => p.anomaly_detected).length,
     };
   }
 
@@ -328,28 +354,25 @@ class PointageService {
    * Get all anomalies (for RH/Admin)
    */
   async getAnomalies(status?: string, severity?: string) {
-    const where: any = {};
-    if (status) where.status = status;
-    if (severity) where.severity = severity;
+    let sql = `SELECT a.*, p.*, u.id as userId, u.name as userName, u.last_name as userLastName, u.email as userEmail
+               FROM Anomaly a
+               LEFT JOIN Pointage p ON a.pointageId = p.id
+               LEFT JOIN User u ON p.user_id = u.id
+               WHERE 1=1`;
+    const params: any[] = [];
     
-    return await prisma.anomaly.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      include: {
-        pointage: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                lastName: true,
-                email: true,
-              },
-            },
-          },
-        },
-      },
-    });
+    if (status) {
+      sql += ` AND a.status = ?`;
+      params.push(status);
+    }
+    if (severity) {
+      sql += ` AND a.severity = ?`;
+      params.push(severity);
+    }
+    
+    sql += ` ORDER BY a.createdAt DESC`;
+    
+    return await query(sql, params) as any[];
   }
 
   /**
@@ -361,15 +384,12 @@ class PointageService {
     status: "RESOLVED" | "FALSE_POSITIVE" | "IGNORED",
     resolution: string
   ) {
-    return await prisma.anomaly.update({
-      where: { id: anomalyId },
-      data: {
-        status,
-        resolvedBy,
-        resolvedAt: new Date(),
-        resolution,
-      },
-    });
+    await execute(
+      `UPDATE Anomaly SET status = ?, resolvedBy = ?, resolvedAt = NOW(), resolution = ? WHERE id = ?`,
+      [status, resolvedBy, resolution, anomalyId]
+    );
+    
+    return { id: anomalyId, status, resolvedBy, resolution };
   }
 }
 

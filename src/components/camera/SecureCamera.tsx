@@ -2,9 +2,9 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { 
-  FiCamera, FiCheck, FiX, FiUpload, FiAlertTriangle, 
-  FiRefreshCw, FiShield, FiLock
-} from "react-icons/fi";
+  Camera, Check, X, Upload, AlertTriangle, 
+  RefreshCw, Shield, Lock
+} from "lucide-react";
 
 interface SecureCameraProps {
   onCapture: (imageData: string, method: "camera" | "upload") => void;
@@ -366,7 +366,7 @@ export function SecureCamera({
       {!cameraState.isSecure && (
         <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg">
           <div className="flex items-center gap-2 text-amber-800 dark:text-amber-300">
-            <FiAlertTriangle className="w-5 h-5 flex-shrink-0" />
+            <AlertTriangle className="w-5 h-5 flex-shrink-0" />
             <div>
               <p className="text-sm font-medium">Connexion non sécurisée</p>
               <p className="text-xs opacity-80">
@@ -386,7 +386,7 @@ export function SecureCamera({
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center text-gray-400">
               <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-violet-600 to-purple-600 flex items-center justify-center">
-                <FiCamera className="w-10 h-10 text-white" />
+                <Camera className="w-10 h-10 text-white" />
               </div>
               <p className="text-lg font-medium">Caméra prête</p>
               <p className="text-sm opacity-75 mt-1">Cliquez sur le bouton pour démarrer</p>
@@ -398,7 +398,7 @@ export function SecureCamera({
         {cameraState.status === "requesting" && (
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center text-gray-400">
-              <FiRefreshCw className="w-12 h-12 mx-auto mb-4 animate-spin" />
+              <RefreshCw className="w-12 h-12 mx-auto mb-4 animate-spin" />
               <p className="text-lg font-medium">Demande d'accès...</p>
               <p className="text-sm opacity-75 mt-1">Veuillez autoriser l'accès à la caméra</p>
             </div>
@@ -422,7 +422,7 @@ export function SecureCamera({
             </div>
             {/* Secure indicator */}
             <div className="absolute top-4 right-4 flex items-center gap-2 bg-green-500/90 text-white px-3 py-1 rounded-full text-sm font-medium">
-              <FiShield className="w-4 h-4" />
+              <Shield className="w-4 h-4" />
               Sécurisé
             </div>
             {/* Face guide overlay */}
@@ -441,7 +441,7 @@ export function SecureCamera({
               className="w-full h-full object-cover"
             />
             <div className="absolute top-4 right-4 flex items-center gap-2 bg-green-500/90 text-white px-4 py-2 rounded-full text-sm font-bold">
-              <FiCheck className="w-4 h-4" />
+              <Check className="w-4 h-4" />
               PHOTO CAPTURÉE
             </div>
           </>
@@ -452,7 +452,7 @@ export function SecureCamera({
           <div className="absolute inset-0 flex items-center justify-center p-6">
             <div className="text-center">
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-500/20 flex items-center justify-center">
-                <FiAlertTriangle className="w-8 h-8 text-red-400" />
+                <AlertTriangle className="w-8 h-8 text-red-400" />
               </div>
               <p className="text-red-400 font-medium mb-2">Accès caméra impossible</p>
               <p className="text-sm text-gray-400 max-w-xs mx-auto">{cameraState.error}</p>
@@ -460,7 +460,8 @@ export function SecureCamera({
               {cameraState.permissionDenied && (
                 <div className="mt-4 p-3 bg-blue-500/10 rounded-lg">
                   <p className="text-xs text-blue-300">
-                    💡 Conseil: Cliquez sur l'icône 🔒 dans la barre d'adresse pour autoriser la caméra
+                    <Lock className="inline w-3 h-3 mr-1" />
+                    Conseil: Cliquez sur l'icône de cadenas dans la barre d'adresse pour autoriser la caméra
                   </p>
                 </div>
               )}
@@ -483,7 +484,7 @@ export function SecureCamera({
               disabled={disabled}
               className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-bold rounded-xl transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <FiCamera className="w-5 h-5" />
+              <Camera className="w-5 h-5" />
               Démarrer la Caméra
             </button>
           )}
@@ -495,14 +496,14 @@ export function SecureCamera({
                 onClick={capturePhoto}
                 className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-bold rounded-xl transition-all shadow-lg"
               >
-                <FiCamera className="w-5 h-5" />
+                <Camera className="w-5 h-5" />
                 Capturer
               </button>
               <button
                 onClick={stopCamera}
                 className="px-4 py-4 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-xl transition-all"
               >
-                <FiX className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+                <X className="w-5 h-5 text-gray-600 dark:text-gray-300" />
               </button>
             </>
           )}
@@ -514,7 +515,7 @@ export function SecureCamera({
                 onClick={stream ? confirmCapture : confirmUpload}
                 className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-bold rounded-xl transition-all shadow-lg"
               >
-                <FiCheck className="w-5 h-5" />
+                <Check className="w-5 h-5" />
                 Valider
               </button>
               <button
@@ -524,7 +525,7 @@ export function SecureCamera({
                 }}
                 className="px-4 py-4 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-xl transition-all"
               >
-                <FiRefreshCw className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+                <RefreshCw className="w-5 h-5 text-gray-600 dark:text-gray-300" />
               </button>
             </>
           )}
@@ -536,7 +537,7 @@ export function SecureCamera({
               disabled={disabled}
               className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold rounded-xl transition-all shadow-lg disabled:opacity-50"
             >
-              <FiRefreshCw className="w-5 h-5" />
+              <RefreshCw className="w-5 h-5" />
               Réessayer
             </button>
           )}
@@ -547,7 +548,7 @@ export function SecureCamera({
               disabled
               className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-gray-400 text-white font-bold rounded-xl cursor-not-allowed"
             >
-              <FiRefreshCw className="w-5 h-5 animate-spin" />
+              <RefreshCw className="w-5 h-5 animate-spin" />
               Chargement...
             </button>
           )}
@@ -574,7 +575,7 @@ export function SecureCamera({
               disabled={disabled}
               className="w-full flex items-center justify-center gap-2 px-6 py-3 border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-violet-500 dark:hover:border-violet-500 text-gray-700 dark:text-gray-300 hover:text-violet-600 dark:hover:text-violet-400 font-medium rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <FiUpload className="w-5 h-5" />
+              <Upload className="w-5 h-5" />
               Télécharger une Photo
             </button>
             <input
@@ -592,7 +593,7 @@ export function SecureCamera({
       {/* Security & Consent Info */}
       <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
         <div className="flex items-start gap-3">
-          <FiLock className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+          <Lock className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
           <div>
             <p className="text-sm font-medium text-blue-800 dark:text-blue-300">
               Protection des données
@@ -609,3 +610,4 @@ export function SecureCamera({
 }
 
 export default SecureCamera;
+

@@ -4,7 +4,6 @@
  * Production-grade logging with role tracking
  */
 
-import { prisma } from "@/lib/prisma";
 import { query, execute } from "@/lib/mysql-direct";
 
 // Action types for comprehensive logging
@@ -83,6 +82,12 @@ export const AUDIT_ACTIONS = {
   // Profile
   PROFILE_UPDATED: "PROFILE_UPDATED",
   PROFILE_COMPLETED: "PROFILE_COMPLETED",
+  
+  // Error tracking
+  API_ERROR: "API_ERROR",
+  SYSTEM_ERROR: "SYSTEM_ERROR",
+  VALIDATION_ERROR: "VALIDATION_ERROR",
+  DATABASE_ERROR: "DATABASE_ERROR",
 } as const;
 
 export type AuditAction = typeof AUDIT_ACTIONS[keyof typeof AUDIT_ACTIONS];
@@ -400,6 +405,49 @@ class AuditLogger {
   }
 
   /**
+   * Log API error for tracking and debugging
+   */
+  async logError(
+    type: "api" | "system" | "validation" | "database",
+    error: Error | string,
+    context: {
+      endpoint?: string;
+      method?: string;
+      userId?: string;
+      ipAddress?: string;
+      userAgent?: string;
+      requestData?: any;
+      stackTrace?: string;
+    }
+  ) {
+    const actionMap = {
+      api: AUDIT_ACTIONS.API_ERROR,
+      system: AUDIT_ACTIONS.SYSTEM_ERROR,
+      validation: AUDIT_ACTIONS.VALIDATION_ERROR,
+      database: AUDIT_ACTIONS.DATABASE_ERROR,
+    };
+
+    const errorMessage = error instanceof Error ? error.message : error;
+    const stackTrace = error instanceof Error ? error.stack : context.stackTrace;
+
+    await this.log({
+      userId: context.userId,
+      action: actionMap[type],
+      entityType: "Error",
+      metadata: {
+        message: errorMessage,
+        endpoint: context.endpoint,
+        method: context.method,
+        requestData: context.requestData,
+        stackTrace: stackTrace?.substring(0, 1000), // Limit stack trace length
+      },
+      ipAddress: context.ipAddress,
+      userAgent: context.userAgent,
+      severity: type === "system" || type === "database" ? "CRITICAL" : "ERROR",
+    });
+  }
+
+  /**
    * Log export action
    */
   async logExport(
@@ -581,21 +629,21 @@ class AuditLogger {
       params.push(searchPattern, searchPattern, searchPattern);
     }
 
-    const limit = filters.limit || 100;
-    const offset = filters.offset || 0;
+    const limit = Number(filters.limit) || 100;
+    const offset = Number(filters.offset) || 0;
 
+    // Use string interpolation for LIMIT/OFFSET to avoid mysql2 prepared statement issues
     const sql = `
       SELECT 
         al.id, al.user_id, al.action, al.entity_type, al.entity_id,
         al.changes, al.ip_address, al.user_agent, al.metadata, al.severity, al.created_at,
-        u.name as user_name, u.last_name as user_last_name, u.email as user_email, u.role_enum as user_role
+        u.name as user_name, u.email as user_email, u.role as user_role
       FROM audit_logs al
-      LEFT JOIN users u ON al.user_id = u.id
+      LEFT JOIN User u ON al.user_id = u.id
       WHERE ${conditions.join(" AND ")}
       ORDER BY al.created_at DESC
-      LIMIT ? OFFSET ?
+      LIMIT ${limit} OFFSET ${offset}
     `;
-    params.push(limit, offset);
 
     const rows = await query(sql, params) as any[];
     
@@ -614,7 +662,6 @@ class AuditLogger {
       user: row.user_id ? {
         id: row.user_id,
         name: row.user_name,
-        lastName: row.user_last_name,
         email: row.user_email,
         roleEnum: row.user_role,
       } : null,

@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react"
 import { useNotification } from "@/contexts/NotificationContext"
 import { Button } from "@/components/ui/Button"
-import { FiCalendar, FiClock, FiCheck, FiX, FiAlertCircle, FiEdit, FiTrash2 } from "react-icons/fi"
+import { Calendar, Clock, Check, X, AlertCircle, Edit, Trash2 } from "lucide-react"
+import { LoadingSpinner, EmptyState } from "@/components/ui"
 
 interface LeaveRequest {
   id: string
@@ -16,12 +17,20 @@ interface LeaveRequest {
   createdAt: string
 }
 
+interface FormErrors {
+  startDate?: string
+  endDate?: string
+  general?: string
+}
+
 export default function CongesPage() {
   const { showNotification } = useNotification()
   const [requests, setRequests] = useState<LeaveRequest[]>([])
   const [loading, setLoading] = useState(false)
+  const [initialLoading, setInitialLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editingRequest, setEditingRequest] = useState<LeaveRequest | null>(null)
+  const [formErrors, setFormErrors] = useState<FormErrors>({})
   
   const [formData, setFormData] = useState({
     type: "PAID",
@@ -34,21 +43,72 @@ export default function CongesPage() {
     fetchRequests()
   }, [])
 
+  // Form validation
+  const validateForm = (): boolean => {
+    const errors: FormErrors = {}
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    
+    const startDate = new Date(formData.startDate)
+    const endDate = new Date(formData.endDate)
+
+    // Check if dates are valid
+    if (isNaN(startDate.getTime())) {
+      errors.startDate = "Date de début invalide"
+    } else if (startDate < today && !editingRequest) {
+      errors.startDate = "La date de début ne peut pas être dans le passé"
+    }
+
+    if (isNaN(endDate.getTime())) {
+      errors.endDate = "Date de fin invalide"
+    } else if (endDate < startDate) {
+      errors.endDate = "La date de fin doit être après la date de début"
+    }
+
+    // Check duration
+    if (!errors.startDate && !errors.endDate) {
+      const duration = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
+      if (duration > 365) {
+        errors.general = "La durée du congé ne peut pas dépasser 365 jours"
+      }
+    }
+
+    setFormErrors(errors)
+    return Object.keys(errors).length === 0
+  }
+
   const fetchRequests = async () => {
     try {
       const response = await fetch("/api/conges")
       if (response.ok) {
         const data = await response.json()
-        // API returns array directly
         setRequests(Array.isArray(data) ? data : [])
       }
     } catch (error) {
       console.error("Error fetching requests:", error)
+      showNotification({
+        type: "error",
+        title: "Erreur",
+        message: "Impossible de charger les demandes de congé"
+      })
+    } finally {
+      setInitialLoading(false)
     }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Validate form
+    if (!validateForm()) {
+      showNotification({
+        type: "error",
+        title: "Formulaire invalide",
+        message: "Veuillez corriger les erreurs dans le formulaire"
+      })
+      return
+    }
+    
     setLoading(true)
 
     try {
@@ -72,6 +132,7 @@ export default function CongesPage() {
         setShowForm(false)
         setEditingRequest(null)
         setFormData({ type: "PAID", startDate: "", endDate: "", reason: "" })
+        setFormErrors({})
         fetchRequests()
       } else {
         showNotification({
@@ -141,6 +202,7 @@ export default function CongesPage() {
     setShowForm(false)
     setEditingRequest(null)
     setFormData({ type: "PAID", startDate: "", endDate: "", reason: "" })
+    setFormErrors({})
   }
 
   const getStatusColor = (status: string) => {
@@ -196,6 +258,13 @@ export default function CongesPage() {
           <h2 className="text-xl font-semibold mb-4">
             {editingRequest ? "Modifier la demande de congé" : "Nouvelle demande de congé"}
           </h2>
+          
+          {formErrors.general && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-600">{formErrors.general}</p>
+            </div>
+          )}
+          
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -223,10 +292,20 @@ export default function CongesPage() {
                 <input
                   type="date"
                   value={formData.startDate}
-                  onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-violet-500 dark:bg-gray-700"
+                  onChange={(e) => {
+                    setFormData({ ...formData, startDate: e.target.value })
+                    if (formErrors.startDate) setFormErrors({ ...formErrors, startDate: undefined })
+                  }}
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-violet-500 dark:bg-gray-700 ${
+                    formErrors.startDate 
+                      ? 'border-red-500 focus:ring-red-500' 
+                      : 'border-gray-300 dark:border-gray-600'
+                  }`}
                   required
                 />
+                {formErrors.startDate && (
+                  <p className="mt-1 text-sm text-red-500">{formErrors.startDate}</p>
+                )}
               </div>
 
               <div>
@@ -236,10 +315,20 @@ export default function CongesPage() {
                 <input
                   type="date"
                   value={formData.endDate}
-                  onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-violet-500 dark:bg-gray-700"
+                  onChange={(e) => {
+                    setFormData({ ...formData, endDate: e.target.value })
+                    if (formErrors.endDate) setFormErrors({ ...formErrors, endDate: undefined })
+                  }}
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-violet-500 dark:bg-gray-700 ${
+                    formErrors.endDate 
+                      ? 'border-red-500 focus:ring-red-500' 
+                      : 'border-gray-300 dark:border-gray-600'
+                  }`}
                   required
                 />
+                {formErrors.endDate && (
+                  <p className="mt-1 text-sm text-red-500">{formErrors.endDate}</p>
+                )}
               </div>
             </div>
 
@@ -272,7 +361,7 @@ export default function CongesPage() {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
         {requests.length === 0 ? (
           <div className="p-12 text-center">
-            <FiCalendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <p className="text-gray-500 dark:text-gray-400">
               Aucune demande de congé pour le moment
             </p>
@@ -311,14 +400,14 @@ export default function CongesPage() {
                           className="p-2 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
                           title="Modifier"
                         >
-                          <FiEdit className="w-4 h-4" />
+                          <Edit className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleDelete(request.id)}
                           className="p-2 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                           title="Supprimer"
                         >
-                          <FiTrash2 className="w-4 h-4" />
+                          <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     ) : (

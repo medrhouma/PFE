@@ -152,6 +152,23 @@ export const DELETE = withAuth(async (req: NextRequest, user) => {
         { status: 400 }
       );
     }
+
+    // Verify ownership before deleting
+    const notification = await notificationService.getById(notificationId);
+    if (!notification) {
+      return NextResponse.json(
+        { error: "Notification not found" },
+        { status: 404 }
+      );
+    }
+
+    // Only allow deletion of own notifications (admins can delete any)
+    if (notification.user_id !== user.id && user.role !== 'SUPER_ADMIN') {
+      return NextResponse.json(
+        { error: "Not authorized to delete this notification" },
+        { status: 403 }
+      );
+    }
     
     await notificationService.delete(notificationId);
     return NextResponse.json({ success: true });
@@ -160,6 +177,6 @@ export const DELETE = withAuth(async (req: NextRequest, user) => {
     return NextResponse.json(
       { error: "Failed to delete notification" },
       { status: 500 }
-      );
+    );
   }
 });

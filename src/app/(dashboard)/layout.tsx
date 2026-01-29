@@ -1,8 +1,8 @@
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { redirect } from "next/navigation"
-import { Header } from "@/components/dashboard/Header"
-import { Sidebar } from "@/components/dashboard/Sidebar"
+import { Navbar } from "@/components/dashboard/Navbar"
+import { SidebarNew } from "@/components/dashboard/SidebarNew"
 import { SessionProvider } from "@/components/providers/SessionProvider"
 import { query } from "@/lib/mysql-direct"
 
@@ -19,8 +19,12 @@ export default async function DashboardLayout({
 
   let showSidebar = false
 
+  // Pour RH et SUPER_ADMIN, toujours afficher la sidebar
+  if (session.user.role === "RH" || session.user.role === "SUPER_ADMIN") {
+    showSidebar = true
+  }
   // Pour les USER, vérifier le statut réel dans la BD
-  if (session.user.role === "USER") {
+  else if (session.user.role === "USER") {
     // Vérifier le statut User dans la BD
     const users: any = await query(
       'SELECT status FROM User WHERE id = ?',
@@ -71,15 +75,28 @@ export default async function DashboardLayout({
 
   return (
     <SessionProvider session={session}>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
-        <Header />
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors">
+        {/* Fixed Navbar */}
+        <Navbar />
+        
         {showSidebar ? (
-          <div className="flex pt-16">
-            <Sidebar userRole={session.user.role} />
-            <main className="flex-1 ml-64 p-6">{children}</main>
+          <div className="flex">
+            {/* Fixed Sidebar */}
+            <SidebarNew userRole={session.user.role} />
+            
+            {/* Main Content - with proper margin for sidebar */}
+            <main className="flex-1 lg:ml-64 pt-16 min-h-screen">
+              <div className="p-4 sm:p-6 lg:p-8">
+                {children}
+              </div>
+            </main>
           </div>
         ) : (
-          <main className="pt-16">{children}</main>
+          <main className="pt-16 min-h-screen">
+            <div className="p-4 sm:p-6 lg:p-8">
+              {children}
+            </div>
+          </main>
         )}
       </div>
     </SessionProvider>

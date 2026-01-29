@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { FiX, FiUser } from "react-icons/fi"
+import { X, User } from "lucide-react"
 import { useNotification } from "@/contexts/NotificationContext"
 
 interface EditUserModalProps {
@@ -83,7 +83,7 @@ export default function EditUserModal({ user, onClose, onSave }: EditUserModalPr
           </button>
           <div className="flex-1 text-center">
             <h2 className="text-xl font-bold text-indigo-600 dark:text-indigo-400 flex items-center justify-center gap-2">
-              <FiUser className="w-5 h-5" />
+              <User className="w-5 h-5" />
               Modifier l'utilisateur
             </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">

@@ -4,6 +4,15 @@ import { authOptions } from '@/lib/auth';
 import { query } from '@/lib/mysql-direct';
 import { emailService } from '@/lib/services/email-service';
 import { notificationService } from '@/lib/services/notification-service';
+import { auditLogger } from '@/lib/services/audit-logger';
+import { sanitizeImageFromAPI } from '@/lib/utils';
+
+// Helper to get client IP
+function getClientIP(req: NextRequest): string {
+  return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || 
+         req.headers.get("x-real-ip") || 
+         "unknown";
+}
 
 // GET all employees (Super Admin only)
 export async function GET(req: NextRequest) {
@@ -49,6 +58,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Transform the flat data structure to match the expected format
+    // Sanitize image fields to prevent ERR_INVALID_URL
     const formattedEmployees = employees.map((emp: any) => ({
       id: emp.id,
       userId: emp.user_id,
@@ -61,8 +71,8 @@ export async function GET(req: NextRequest) {
       adresse: emp.adresse,
       telephone: emp.telephone,
       dateEmbauche: emp.date_embauche,
-      photo: emp.photo,
-      cv: emp.cv,
+      photo: sanitizeImageFromAPI(emp.photo),
+      cv: sanitizeImageFromAPI(emp.cv),
       typeContrat: emp.type_contrat,
       createdAt: emp.created_at,
       updatedAt: emp.updated_at,
@@ -94,6 +104,8 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
+    const ipAddress = getClientIP(req);
+    const userAgent = req.headers.get("user-agent") || undefined;
     const {
       nom,
       prenom,
@@ -246,6 +258,42 @@ export async function POST(req: NextRequest) {
         email: employee.user_email,
       }
     };
+
+    // Log the employee profile action
+    const isUpdate = existingEmployee && existingEmployee.length > 0;
+    if (isUpdate) {
+      await auditLogger.logEmployeeAction(
+        "updated",
+        employee.id,
+        session.user.id,
+        ipAddress,
+        userAgent,
+        { 
+          changes: { 
+            nom, prenom, email, typeContrat,
+            hasPhoto: !!photo,
+            hasCV: !!cv,
+            hasDocuments: !!autresDocuments
+          }
+        }
+      );
+    } else {
+      await auditLogger.logEmployeeAction(
+        "created",
+        employee.id,
+        session.user.id,
+        ipAddress,
+        userAgent,
+        { 
+          changes: { 
+            nom, prenom, email, typeContrat,
+            hasPhoto: !!photo,
+            hasCV: !!cv,
+            hasDocuments: !!autresDocuments
+          }
+        }
+      );
+    }
 
     // Notify all RH users of new pending employee
     try {

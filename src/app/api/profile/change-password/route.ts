@@ -3,12 +3,31 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { query } from "@/lib/mysql-direct";
 import bcrypt from "bcryptjs";
+import { auditLogger, AUDIT_ACTIONS } from "@/lib/services/audit-logger";
+import { checkRateLimit, getClientIP } from "@/lib/security-middleware";
+
+// Password validation helper
+function validatePassword(password: string): { valid: boolean; message?: string } {
+  if (password.length < 8) {
+    return { valid: false, message: "Le mot de passe doit contenir au moins 8 caractères" };
+  }
+  if (!/[A-Z]/.test(password)) {
+    return { valid: false, message: "Le mot de passe doit contenir au moins une majuscule" };
+  }
+  if (!/[0-9]/.test(password)) {
+    return { valid: false, message: "Le mot de passe doit contenir au moins un chiffre" };
+  }
+  return { valid: true };
+}
 
 /**
  * Change Password API Endpoint
  * POST /api/profile/change-password
  */
 export async function POST(request: NextRequest) {
+  const ip = getClientIP(request);
+  const userAgent = request.headers.get("user-agent") || undefined;
+
   try {
     const session = await getServerSession(authOptions);
 
@@ -16,6 +35,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: "Non authentifié" },
         { status: 401 }
+      );
+    }
+
+    // Rate limiting - max 5 password change attempts per hour
+    const { allowed } = checkRateLimit(`password-change:${session.user.id}`, "sensitive");
+    if (!allowed) {
+      await auditLogger.log({
+        userId: session.user.id,
+        action: "PASSWORD_CHANGE_RATE_LIMITED",
+        entityType: "User",
+        ipAddress: ip,
+        userAgent,
+        severity: "WARNING"
+      });
+      
+      return NextResponse.json(
+        { error: "Trop de tentatives. Veuillez réessayer plus tard." },
+        { status: 429 }
       );
     }
 
@@ -30,9 +67,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (newPassword.length < 8) {
+    // Validate new password strength
+    const passwordValidation = validatePassword(newPassword);
+    if (!passwordValidation.valid) {
       return NextResponse.json(
-        { error: "Le nouveau mot de passe doit contenir au moins 8 caractères" },
+        { error: passwordValidation.message },
+        { status: 400 }
+      );
+    }
+
+    // Ensure new password is different from current
+    if (currentPassword === newPassword) {
+      return NextResponse.json(
+        { error: "Le nouveau mot de passe doit être différent de l'ancien" },
         { status: 400 }
       );
     }
@@ -62,6 +109,16 @@ export async function POST(request: NextRequest) {
 
     const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
     if (!isCurrentPasswordValid) {
+      await auditLogger.log({
+        userId: session.user.id,
+        action: "PASSWORD_CHANGE_FAILED",
+        entityType: "User",
+        ipAddress: ip,
+        userAgent,
+        severity: "WARNING",
+        metadata: JSON.stringify({ reason: "Invalid current password" })
+      });
+      
       return NextResponse.json(
         { error: "Mot de passe actuel incorrect" },
         { status: 400 }
@@ -73,28 +130,21 @@ export async function POST(request: NextRequest) {
 
     // Update password
     await query(
-      "UPDATE User SET password = ?, updatedAt = NOW() WHERE id = ?",
+      "UPDATE User SET password = ?, updated_at = NOW() WHERE id = ?",
       [hashedPassword, session.user.id]
     );
 
     // Log the password change event
-    try {
-      await query(
-        `INSERT INTO Log (id, action, details, userId, createdAt) 
-         VALUES (UUID(), 'PASSWORD_CHANGED', ?, ?, NOW())`,
-        [
-          JSON.stringify({
-            userId: session.user.id,
-            timestamp: new Date().toISOString(),
-            ip: request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown"
-          }),
-          session.user.id
-        ]
-      );
-    } catch (logError) {
-      console.error("Error logging password change:", logError);
-      // Don't fail the request if logging fails
-    }
+    await auditLogger.log({
+      userId: session.user.id,
+      userRole: session.user.role,
+      action: AUDIT_ACTIONS.PASSWORD_CHANGE,
+      entityType: "User",
+      entityId: session.user.id,
+      ipAddress: ip,
+      userAgent,
+      severity: "INFO",
+    });
 
     return NextResponse.json({
       success: true,

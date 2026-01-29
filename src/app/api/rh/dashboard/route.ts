@@ -114,7 +114,7 @@ export async function GET(req: NextRequest) {
       FROM Employe e
       LEFT JOIN User u ON e.user_id = u.id
       WHERE e.status = 'EN_ATTENTE'
-      ORDER BY e.createdAt DESC
+      ORDER BY e.created_at DESC
       LIMIT 10
     `) || [];
 
@@ -146,12 +146,11 @@ export async function GET(req: NextRequest) {
         u.name as u_name,
         u.email as u_email,
         u.image as u_image,
-        u.telephone as u_telephone,
         u.status as u_status,
         u.createdAt as u_created_at
       FROM Employe e
       LEFT JOIN User u ON e.user_id = u.id
-      ORDER BY e.createdAt DESC
+      ORDER BY e.created_at DESC
     `) || [];
 
     // Format employees for frontend
@@ -165,7 +164,7 @@ export async function GET(req: NextRequest) {
       dateNaissance: emp.date_naissance,
       sexe: emp.sexe,
       adresse: emp.adresse,
-      telephone: emp.telephone || emp.u_telephone,
+      telephone: emp.telephone,
       dateEmbauche: emp.date_embauche,
       typeContrat: emp.type_contrat,
       departement: emp.departement,
@@ -180,7 +179,6 @@ export async function GET(req: NextRequest) {
         name: emp.u_name,
         email: emp.u_email,
         image: emp.u_image,
-        telephone: emp.u_telephone,
         status: emp.u_status,
         createdAt: emp.u_created_at
       } : null

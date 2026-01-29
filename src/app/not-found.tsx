@@ -3,16 +3,16 @@
 import Link from "next/link";
 import { useState } from "react";
 import { 
-  FiHome, 
-  FiArrowLeft, 
-  FiSearch, 
-  FiCompass,
-  FiFileText,
-  FiUsers,
-  FiCalendar,
-  FiClock,
-  FiSettings
-} from "react-icons/fi";
+  Home, 
+  ArrowLeft, 
+  Search, 
+  Compass,
+  FileText,
+  Users,
+  Calendar,
+  Clock,
+  Settings
+} from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function NotFound() {
@@ -76,12 +76,12 @@ export default function NotFound() {
   const t = translations[language as keyof typeof translations] || translations.fr;
 
   const quickLinks = [
-    { href: "/home", icon: FiHome, label: t.links.dashboard },
-    { href: "/rh/employees", icon: FiUsers, label: t.links.employees },
-    { href: "/conges", icon: FiCalendar, label: t.links.leaves },
-    { href: "/pointage", icon: FiClock, label: t.links.attendance },
-    { href: "/documents", icon: FiFileText, label: t.links.documents },
-    { href: "/parametres", icon: FiSettings, label: t.links.settings }
+    { href: "/home", icon: Home, label: t.links.dashboard },
+    { href: "/rh/employees", icon: Users, label: t.links.employees },
+    { href: "/conges", icon: Calendar, label: t.links.leaves },
+    { href: "/pointage", icon: Clock, label: t.links.attendance },
+    { href: "/documents", icon: FileText, label: t.links.documents },
+    { href: "/parametres", icon: Settings, label: t.links.settings }
   ];
 
   const handleSearch = (e: React.FormEvent) => {
@@ -122,7 +122,7 @@ export default function NotFound() {
               
               {/* Compass icon */}
               <div className="relative w-20 h-20 bg-gradient-to-br from-violet-500 via-purple-500 to-indigo-500 rounded-2xl flex items-center justify-center shadow-lg shadow-violet-500/30 animate-bounce-gentle">
-                <FiCompass className="w-10 h-10 text-white animate-spin-very-slow" />
+                <Compass className="w-10 h-10 text-white animate-spin-very-slow" />
               </div>
             </div>
 
@@ -141,7 +141,7 @@ export default function NotFound() {
 
             {/* Error badge */}
             <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-violet-100 dark:bg-violet-900/30 rounded-full mb-4">
-              <FiSearch className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+              <Search className="w-4 h-4 text-violet-600 dark:text-violet-400" />
               <span className="text-sm font-medium text-violet-600 dark:text-violet-400">
                 {t.subtitle}
               </span>
@@ -166,12 +166,12 @@ export default function NotFound() {
                 placeholder={t.searchPlaceholder}
                 className="w-full px-5 py-3.5 pl-12 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all duration-300 group-hover:shadow-lg"
               />
-              <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-violet-500 transition-colors" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-violet-500 transition-colors" />
               <button
                 type="submit"
                 className="absolute right-2 top-1/2 -translate-y-1/2 px-4 py-2 bg-gradient-to-r from-violet-500 to-purple-500 text-white text-sm font-medium rounded-lg hover:from-violet-600 hover:to-purple-600 transition-all duration-300 hover:scale-105 active:scale-95"
               >
-                <FiSearch className="w-4 h-4" />
+                <Search className="w-4 h-4" />
               </button>
             </form>
           </div>
@@ -184,7 +184,7 @@ export default function NotFound() {
                 className="group relative inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600 text-white font-semibold rounded-xl shadow-lg shadow-violet-500/25 hover:shadow-xl hover:shadow-violet-500/30 transition-all duration-300 hover:scale-105 active:scale-95 overflow-hidden"
               >
                 <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
-                <FiHome className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                <Home className="w-5 h-5 group-hover:scale-110 transition-transform" />
                 {t.goHome}
               </Link>
               
@@ -192,7 +192,7 @@ export default function NotFound() {
                 onClick={() => window.history.back()}
                 className="group inline-flex items-center justify-center gap-2 px-6 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-semibold rounded-xl transition-all duration-300 hover:scale-105 active:scale-95"
               >
-                <FiArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+                <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
                 {t.goBack}
               </button>
             </div>

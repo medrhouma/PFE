@@ -3,7 +3,18 @@
 import { useState } from "react";
 import { useCookieConsent, CookiePreferences } from "@/contexts/CookieConsentContext";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { FiX, FiSettings, FiCheck, FiShield, FiInfo } from "react-icons/fi";
+import { 
+  X, 
+  Settings, 
+  Check, 
+  Shield, 
+  Info, 
+  Cookie, 
+  BarChart3, 
+  Megaphone,
+  Sparkles,
+  Lock
+} from "lucide-react";
 
 interface CookieToggleProps {
   label: string;
@@ -12,34 +23,50 @@ interface CookieToggleProps {
   onChange: (checked: boolean) => void;
   disabled?: boolean;
   required?: boolean;
+  icon?: React.ReactNode;
+  color?: string;
 }
 
-function CookieToggle({ label, description, checked, onChange, disabled, required }: CookieToggleProps) {
+function CookieToggle({ label, description, checked, onChange, disabled, required, icon, color = "violet" }: CookieToggleProps) {
+  const colorClasses = {
+    violet: "from-violet-500 to-purple-500",
+    blue: "from-blue-500 to-cyan-500",
+    green: "from-green-500 to-emerald-500",
+    orange: "from-orange-500 to-amber-500",
+    gray: "from-gray-400 to-gray-500"
+  };
+
   return (
-    <div className="flex items-start justify-between py-4 border-b border-gray-100 dark:border-gray-700 last:border-b-0">
-      <div className="flex-1 pr-4">
-        <div className="flex items-center gap-2">
-          <span className="font-medium text-gray-900 dark:text-white">{label}</span>
-          {required && (
-            <span className="text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded">
-              Requis
-            </span>
-          )}
+    <div className="flex items-start justify-between py-4 border-b border-gray-100 dark:border-gray-700/50 last:border-b-0 group hover:bg-gray-50/50 dark:hover:bg-gray-700/20 -mx-4 px-4 rounded-xl transition-colors">
+      <div className="flex items-start gap-3 flex-1 pr-4">
+        <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${colorClasses[color as keyof typeof colorClasses] || colorClasses.violet} flex items-center justify-center shadow-lg flex-shrink-0`}>
+          {icon || <Cookie className="w-5 h-5 text-white" />}
         </div>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{description}</p>
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-gray-900 dark:text-white">{label}</span>
+            {required && (
+              <span className="text-[10px] px-2 py-0.5 bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 text-gray-600 dark:text-gray-400 rounded-full font-medium flex items-center gap-1">
+                <Lock className="w-2.5 h-2.5" />
+                Requis
+              </span>
+            )}
+          </div>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{description}</p>
+        </div>
       </div>
       <button
         onClick={() => !disabled && onChange(!checked)}
         disabled={disabled}
-        className={`relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${
+        className={`relative w-14 h-7 rounded-full transition-all flex-shrink-0 ${
           checked 
-            ? "bg-violet-600" 
+            ? "bg-gradient-to-r from-violet-500 to-purple-500 shadow-lg shadow-violet-500/30" 
             : "bg-gray-300 dark:bg-gray-600"
-        } ${disabled ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
+        } ${disabled ? "opacity-60 cursor-not-allowed" : "cursor-pointer hover:shadow-xl"}`}
       >
         <span
-          className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${
-            checked ? "translate-x-6" : ""
+          className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full transition-all shadow-md ${
+            checked ? "translate-x-7" : ""
           }`}
         />
       </button>
@@ -134,22 +161,27 @@ export function CookieConsentBanner() {
   return (
     <>
       {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9998]" />
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9998]" />
       
       {/* Banner */}
-      <div className="fixed bottom-0 left-0 right-0 z-[9999] p-4 md:p-6">
-        <div className="max-w-4xl mx-auto bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-          {/* Header */}
-          <div className="p-6 pb-4">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center flex-shrink-0">
-                <FiShield className="w-6 h-6 text-white" />
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+        <div className="max-w-xl w-full bg-white dark:bg-gray-800 rounded-3xl shadow-2xl border border-gray-100 dark:border-gray-700 overflow-hidden animate-in fade-in zoom-in-95 duration-300">
+          {/* Header with Gradient */}
+          <div className="relative overflow-hidden bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 p-6 pb-8">
+            <div className="absolute inset-0 bg-grid-white/10 [mask-image:linear-gradient(0deg,transparent,rgba(255,255,255,0.5))]"></div>
+            <div className="absolute -top-10 -right-10 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
+            <div className="absolute -bottom-10 -left-10 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
+            
+            <div className="relative flex items-center gap-4">
+              <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center flex-shrink-0">
+                <Cookie className="w-7 h-7 text-white" />
               </div>
-              <div className="flex-1">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+              <div>
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
                   {t.title}
+                  <Sparkles className="w-5 h-5 text-yellow-300" />
                 </h2>
-                <p className="text-gray-600 dark:text-gray-400 text-sm">
+                <p className="text-violet-200 text-sm mt-1">
                   {t.description}
                 </p>
               </div>
@@ -158,7 +190,7 @@ export function CookieConsentBanner() {
 
           {/* Cookie Details (Expandable) */}
           {showDetails && (
-            <div className="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-100 dark:border-gray-700">
+            <div className="px-6 py-4 bg-gray-50/50 dark:bg-gray-900/30 border-t border-gray-100 dark:border-gray-700">
               <CookieToggle
                 label={t.necessary}
                 description={t.necessaryDesc}
@@ -166,79 +198,90 @@ export function CookieConsentBanner() {
                 onChange={() => {}}
                 disabled
                 required
+                icon={<Shield className="w-5 h-5 text-white" />}
+                color="gray"
               />
               <CookieToggle
                 label={t.functional}
                 description={t.functionalDesc}
                 checked={localPrefs.functional}
                 onChange={(checked) => setLocalPrefs(prev => ({ ...prev, functional: checked }))}
+                icon={<Settings className="w-5 h-5 text-white" />}
+                color="blue"
               />
               <CookieToggle
                 label={t.analytics}
                 description={t.analyticsDesc}
                 checked={localPrefs.analytics}
                 onChange={(checked) => setLocalPrefs(prev => ({ ...prev, analytics: checked }))}
+                icon={<BarChart3 className="w-5 h-5 text-white" />}
+                color="green"
               />
               <CookieToggle
                 label={t.marketing}
                 description={t.marketingDesc}
                 checked={localPrefs.marketing}
                 onChange={(checked) => setLocalPrefs(prev => ({ ...prev, marketing: checked }))}
+                icon={<Megaphone className="w-5 h-5 text-white" />}
+                color="orange"
               />
             </div>
           )}
 
           {/* Actions */}
-          <div className="p-6 pt-4 flex flex-col sm:flex-row items-center gap-3">
+          <div className="p-6 pt-4 flex flex-col gap-3">
             {!showDetails ? (
               <>
-                <button
-                  onClick={rejectAll}
-                  className="w-full sm:w-auto px-6 py-3 text-gray-700 dark:text-gray-300 font-medium rounded-xl border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                >
-                  {t.rejectAll}
-                </button>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <button
+                    onClick={acceptAll}
+                    className="flex-1 px-6 py-3.5 bg-gradient-to-r from-violet-500 to-purple-500 text-white font-semibold rounded-xl hover:from-violet-600 hover:to-purple-600 transition-all shadow-lg shadow-violet-500/30 flex items-center justify-center gap-2"
+                  >
+                    <Check className="w-5 h-5" />
+                    {t.acceptAll}
+                  </button>
+                  <button
+                    onClick={rejectAll}
+                    className="flex-1 px-6 py-3.5 text-gray-700 dark:text-gray-300 font-semibold rounded-xl border-2 border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <X className="w-5 h-5" />
+                    {t.rejectAll}
+                  </button>
+                </div>
                 <button
                   onClick={() => setShowDetails(true)}
-                  className="w-full sm:w-auto px-6 py-3 text-violet-600 dark:text-violet-400 font-medium rounded-xl border border-violet-300 dark:border-violet-600 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors flex items-center justify-center gap-2"
+                  className="w-full px-6 py-3 text-violet-600 dark:text-violet-400 font-semibold rounded-xl hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors flex items-center justify-center gap-2"
                 >
-                  <FiSettings className="w-4 h-4" />
+                  <Settings className="w-5 h-5" />
                   {t.customize}
-                </button>
-                <button
-                  onClick={acceptAll}
-                  className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-violet-600 to-purple-600 text-white font-medium rounded-xl hover:from-violet-700 hover:to-purple-700 transition-all shadow-lg shadow-violet-500/25 flex items-center justify-center gap-2"
-                >
-                  <FiCheck className="w-4 h-4" />
-                  {t.acceptAll}
                 </button>
               </>
             ) : (
-              <>
+              <div className="flex flex-col sm:flex-row gap-3">
                 <button
                   onClick={() => setShowDetails(false)}
-                  className="w-full sm:w-auto px-6 py-3 text-gray-700 dark:text-gray-300 font-medium rounded-xl border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  className="flex-1 px-6 py-3.5 text-gray-700 dark:text-gray-300 font-semibold rounded-xl border-2 border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 >
                   Retour
                 </button>
                 <button
                   onClick={handleSavePreferences}
-                  className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-violet-600 to-purple-600 text-white font-medium rounded-xl hover:from-violet-700 hover:to-purple-700 transition-all shadow-lg shadow-violet-500/25 flex items-center justify-center gap-2"
+                  className="flex-1 px-6 py-3.5 bg-gradient-to-r from-violet-500 to-purple-500 text-white font-semibold rounded-xl hover:from-violet-600 hover:to-purple-600 transition-all shadow-lg shadow-violet-500/30 flex items-center justify-center gap-2"
                 >
-                  <FiCheck className="w-4 h-4" />
+                  <Check className="w-5 h-5" />
                   {t.savePreferences}
                 </button>
-              </>
+              </div>
             )}
           </div>
 
           {/* Privacy Policy Link */}
-          <div className="px-6 pb-4 text-center">
+          <div className="px-6 pb-5 text-center">
             <a
               href="/privacy-policy"
-              className="text-sm text-violet-600 dark:text-violet-400 hover:underline inline-flex items-center gap-1"
+              className="text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 font-medium inline-flex items-center gap-1.5 hover:underline"
             >
-              <FiInfo className="w-4 h-4" />
+              <Info className="w-4 h-4" />
               {t.privacyPolicy}
             </a>
           </div>

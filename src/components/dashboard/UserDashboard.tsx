@@ -3,19 +3,19 @@
 import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 import { 
-  FiAward, 
-  FiClock, 
-  FiTarget, 
-  FiActivity,
-  FiCalendar,
-  FiFileText,
-  FiSettings,
-  FiUser,
-  FiMail,
-  FiPhone,
-  FiMapPin,
-  FiTrendingUp
-} from 'react-icons/fi';
+  Award, 
+  Clock, 
+  Target, 
+  Activity,
+  Calendar,
+  FileText,
+  Settings,
+  User,
+  Mail,
+  Phone,
+  MapPin,
+  TrendingUp
+} from 'lucide-react';
 
 interface LeaveStats {
   approvedLeaves: number;
@@ -85,6 +85,20 @@ export default function UserDashboard() {
   }
 
   const firstName = session?.user?.name?.split(' ')[0] || 'Utilisateur';
+  const userStatus = (session?.user as any)?.status || 'ACTIVE';
+  const isPending = userStatus === 'PENDING';
+  const isActive = userStatus === 'ACTIVE';
+
+  // Status badge configuration
+  const statusConfig = {
+    ACTIVE: { color: 'green', text: 'Profil Actif', icon: '●' },
+    PENDING: { color: 'amber', text: 'En attente de validation', icon: '⏳' },
+    INACTIVE: { color: 'gray', text: 'Profil Incomplet', icon: '○' },
+    REJECTED: { color: 'red', text: 'Profil Refusé', icon: '✕' },
+    SUSPENDED: { color: 'red', text: 'Compte Suspendu', icon: '⊘' }
+  };
+  
+  const currentStatus = statusConfig[userStatus as keyof typeof statusConfig] || statusConfig.ACTIVE;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-purple-50 to-indigo-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-indigo-900/20">
@@ -98,9 +112,9 @@ export default function UserDashboard() {
         <div className="relative max-w-7xl mx-auto px-6 py-16">
           <div className="flex items-center justify-between">
             <div>
-              <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 mb-4">
-                <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
-                <span className="text-sm text-white/90 font-medium">Profil Actif</span>
+              <div className={`inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 mb-4`}>
+                <span className={`w-2 h-2 bg-${currentStatus.color}-400 rounded-full ${isActive ? 'animate-pulse' : ''}`}></span>
+                <span className="text-sm text-white/90 font-medium">{currentStatus.text}</span>
               </div>
               <h1 className="text-5xl font-bold text-white mb-3">
                 Bienvenue, {firstName}
@@ -108,24 +122,30 @@ export default function UserDashboard() {
               <p className="text-xl text-purple-100">
                 Gérez vos congés, consultez vos documents et suivez vos performances.
               </p>
-              <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4 max-w-md mx-auto shadow-sm">
-                <p className="text-sm text-amber-700 font-medium">
-                  Vous serez notifié par email une fois votre profil vérifié et approuvé.
-                </p>
-              </div>
               
-              <div className="mt-8 flex justify-center">
-                <div className="inline-flex items-center px-4 py-2 rounded-full bg-amber-100 text-amber-800 text-sm font-medium">
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  En attente de validation
-                </div>
-              </div>
+              {/* Conditional pending message - only show if PENDING */}
+              {isPending && (
+                <>
+                  <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4 max-w-md mt-6 shadow-sm">
+                    <p className="text-sm text-amber-700 font-medium">
+                      Vous serez notifié par email une fois votre profil vérifié et approuvé.
+                    </p>
+                  </div>
+                  
+                  <div className="mt-4">
+                    <div className="inline-flex items-center px-4 py-2 rounded-full bg-amber-100 text-amber-800 text-sm font-medium">
+                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      En attente de validation RH
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
             <div className="hidden lg:block">
               <div className="w-32 h-32 bg-white/10 backdrop-blur-sm rounded-3xl flex items-center justify-center shadow-2xl border border-white/20">
-                <FiUser className="w-16 h-16 text-white" />
+                <User className="w-16 h-16 text-white" />
               </div>
             </div>
           </div>
@@ -141,10 +161,10 @@ export default function UserDashboard() {
             <div className="relative p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
-                  <FiAward className="w-6 h-6 text-white" />
+                  <Award className="w-6 h-6 text-white" />
                 </div>
                 <span className="inline-flex items-center gap-1 text-xs font-semibold text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 px-2 py-1 rounded-full">
-                  <FiTrendingUp className="w-3 h-3" />
+                  <TrendingUp className="w-3 h-3" />
                   Validé
                 </span>
               </div>
@@ -160,10 +180,10 @@ export default function UserDashboard() {
             <div className="relative p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
-                  <FiClock className="w-6 h-6 text-white" />
+                  <Clock className="w-6 h-6 text-white" />
                 </div>
                 <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-2 py-1 rounded-full">
-                  <FiClock className="w-3 h-3" />
+                  <Clock className="w-3 h-3" />
                   En cours
                 </span>
               </div>
@@ -179,10 +199,10 @@ export default function UserDashboard() {
             <div className="relative p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
-                  <FiTarget className="w-6 h-6 text-white" />
+                  <Target className="w-6 h-6 text-white" />
                 </div>
                 <span className="inline-flex items-center gap-1 text-xs font-semibold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30 px-2 py-1 rounded-full">
-                  <FiCalendar className="w-3 h-3" />
+                  <Calendar className="w-3 h-3" />
                   Total
                 </span>
               </div>
@@ -198,10 +218,10 @@ export default function UserDashboard() {
             <div className="relative p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
-                  <FiActivity className="w-6 h-6 text-white" />
+                  <Activity className="w-6 h-6 text-white" />
                 </div>
                 <span className="inline-flex items-center gap-1 text-xs font-semibold text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-900/30 px-2 py-1 rounded-full">
-                  <FiTrendingUp className="w-3 h-3" />
+                  <TrendingUp className="w-3 h-3" />
                   {stats.performance}%
                 </span>
               </div>
@@ -221,7 +241,7 @@ export default function UserDashboard() {
               <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
               <div className="relative">
                 <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                  <FiCalendar className="w-6 h-6 text-white" />
+                  <Calendar className="w-6 h-6 text-white" />
                 </div>
                 <h3 className="text-lg font-semibold text-white mb-2">Demander un Congé</h3>
                 <p className="text-sm text-purple-100">Soumettre une nouvelle demande de congé</p>
@@ -233,7 +253,7 @@ export default function UserDashboard() {
               <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
               <div className="relative">
                 <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                  <FiClock className="w-6 h-6 text-white" />
+                  <Clock className="w-6 h-6 text-white" />
                 </div>
                 <h3 className="text-lg font-semibold text-white mb-2">Pointage</h3>
                 <p className="text-sm text-emerald-100">Gérer vos heures de travail</p>
@@ -245,7 +265,7 @@ export default function UserDashboard() {
               <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
               <div className="relative">
                 <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                  <FiFileText className="w-6 h-6 text-white" />
+                  <FileText className="w-6 h-6 text-white" />
                 </div>
                 <h3 className="text-lg font-semibold text-white mb-2">Mes Documents</h3>
                 <p className="text-sm text-amber-100">Accéder à vos documents</p>
@@ -257,7 +277,7 @@ export default function UserDashboard() {
               <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
               <div className="relative">
                 <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                  <FiSettings className="w-6 h-6 text-white" />
+                  <Settings className="w-6 h-6 text-white" />
                 </div>
                 <h3 className="text-lg font-semibold text-white mb-2">Mon Profil</h3>
                 <p className="text-sm text-cyan-100">Modifier vos informations</p>
@@ -272,7 +292,7 @@ export default function UserDashboard() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="flex items-start gap-4">
               <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center flex-shrink-0">
-                <FiUser className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                <User className="w-6 h-6 text-purple-600 dark:text-purple-400" />
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Nom Complet</p>
@@ -282,7 +302,7 @@ export default function UserDashboard() {
 
             <div className="flex items-start gap-4">
               <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl flex items-center justify-center flex-shrink-0">
-                <FiMail className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+                <Mail className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Email</p>
@@ -292,7 +312,7 @@ export default function UserDashboard() {
 
             <div className="flex items-start gap-4">
               <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl flex items-center justify-center flex-shrink-0">
-                <FiPhone className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+                <Phone className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Téléphone</p>
@@ -302,7 +322,7 @@ export default function UserDashboard() {
 
             <div className="flex items-start gap-4">
               <div className="w-12 h-12 bg-amber-100 dark:bg-amber-900/30 rounded-xl flex items-center justify-center flex-shrink-0">
-                <FiMapPin className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+                <MapPin className="w-6 h-6 text-amber-600 dark:text-amber-400" />
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Localisation</p>

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { FiX } from "react-icons/fi"
+import { X } from "lucide-react"
 import { useNotification } from "@/contexts/NotificationContext"
 
 interface RoleEditModalProps {
@@ -139,7 +139,7 @@ export default function RoleEditModal({ role, onClose, onSave }: RoleEditModalPr
             onClick={onClose}
             aria-label="Fermer"
           >
-            <FiX className="w-6 h-6" />
+            <X className="w-6 h-6" />
           </button>
         </div>
 
