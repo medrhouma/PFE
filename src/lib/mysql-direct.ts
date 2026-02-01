@@ -11,10 +11,20 @@ export function getPool() {
       password: process.env.DB_PASSWORD,
       database: process.env.DB_NAME,
       waitForConnections: true,
-      connectionLimit: 10,
+      connectionLimit: 5,
       queueLimit: 0,
       enableKeepAlive: true,
-      keepAliveInitialDelay: 0
+      keepAliveInitialDelay: 10000,
+      connectTimeout: 30000,
+      idleTimeout: 60000,
+    })
+    
+    // Handle pool errors gracefully
+    pool.on('error', (err) => {
+      console.error('Database pool error:', err.message)
+      if (err.code === 'PROTOCOL_CONNECTION_LOST' || err.code === 'ECONNRESET') {
+        pool = null // Reset pool to force reconnection
+      }
     })
   }
   return pool
@@ -28,12 +38,22 @@ export async function query<T extends RowDataPacket[] = RowDataPacket[]>(
   sql: string, 
   params?: any[]
 ): Promise<T> {
-  const connection = await getPool().getConnection()
+  let connection: PoolConnection | null = null
   try {
+    connection = await getPool().getConnection()
     const [rows] = await connection.execute<T>(sql, params)
     return rows
+  } catch (error: any) {
+    // Handle connection reset errors
+    if (error.code === 'ECONNRESET' || error.code === 'PROTOCOL_CONNECTION_LOST') {
+      console.error('Database connection lost, resetting pool...')
+      pool = null
+    }
+    throw error
   } finally {
-    connection.release()
+    if (connection) {
+      connection.release()
+    }
   }
 }
 
@@ -41,11 +61,20 @@ export async function execute(
   sql: string, 
   params?: any[]
 ): Promise<OkPacket | ResultSetHeader> {
-  const connection = await getPool().getConnection()
+  let connection: PoolConnection | null = null
   try {
+    connection = await getPool().getConnection()
     const [result] = await connection.execute<OkPacket | ResultSetHeader>(sql, params)
     return result
+  } catch (error: any) {
+    if (error.code === 'ECONNRESET' || error.code === 'PROTOCOL_CONNECTION_LOST') {
+      console.error('Database connection lost, resetting pool...')
+      pool = null
+    }
+    throw error
   } finally {
-    connection.release()
+    if (connection) {
+      connection.release()
+    }
   }
 }

@@ -200,8 +200,8 @@ export async function POST(req: NextRequest) {
         `INSERT INTO Employe (
           id, user_id, nom, prenom, email, birthday, sexe,
           rib, adresse, telephone, date_embauche, photo, cv, type_contrat,
-          autres_documents, statut, status
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          autres_documents, status
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           employeeId, targetUserId, nom, prenom, email,
           birthday ? new Date(birthday) : null,
@@ -209,7 +209,6 @@ export async function POST(req: NextRequest) {
           dateEmbauche ? new Date(dateEmbauche) : null,
           photo, cv, typeContrat,
           autresDocumentsJson,
-          'EN_ATTENTE',
           'EN_ATTENTE'
         ]
       );

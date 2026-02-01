@@ -35,12 +35,12 @@ export default async function DashboardLayout({
 
     // Vérifier si l'employé existe et son statut
     const employees: any = await query(
-      'SELECT statut FROM Employe WHERE user_id = ?',
+      'SELECT status FROM Employe WHERE user_id = ?',
       [session.user.id]
     )
 
     const employeeExists = employees && employees.length > 0
-    const employeeStatus = employeeExists ? employees[0].statut : null
+    const employeeStatus = employeeExists ? employees[0].status : null
 
     // Si l'employé n'existe pas mais le user est PENDING ou ACTIVE, réinitialiser
     if (!employeeExists && (currentUserStatus === 'PENDING' || currentUserStatus === 'ACTIVE')) {

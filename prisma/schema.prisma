@@ -84,6 +84,11 @@ model User {
   deviceFingerprints DeviceFingerprint[]
   cookieConsents  CookieConsent[]
   userSessions    UserSession[]
+  loginHistory    LoginHistory[]
+  preferences     UserPreferences?
+  rhFavorites     RHFavorite[]     @relation("RHFavoritesByUser")
+  documents       Document[]
+  contracts       Contract[]
 
   @@map("User")
 }
@@ -552,4 +557,176 @@ model UserSession {
   @@index([sessionToken])
   @@index([isActive, expiresAt])
   @@map("user_sessions")
+}
+
+// ========== LOGIN HISTORY ==========
+model LoginHistory {
+  id              String    @id @default(cuid())
+  userId          String    @map("user_id")
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  loginAt         DateTime  @default(now()) @map("login_at")
+  ipAddress       String?   @map("ip_address")
+  userAgent       String?   @db.Text @map("user_agent")
+  deviceType      String?   @map("device_type") // mobile, desktop, tablet
+  browser         String?
+  os              String?
+  location        String?   // City, Country if available
+  isSuspicious    Boolean   @default(false) @map("is_suspicious")
+  suspiciousReason String?  @db.Text @map("suspicious_reason")
+  loginMethod     String    @default("credentials") @map("login_method") // credentials, google, otp
+  success         Boolean   @default(true)
+  failureReason   String?   @map("failure_reason")
+  
+  @@index([userId, loginAt])
+  @@index([loginAt])
+  @@map("login_history")
+}
+
+// ========== USER PREFERENCES ==========
+model UserPreferences {
+  id                    String   @id @default(cuid())
+  userId                String   @unique @map("user_id")
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  language              String   @default("fr")
+  theme                 String   @default("system") // light, dark, system
+  emailNotifications    Boolean  @default(true) @map("email_notifications")
+  pushNotifications     Boolean  @default(true) @map("push_notifications")
+  smsNotifications      Boolean  @default(false) @map("sms_notifications")
+  digestFrequency       String   @default("daily") @map("digest_frequency") // none, daily, weekly
+  
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+  
+  @@map("user_preferences")
+}
+
+// ========== RH FAVORITES ==========
+model RHFavorite {
+  id              String        @id @default(cuid())
+  rhUserId        String        @map("rh_user_id")
+  rhUser          User          @relation("RHFavoritesByUser", fields: [rhUserId], references: [id], onDelete: Cascade)
+  entityType      FavoriteType  @map("entity_type")
+  entityId        String        @map("entity_id")
+  notes           String?       @db.Text
+  priority        Int           @default(0)
+  
+  createdAt       DateTime      @default(now()) @map("created_at")
+  
+  @@unique([rhUserId, entityType, entityId])
+  @@index([rhUserId])
+  @@map("rh_favorites")
+}
+
+enum FavoriteType {
+  USER
+  DOCUMENT
+  CONTRACT
+  LEAVE_REQUEST
+}
+
+// ========== DOCUMENTS ==========
+model Document {
+  id              String           @id @default(cuid())
+  userId          String           @map("user_id")
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name            String
+  originalName    String           @map("original_name")
+  type            DocumentType
+  category        DocumentCategory
+  description     String?          @db.Text
+  filePath        String           @db.Text @map("file_path")
+  fileSize        Int              @map("file_size") // in bytes
+  mimeType        String           @map("mime_type")
+  status          DocumentStatus   @default(PENDING)
+  validatedBy     String?          @map("validated_by")
+  validatedAt     DateTime?        @map("validated_at")
+  expiresAt       DateTime?        @map("expires_at")
+  metadata        String?          @db.LongText // JSON additional data
+  
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+  
+  @@index([userId, type])
+  @@index([category, status])
+  @@map("documents")
+}
+
+enum DocumentType {
+  CV
+  DIPLOMA
+  CERTIFICATE
+  ATTESTATION
+  CONTRACT
+  ID_CARD
+  PASSPORT
+  PHOTO
+  OTHER
+}
+
+enum DocumentCategory {
+  PERSONNEL
+  FORMATION
+  EXPERIENCE
+  CONTRAT
+  IDENTITE
+  AUTRE
+}
+
+enum DocumentStatus {
+  PENDING
+  VALIDATED
+  REJECTED
+  EXPIRED
+}
+
+// ========== CONTRACTS ==========
+model Contract {
+  id                String           @id @default(cuid())
+  userId            String           @map("user_id")
+  user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title             String
+  type              ContractType
+  description       String?          @db.Text
+  originalPdfPath   String           @db.Text @map("original_pdf_path")
+  signedPdfPath     String?          @db.Text @map("signed_pdf_path")
+  status            ContractStatus   @default(DRAFT)
+  version           Int              @default(1)
+  
+  // Signature zone configuration (JSON: {page, x, y, width, height})
+  signatureZone     String?          @db.Text @map("signature_zone")
+  
+  // Signature data
+  signatureData     String?          @db.LongText @map("signature_data") // Base64 signature image
+  signedAt          DateTime?        @map("signed_at")
+  signedIpAddress   String?          @map("signed_ip_address")
+  signedUserAgent   String?          @db.Text @map("signed_user_agent")
+  
+  // Tracking
+  sentAt            DateTime?        @map("sent_at")
+  viewedAt          DateTime?        @map("viewed_at")
+  archivedAt        DateTime?        @map("archived_at")
+  
+  // Workflow
+  createdBy         String           @map("created_by")
+  validFrom         DateTime?        @map("valid_from")
+  validUntil        DateTime?        @map("valid_until")
+  
+  // Versioning
+  parentId          String?          @map("parent_id")
+  
+  createdAt         DateTime         @default(now()) @map("created_at")
+  updatedAt         DateTime         @updatedAt @map("updated_at")
+  
+  @@index([userId, status])
+  @@index([status, createdAt])
+  @@map("contracts")
+}
+
+enum ContractStatus {
+  DRAFT
+  SENT
+  VIEWED
+  SIGNED
+  ARCHIVED
+  CANCELLED
 }

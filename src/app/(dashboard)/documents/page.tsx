@@ -335,6 +335,40 @@ export default function DocumentsPage() {
         </div>
       </div>
 
+      {/* Quick Access - Contracts */}
+      <div className="mb-6">
+        <a 
+          href="/documents/contracts"
+          className="group flex items-center justify-between p-5 bg-gradient-to-r from-blue-500/10 to-indigo-500/10 dark:from-blue-900/20 dark:to-indigo-900/20 border-2 border-blue-200 dark:border-blue-800 rounded-2xl hover:from-blue-500/20 hover:to-indigo-500/20 hover:border-blue-300 dark:hover:border-blue-700 transition-all"
+        >
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl text-white shadow-lg shadow-blue-500/30">
+              <FileCheck className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="font-bold text-gray-900 dark:text-white text-lg">
+                {language === 'ar' ? 'عقودي' : language === 'en' ? 'My Contracts' : 'Mes Contrats'}
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {language === 'ar' 
+                  ? 'عرض وتوقيع عقود العمل'
+                  : language === 'en'
+                  ? 'View and sign employment contracts'
+                  : 'Consulter et signer les contrats de travail'}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 font-medium group-hover:translate-x-1 transition-transform">
+            <span className="hidden sm:inline">
+              {language === 'ar' ? 'عرض' : language === 'en' ? 'View' : 'Voir'}
+            </span>
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </div>
+        </a>
+      </div>
+
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20">
           <div className="w-16 h-16 bg-gradient-to-br from-violet-100 to-purple-100 dark:from-violet-900/30 dark:to-purple-900/30 rounded-2xl flex items-center justify-center mb-4">

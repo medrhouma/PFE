@@ -48,10 +48,11 @@ class PointageService {
       // Create pointage
       const pointageId = `ptg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       const status = anomalyCheck.hasAnomaly ? "PENDING_REVIEW" : "VALID";
+      const timestamp = new Date();
       
       await execute(
-        `INSERT INTO Pointage (id, user_id, type, deviceFingerprintId, ip_address, geolocation, capturedPhoto, face_verified, verificationScore, anomaly_detected, anomaly_reason, status, timestamp)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+        `INSERT INTO pointages (id, user_id, type, device_fingerprint_id, ip_address, geolocation, captured_photo, face_verified, verification_score, anomaly_detected, anomaly_reason, status, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           pointageId,
           params.userId,
@@ -64,7 +65,8 @@ class PointageService {
           params.verificationScore || null,
           anomalyCheck.hasAnomaly ? 1 : 0,
           anomalyCheck.reason || null,
-          status
+          status,
+          timestamp
         ]
       );
       
@@ -73,7 +75,9 @@ class PointageService {
         userId: params.userId,
         type: params.type,
         status,
+        timestamp,
         anomalyDetected: anomalyCheck.hasAnomaly,
+        anomalyReason: anomalyCheck.reason || null,
       };
       
       // Create anomaly record if detected
@@ -150,7 +154,7 @@ class PointageService {
     // Check 3: Duplicate pointage (same type within 5 minutes)
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
     const recentPointages = await query(
-      `SELECT id FROM Pointage WHERE user_id = ? AND type = ? AND timestamp >= ? LIMIT 1`,
+      `SELECT id FROM pointages WHERE user_id = ? AND type = ? AND created_at >= ? LIMIT 1`,
       [params.userId, params.type, fiveMinutesAgo]
     ) as any[];
     
@@ -166,7 +170,7 @@ class PointageService {
     // Check 4: Missing check-out (if checking IN but last was also IN)
     if (params.type === "IN") {
       const lastPointages = await query(
-        `SELECT id, type FROM Pointage WHERE user_id = ? ORDER BY timestamp DESC LIMIT 1`,
+        `SELECT id, type FROM pointages WHERE user_id = ? ORDER BY created_at DESC LIMIT 1`,
         [params.userId]
       ) as any[];
       
@@ -183,7 +187,7 @@ class PointageService {
     // Check 5: Multiple devices (more than 3 different devices in last 7 days)
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     const deviceCountResult = await query(
-      `SELECT COUNT(*) as count FROM DeviceFingerprint WHERE userId = ? AND lastSeen >= ?`,
+      `SELECT COUNT(*) as count FROM device_fingerprints WHERE user_id = ? AND last_seen >= ?`,
       [params.userId, sevenDaysAgo]
     ) as any[];
     
@@ -211,14 +215,14 @@ class PointageService {
     
     // Try to find existing fingerprint
     const existing = await query(
-      `SELECT id FROM DeviceFingerprint WHERE userId = ? AND fingerprint = ? LIMIT 1`,
+      `SELECT id FROM device_fingerprints WHERE user_id = ? AND fingerprint = ? LIMIT 1`,
       [userId, fingerprint]
     ) as any[];
     
     if (existing.length > 0) {
       // Update last seen
       await execute(
-        `UPDATE DeviceFingerprint SET lastSeen = NOW() WHERE id = ?`,
+        `UPDATE device_fingerprints SET last_seen = NOW() WHERE id = ?`,
         [existing[0].id]
       );
       return { id: existing[0].id };
@@ -227,7 +231,7 @@ class PointageService {
     // Create new fingerprint
     const deviceId = `dev_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     await execute(
-      `INSERT INTO DeviceFingerprint (id, userId, fingerprint, userAgent, platform, browser, screenResolution, timezone, language, isTrusted, firstSeen, lastSeen)
+      `INSERT INTO device_fingerprints (id, user_id, fingerprint, user_agent, platform, browser, screen_resolution, timezone, language, is_trusted, first_seen, last_seen)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, NOW(), NOW())`,
       [
         deviceId,
@@ -259,7 +263,7 @@ class PointageService {
   }) {
     const anomalyId = `anom_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     await execute(
-      `INSERT INTO Anomaly (id, type, severity, entityType, entityId, pointageId, description, metadata, status, createdAt)
+      `INSERT INTO anomalies (id, type, severity, entity_type, entity_id, pointage_id, description, metadata, status, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'PENDING', NOW())`,
       [
         anomalyId,
@@ -279,28 +283,28 @@ class PointageService {
    * Get user pointages
    */
   async getUserPointages(userId: string, startDate?: Date, endDate?: Date) {
-    let sql = `SELECT p.*, df.* FROM Pointage p
-               LEFT JOIN DeviceFingerprint df ON p.deviceFingerprintId = df.id
+    let sql = `SELECT p.*, df.* FROM pointages p
+               LEFT JOIN device_fingerprints df ON p.device_fingerprint_id = df.id
                WHERE p.user_id = ?`;
     const params: any[] = [userId];
     
     if (startDate) {
-      sql += ` AND p.timestamp >= ?`;
+      sql += ` AND p.created_at >= ?`;
       params.push(startDate);
     }
     if (endDate) {
-      sql += ` AND p.timestamp <= ?`;
+      sql += ` AND p.created_at <= ?`;
       params.push(endDate);
     }
     
-    sql += ` ORDER BY p.timestamp DESC`;
+    sql += ` ORDER BY p.created_at DESC`;
     
     const pointages = await query(sql, params) as any[];
     
     // Get anomalies for each pointage
     for (const p of pointages) {
       const anomalies = await query(
-        `SELECT * FROM Anomaly WHERE pointageId = ?`,
+        `SELECT * FROM anomalies WHERE pointage_id = ?`,
         [p.id]
       ) as any[];
       p.anomalies = anomalies;
@@ -321,7 +325,7 @@ class PointageService {
     const endDate = new Date(targetYear, targetMonth + 1, 0, 23, 59, 59);
     
     const pointages = await query(
-      `SELECT * FROM Pointage WHERE user_id = ? AND timestamp >= ? AND timestamp <= ? ORDER BY timestamp ASC`,
+      `SELECT * FROM pointages WHERE user_id = ? AND created_at >= ? AND created_at <= ? ORDER BY created_at ASC`,
       [userId, startDate, endDate]
     ) as any[];
     
@@ -331,9 +335,9 @@ class PointageService {
     
     for (const p of pointages) {
       if (p.type === "IN") {
-        currentCheckIn = new Date(p.timestamp);
+        currentCheckIn = new Date(p.created_at);
       } else if (p.type === "OUT" && currentCheckIn) {
-        const diff = new Date(p.timestamp).getTime() - currentCheckIn.getTime();
+        const diff = new Date(p.created_at).getTime() - currentCheckIn.getTime();
         totalHours += diff / (1000 * 60 * 60);
         currentCheckIn = null;
       }
@@ -355,8 +359,8 @@ class PointageService {
    */
   async getAnomalies(status?: string, severity?: string) {
     let sql = `SELECT a.*, p.*, u.id as userId, u.name as userName, u.last_name as userLastName, u.email as userEmail
-               FROM Anomaly a
-               LEFT JOIN Pointage p ON a.pointageId = p.id
+               FROM anomalies a
+               LEFT JOIN pointages p ON a.pointage_id = p.id
                LEFT JOIN User u ON p.user_id = u.id
                WHERE 1=1`;
     const params: any[] = [];
@@ -370,7 +374,7 @@ class PointageService {
       params.push(severity);
     }
     
-    sql += ` ORDER BY a.createdAt DESC`;
+    sql += ` ORDER BY a.created_at DESC`;
     
     return await query(sql, params) as any[];
   }
@@ -385,7 +389,7 @@ class PointageService {
     resolution: string
   ) {
     await execute(
-      `UPDATE Anomaly SET status = ?, resolvedBy = ?, resolvedAt = NOW(), resolution = ? WHERE id = ?`,
+      `UPDATE anomalies SET status = ?, resolved_by = ?, resolved_at = NOW(), resolution = ? WHERE id = ?`,
       [status, resolvedBy, resolution, anomalyId]
     );
     

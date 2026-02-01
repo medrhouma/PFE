@@ -51,39 +51,36 @@ export async function PATCH(
 
     const userId = empResult[0].user_id;
 
-    // Update both Employee status AND User status
-    // Note: Employe table has BOTH 'statut' and 'status' columns - update both!
+    // Update Employee status (only 'status' column exists, not 'statut')
     if (statut === 'REJETE') {
       // Pour les rejets, inclure la raison et réinitialiser les champs d'approbation
       await query(
         `UPDATE Employe SET 
-          statut = ?, 
           status = ?, 
           rejection_reason = ?,
           approved_by = NULL,
           approved_at = NULL,
           updated_at = NOW() 
         WHERE id = ?`,
-        [statut, statut, reason, employeeId]
+        [statut, reason, employeeId]
       );
     } else if (statut === 'APPROUVE') {
       // Pour les approbations, enregistrer qui a approuvé et quand
       await query(
         `UPDATE Employe SET 
-          statut = ?, 
           status = ?, 
           rejection_reason = NULL,
           approved_by = ?,
           approved_at = NOW(),
           updated_at = NOW() 
         WHERE id = ?`,
-        [statut, statut, session.user.id, employeeId]
+        [statut, session.user.id, employeeId]
       );
     } else {
       // Autre statut (EN_ATTENTE)
       await query(
-        `UPDATE Employe SET statut = ?, status = ?, updated_at = NOW() WHERE id = ?`,
-        [statut, statut, employeeId]
+        `UPDATE Employe SET status = ?, updated_at = NOW() WHERE id = ?`,
+        [statut, employeeId]
       );
     }
 
@@ -145,7 +142,8 @@ export async function PATCH(
       photo: employee.photo,
       cv: employee.cv,
       typeContrat: employee.type_contrat,
-      statut: employee.statut,
+      statut: employee.status,
+      status: employee.status,
       user: {
         id: employee.user_id,
         name: employee.user_name,

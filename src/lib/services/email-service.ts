@@ -1153,6 +1153,177 @@ class EmailService {
       text: `Test de notification réussi! Configuration email fonctionnelle. Envoyé le ${new Date().toLocaleString('fr-FR')}`
     });
   }
+
+  /**
+   * Send security alert email
+   */
+  async sendSecurityAlertEmail(
+    email: string,
+    alertTitle: string,
+    alertReason: string,
+    userName: string = "Utilisateur"
+  ) {
+    const subject = `Alerte de sécurité - ${alertTitle}`;
+    
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #111827; background-color: #f3f4f6; margin: 0; padding: 20px; }
+          .container { max-width: 600px; margin: 0 auto; }
+          .card { background-color: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+          .header { background: linear-gradient(135deg, #dc2626, #b91c1c); color: white; padding: 30px; text-align: center; }
+          .content { padding: 30px; }
+          .alert-box { background-color: #fef2f2; border-left: 4px solid #dc2626; padding: 20px; border-radius: 8px; margin: 20px 0; }
+          .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="card">
+            <div class="header">
+              <h1>Alerte de Sécurité</h1>
+            </div>
+            <div class="content">
+              <p>Bonjour ${userName},</p>
+              <div class="alert-box">
+                <strong>${alertTitle}</strong>
+                <p style="margin-top: 10px;">${alertReason}</p>
+              </div>
+              <p>Si vous n'êtes pas à l'origine de cette activité, nous vous recommandons de changer votre mot de passe immédiatement.</p>
+              <p style="color: #6b7280; font-size: 14px;">Date: ${new Date().toLocaleString('fr-FR')}</p>
+            </div>
+            <div class="footer">
+              <p>Santec RH Platform - Sécurité</p>
+            </div>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+    
+    return await this.sendEmail({
+      to: email,
+      subject,
+      html,
+      text: `Alerte de sécurité: ${alertTitle}\n\n${alertReason}\n\nDate: ${new Date().toLocaleString('fr-FR')}\n\nSi vous n'êtes pas à l'origine de cette activité, changez votre mot de passe immédiatement.`
+    });
+  }
+
+  /**
+   * Send contract notification email
+   */
+  async sendContractNotificationEmail(
+    email: string,
+    userName: string,
+    contractTitle: string,
+    contractUrl: string
+  ) {
+    const subject = `Nouveau contrat à signer - ${contractTitle}`;
+    
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #111827; background-color: #f3f4f6; margin: 0; padding: 20px; }
+          .container { max-width: 600px; margin: 0 auto; }
+          .card { background-color: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+          .header { background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white; padding: 30px; text-align: center; }
+          .content { padding: 30px; }
+          .contract-box { background-color: #eff6ff; border-left: 4px solid #2563eb; padding: 20px; border-radius: 8px; margin: 20px 0; }
+          .button { display: inline-block; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white; padding: 14px 28px; text-decoration: none; border-radius: 10px; font-weight: 600; margin-top: 20px; }
+          .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="card">
+            <div class="header">
+              <h1>Nouveau Contrat</h1>
+            </div>
+            <div class="content">
+              <p>Bonjour ${userName},</p>
+              <div class="contract-box">
+                <strong>${contractTitle}</strong>
+                <p style="margin-top: 10px;">Un nouveau contrat vous a été envoyé pour signature.</p>
+              </div>
+              <p>Veuillez consulter et signer ce contrat dès que possible.</p>
+              <div style="text-align: center;">
+                <a href="${contractUrl}" class="button">Consulter le contrat</a>
+              </div>
+            </div>
+            <div class="footer">
+              <p>Santec RH Platform</p>
+            </div>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+    
+    return await this.sendEmail({
+      to: email,
+      subject,
+      html,
+      text: `Nouveau contrat à signer: ${contractTitle}\n\nBonjour ${userName},\n\nUn nouveau contrat vous a été envoyé pour signature.\n\nConsulter: ${contractUrl}`
+    });
+  }
+
+  /**
+   * Send contract signed confirmation
+   */
+  async sendContractSignedConfirmation(
+    email: string,
+    userName: string,
+    contractTitle: string
+  ) {
+    const subject = `Confirmation de signature - ${contractTitle}`;
+    
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #111827; background-color: #f3f4f6; margin: 0; padding: 20px; }
+          .container { max-width: 600px; margin: 0 auto; }
+          .card { background-color: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+          .header { background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 30px; text-align: center; }
+          .content { padding: 30px; text-align: center; }
+          .success-badge { display: inline-block; background-color: #d1fae5; color: #065f46; padding: 15px 30px; border-radius: 50px; font-weight: 600; margin: 20px 0; font-size: 18px; }
+          .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="card">
+            <div class="header">
+              <h1>Contrat Signé</h1>
+            </div>
+            <div class="content">
+              <div class="success-badge">Signature confirmée</div>
+              <p>Bonjour ${userName},</p>
+              <p>Votre signature pour le contrat <strong>"${contractTitle}"</strong> a été enregistrée avec succès.</p>
+              <p style="color: #6b7280; font-size: 14px;">Date de signature: ${new Date().toLocaleString('fr-FR')}</p>
+              <p style="margin-top: 20px;">Une copie du contrat signé vous sera envoyée prochainement.</p>
+            </div>
+            <div class="footer">
+              <p>Santec RH Platform</p>
+            </div>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+    
+    return await this.sendEmail({
+      to: email,
+      subject,
+      html,
+      text: `Confirmation de signature\n\nBonjour ${userName},\n\nVotre signature pour le contrat "${contractTitle}" a été enregistrée avec succès.\n\nDate: ${new Date().toLocaleString('fr-FR')}`
+    });
+  }
 }
 
 export const emailService = new EmailService();

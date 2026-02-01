@@ -4,6 +4,8 @@ import CredentialsProvider from "next-auth/providers/credentials"
 import { MySQLAdapter } from "./auth-adapter"
 import { pool } from "./db"
 import bcrypt from "bcryptjs"
+import { loginHistoryService } from "./services/login-history-service"
+import { emailService } from "./services/email-service"
 
 export const authOptions: NextAuthOptions = {
   adapter: MySQLAdapter(),
@@ -20,11 +22,20 @@ export const authOptions: NextAuthOptions = {
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
+        userAgent: { label: "User Agent", type: "text" },
+        ipAddress: { label: "IP Address", type: "text" },
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         if (!credentials?.email || !credentials?.password) {
           throw new Error("Email et mot de passe requis")
         }
+
+        // Extract device info from request
+        const userAgent = credentials.userAgent || req?.headers?.["user-agent"] || "Unknown"
+        const ipAddress = credentials.ipAddress || 
+          (req?.headers?.["x-forwarded-for"] as string)?.split(",")[0]?.trim() || 
+          req?.headers?.["x-real-ip"] as string || 
+          "Unknown"
 
         const [rows] = await pool.execute(
           `SELECT * FROM User WHERE email = ?`,
@@ -45,7 +56,50 @@ export const authOptions: NextAuthOptions = {
         const isValid = await bcrypt.compare(credentials.password, user.password)
 
         if (!isValid) {
+          // Record failed login attempt
+          try {
+            await loginHistoryService.recordLogin({
+              userId: user.id,
+              ipAddress,
+              userAgent,
+              loginMethod: "credentials",
+              success: false,
+              failureReason: "Invalid password",
+            })
+          } catch (e) {
+            console.error("Failed to record login failure:", e)
+          }
           throw new Error("Mot de passe incorrect")
+        }
+
+        // Check for suspicious activity before successful login
+        try {
+          const isSuspicious = await loginHistoryService.checkSuspiciousActivity(user.id, ipAddress)
+          
+          // Record successful login
+          await loginHistoryService.recordLogin({
+            userId: user.id,
+            ipAddress,
+            userAgent,
+            loginMethod: "credentials",
+            success: true,
+            isSuspicious,
+          })
+
+          // Send security alert if suspicious
+          if (isSuspicious && user.email) {
+            await emailService.sendSecurityAlertEmail(
+              user.email,
+              user.name || "Utilisateur",
+              "Connexion suspecte détectée",
+              `Une connexion depuis une nouvelle adresse IP (${ipAddress}) a été détectée sur votre compte. Si ce n'était pas vous, veuillez sécuriser votre compte immédiatement.`,
+              ipAddress,
+              userAgent,
+              new Date().toISOString()
+            )
+          }
+        } catch (e) {
+          console.error("Failed to process login history:", e)
         }
 
         return {
@@ -73,6 +127,20 @@ export const authOptions: NextAuthOptions = {
 
   callbacks: {
     async signIn({ user, account, profile }) {
+      // Record Google login in history
+      if (account?.provider === "google" && user?.id) {
+        try {
+          await loginHistoryService.recordLogin({
+            userId: user.id,
+            ipAddress: "OAuth", // IP not available in OAuth flow
+            userAgent: "Google OAuth",
+            loginMethod: "google",
+            success: true,
+          })
+        } catch (e) {
+          console.error("Failed to record Google login:", e)
+        }
+      }
       // ✅ Permettre tous les logins
       return true
     },

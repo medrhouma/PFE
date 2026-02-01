@@ -1,12 +1,22 @@
 "use client"
 
-import { useState } from "react"
-import { X, User } from "lucide-react"
+import { useState, useEffect, useCallback } from "react"
+import { X, User, Check, AlertCircle } from "lucide-react"
 import { useNotification } from "@/contexts/NotificationContext"
 
 interface AddUserModalProps {
   onClose: () => void
   onSave?: (user: any) => void
+}
+
+// Password validation rules
+const validatePassword = (password: string) => {
+  return {
+    minLength: password.length >= 8,
+    hasUppercase: /[A-Z]/.test(password),
+    hasNumber: /[0-9]/.test(password),
+    isValid: password.length >= 8 && /[A-Z]/.test(password) && /[0-9]/.test(password)
+  }
 }
 
 export default function AddUserModal({ onClose, onSave }: AddUserModalProps) {
@@ -17,10 +27,71 @@ export default function AddUserModal({ onClose, onSave }: AddUserModalProps) {
   const [role, setRole] = useState("SUPER_ADMIN")
   const [provider, setProvider] = useState("Credentials")
   const [saving, setSaving] = useState(false)
+  const [checkingEmail, setCheckingEmail] = useState(false)
+  const [emailExists, setEmailExists] = useState(false)
+  const [emailChecked, setEmailChecked] = useState(false)
   const { showNotification } = useNotification()
+
+  // Password validation state
+  const passwordValidation = validatePassword(password)
+
+  // Debounced email check
+  const checkEmailExists = useCallback(async (emailToCheck: string) => {
+    if (!emailToCheck || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailToCheck)) {
+      setEmailExists(false)
+      setEmailChecked(false)
+      return
+    }
+
+    setCheckingEmail(true)
+    try {
+      const response = await fetch(`/api/users/check-email?email=${encodeURIComponent(emailToCheck)}`)
+      const data = await response.json()
+      setEmailExists(data.exists)
+      setEmailChecked(true)
+    } catch (error) {
+      console.error("Error checking email:", error)
+      setEmailChecked(false)
+    } finally {
+      setCheckingEmail(false)
+    }
+  }, [])
+
+  // Check email after user stops typing
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (email) {
+        checkEmailExists(email)
+      }
+    }, 500)
+
+    return () => clearTimeout(timer)
+  }, [email, checkEmailExists])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Validate before submit
+    if (!passwordValidation.isValid) {
+      showNotification({
+        type: 'error',
+        title: 'Mot de passe invalide',
+        message: 'Le mot de passe ne respecte pas les critères requis',
+        duration: 5000
+      })
+      return
+    }
+
+    if (emailExists) {
+      showNotification({
+        type: 'error',
+        title: 'Email déjà utilisé',
+        message: 'Cet email est déjà associé à un compte existant',
+        duration: 5000
+      })
+      return
+    }
+
     setSaving(true)
 
     try {
@@ -53,7 +124,7 @@ export default function AddUserModal({ onClose, onSave }: AddUserModalProps) {
         showNotification({
           type: 'error',
           title: 'Erreur de création',
-          message: error.message || 'Impossible de créer l\'utilisateur',
+          message: error.error || 'Impossible de créer l\'utilisateur',
           duration: 5000
         })
       }
@@ -131,14 +202,46 @@ export default function AddUserModal({ onClose, onSave }: AddUserModalProps) {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Email
             </label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="email@example.com"
-              className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            />
+            <div className="relative">
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="email@example.com"
+                className={`w-full px-4 py-3 pr-10 rounded-xl border ${
+                  emailChecked 
+                    ? emailExists 
+                      ? 'border-red-500 focus:ring-red-500' 
+                      : 'border-green-500 focus:ring-green-500'
+                    : 'border-gray-300 dark:border-gray-600 focus:ring-indigo-500'
+                } bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent`}
+              />
+              {/* Status icon */}
+              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                {checkingEmail ? (
+                  <div className="w-5 h-5 border-2 border-gray-300 border-t-indigo-600 rounded-full animate-spin" />
+                ) : emailChecked ? (
+                  emailExists ? (
+                    <AlertCircle className="w-5 h-5 text-red-500" />
+                  ) : (
+                    <Check className="w-5 h-5 text-green-500" />
+                  )
+                ) : null}
+              </div>
+            </div>
+            {emailChecked && emailExists && (
+              <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
+                <AlertCircle className="w-4 h-4" />
+                Cet email est déjà utilisé
+              </p>
+            )}
+            {emailChecked && !emailExists && email && (
+              <p className="mt-1 text-sm text-green-500 flex items-center gap-1">
+                <Check className="w-4 h-4" />
+                Email disponible
+              </p>
+            )}
           </div>
 
           {/* Password */}
@@ -146,14 +249,49 @@ export default function AddUserModal({ onClose, onSave }: AddUserModalProps) {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Password
             </label>
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Password"
-              className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            />
+            <div className="relative">
+              <input
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className={`w-full px-4 py-3 pr-10 rounded-xl border ${
+                  password.length > 0
+                    ? passwordValidation.isValid
+                      ? 'border-green-500 focus:ring-green-500'
+                      : 'border-orange-400 focus:ring-orange-400'
+                    : 'border-gray-300 dark:border-gray-600 focus:ring-indigo-500'
+                } bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent`}
+              />
+              {/* Status icon */}
+              {password.length > 0 && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  {passwordValidation.isValid ? (
+                    <Check className="w-5 h-5 text-green-500" />
+                  ) : (
+                    <AlertCircle className="w-5 h-5 text-orange-400" />
+                  )}
+                </div>
+              )}
+            </div>
+            {/* Password requirements */}
+            {password.length > 0 && (
+              <div className="mt-2 space-y-1">
+                <div className={`flex items-center gap-2 text-xs ${passwordValidation.minLength ? 'text-green-600' : 'text-gray-500'}`}>
+                  {passwordValidation.minLength ? <Check className="w-3.5 h-3.5" /> : <div className="w-3.5 h-3.5 rounded-full border border-gray-400" />}
+                  Au moins 8 caractères
+                </div>
+                <div className={`flex items-center gap-2 text-xs ${passwordValidation.hasUppercase ? 'text-green-600' : 'text-gray-500'}`}>
+                  {passwordValidation.hasUppercase ? <Check className="w-3.5 h-3.5" /> : <div className="w-3.5 h-3.5 rounded-full border border-gray-400" />}
+                  Au moins une majuscule (A-Z)
+                </div>
+                <div className={`flex items-center gap-2 text-xs ${passwordValidation.hasNumber ? 'text-green-600' : 'text-gray-500'}`}>
+                  {passwordValidation.hasNumber ? <Check className="w-3.5 h-3.5" /> : <div className="w-3.5 h-3.5 rounded-full border border-gray-400" />}
+                  Au moins un chiffre (0-9)
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Role */}

@@ -1,10 +1,11 @@
 "use client"
 import { useEffect, useState } from "react"
-import { User, Edit3, Trash2, RefreshCw, Mail, Phone, Filter, LayoutGrid, List, Search, UserPlus, Briefcase } from "lucide-react"
+import { User, Edit3, Trash2, RefreshCw, Mail, Phone, Filter, LayoutGrid, List, Search, UserPlus, Briefcase, FileText } from "lucide-react"
 import AddUserModal from "@/components/users/AddUserModal"
 import EditUserModal from "@/components/users/EditUserModal"
 import ConfirmationModal from "@/components/ui/ConfirmationModal"
 import UserDossierModal from "@/components/users/UserDossierModal"
+import SendContractModal from "@/components/contracts/SendContractModal"
 import { usePermissions } from "@/contexts/PermissionsContext"
 import { useNotification } from "@/contexts/NotificationContext"
 import { useLanguage } from "@/contexts/LanguageContext"
@@ -48,6 +49,8 @@ export default function UsersPage() {
   const [userToDelete, setUserToDelete] = useState<string | null>(null)
   const [selectedUser, setSelectedUser] = useState<any>(null)
   const [showDossierModal, setShowDossierModal] = useState(false)
+  const [showContractModal, setShowContractModal] = useState(false)
+  const [userForContract, setUserForContract] = useState<any>(null)
   const { hasPermission } = usePermissions()
   const { showNotification } = useNotification()
   const { language } = useLanguage()
@@ -308,13 +311,13 @@ export default function UsersPage() {
         {/* Grid View */}
         {!loading && viewMode === 'grid' && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredUsers.map((user) => {
+            {filteredUsers.map((user, index) => {
               const config = roleConfig[user.role] || roleConfig.USER
               const photoSrc = getUserPhoto(user)
               
               return (
                 <div
-                  key={user.id}
+                  key={user.id || `user-grid-${index}`}
                   className={`bg-white dark:bg-gray-800 rounded-2xl shadow-sm border-2 ${config.border} overflow-hidden hover:shadow-xl transition-all duration-300 group cursor-pointer`}
                   onClick={() => user.hasEmployeeProfile && handleShowDossier(user)}
                 >
@@ -383,7 +386,7 @@ export default function UsersPage() {
                   </div>
                   
                   {/* Actions */}
-                  <div className="px-6 pb-6 flex justify-center gap-2">
+                  <div className="px-6 pb-6 flex justify-center gap-2 flex-wrap">
                     {user.hasEmployeeProfile && (
                       <button
                         onClick={(e) => { e.stopPropagation(); handleShowDossier(user) }}
@@ -391,6 +394,20 @@ export default function UsersPage() {
                       >
                         <User className="w-4 h-4" />
                         {getText('viewProfile')}
+                      </button>
+                    )}
+                    {/* Send Contract Button - Only for approved employees */}
+                    {user.hasEmployeeProfile && user.statut === 'APPROUVE' && canEdit && (
+                      <button 
+                        onClick={(e) => { 
+                          e.stopPropagation(); 
+                          setUserForContract(user);
+                          setShowContractModal(true);
+                        }}
+                        className="p-2 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400 transition-colors"
+                        title="Envoyer un contrat"
+                      >
+                        <FileText className="w-5 h-5" />
                       </button>
                     )}
                     {canEdit && (
@@ -441,7 +458,7 @@ export default function UsersPage() {
                     
                     return (
                       <tr 
-                        key={user.id} 
+                        key={user.id || `user-table-${idx}`} 
                         className="border-b border-gray-100 dark:border-gray-700 hover:bg-violet-50/30 dark:hover:bg-violet-900/10 transition-all cursor-pointer"
                         onClick={() => user.hasEmployeeProfile && handleShowDossier(user)}
                       >
@@ -476,6 +493,20 @@ export default function UsersPage() {
                                 title={getText('viewProfile')}
                               >
                                 <User className="w-4 h-4" />
+                              </button>
+                            )}
+                            {/* Send Contract Button */}
+                            {user.hasEmployeeProfile && user.statut === 'APPROUVE' && canEdit && (
+                              <button 
+                                onClick={(e) => { 
+                                  e.stopPropagation(); 
+                                  setUserForContract(user);
+                                  setShowContractModal(true);
+                                }}
+                                className="p-2 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/20 text-blue-600"
+                                title="Envoyer un contrat"
+                              >
+                                <FileText className="w-4 h-4" />
                               </button>
                             )}
                             {canEdit && (
@@ -565,6 +596,25 @@ export default function UsersPage() {
           type="danger"
           onConfirm={confirmDeleteUser}
           onCancel={cancelDeleteUser}
+        />
+      )}
+
+      {/* Send Contract Modal */}
+      {showContractModal && userForContract && (
+        <SendContractModal
+          isOpen={showContractModal}
+          onClose={() => {
+            setShowContractModal(false)
+            setUserForContract(null)
+          }}
+          user={userForContract}
+          onSuccess={() => {
+            showNotification({
+              type: 'success',
+              title: 'Contrat envoyé',
+              message: `Le contrat a été envoyé à ${userForContract.prenom || userForContract.name} ${userForContract.nom || ''}`
+            })
+          }}
         />
       )}
     </div>

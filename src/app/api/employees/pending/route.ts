@@ -24,11 +24,10 @@ export async function GET(req: NextRequest) {
         u.id as user_id,
         u.name as user_name,
         u.email as user_email,
-        u.role as user_roleEnum,
-        u.createdAt as user_createdAt
+        u.role as user_roleEnum
       FROM Employe e
       INNER JOIN User u ON e.user_id = u.id
-      WHERE e.statut = 'EN_ATTENTE'
+      WHERE e.status = 'EN_ATTENTE'
       ORDER BY e.created_at DESC
     `);
 

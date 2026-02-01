@@ -38,6 +38,8 @@ const translations: Record<Language, Record<string, string>> = {
     "attendance": "Pointage",
     "leaves": "Congés",
     "documents": "Documents",
+    "contracts": "Contrats",
+    "ai_assistant": "Assistant IA",
     "hr": "Ressources humaines",
     "notifications": "Notifications",
     "my_documents": "Mes documents",
@@ -51,6 +53,7 @@ const translations: Record<Language, Record<string, string>> = {
     "cookie_settings": "Paramètres cookies",
     "administration": "Administration",
     "profile_validation": "Validation profils",
+    "login_history": "Historique des connexions",
     
     // Settings
     "general": "Général",
@@ -122,6 +125,8 @@ const translations: Record<Language, Record<string, string>> = {
     "attendance": "Attendance",
     "leaves": "Leaves",
     "documents": "Documents",
+    "contracts": "Contracts",
+    "ai_assistant": "AI Assistant",
     "hr": "Human Resources",
     "notifications": "Notifications",
     "my_documents": "My documents",
@@ -135,6 +140,7 @@ const translations: Record<Language, Record<string, string>> = {
     "cookie_settings": "Cookie Settings",
     "administration": "Administration",
     "profile_validation": "Profile Validation",
+    "login_history": "Login History",
     
     // Settings
     "general": "General",
@@ -206,6 +212,8 @@ const translations: Record<Language, Record<string, string>> = {
     "attendance": "الحضور",
     "leaves": "الإجازات",
     "documents": "المستندات",
+    "contracts": "العقود",
+    "ai_assistant": "المساعد الذكي",
     "hr": "الموارد البشرية",
     "notifications": "الإشعارات",
     "my_documents": "مستنداتي",
@@ -219,6 +227,7 @@ const translations: Record<Language, Record<string, string>> = {
     "cookie_settings": "إعدادات ملفات تعريف الارتباط",
     "administration": "الإدارة",
     "profile_validation": "التحقق من الملفات الشخصية",
+    "login_history": "سجل تسجيل الدخول",
     
     // Settings
     "general": "عام",
