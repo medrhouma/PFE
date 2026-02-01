@@ -138,6 +138,17 @@ export async function POST(req: NextRequest) {
       [targetUserId]
     );
 
+    // Check if user exists before creating new employee
+    if (!existingEmployee || existingEmployee.length === 0) {
+      const userExists: any = await query(
+        'SELECT id FROM User WHERE id = ?',
+        [targetUserId]
+      );
+      if (!userExists || userExists.length === 0) {
+        return NextResponse.json({ error: "L'utilisateur n'existe pas." }, { status: 400 });
+      }
+    }
+
     let employee;
 
     if (existingEmployee && existingEmployee.length > 0) {
