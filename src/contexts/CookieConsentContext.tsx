@@ -107,6 +107,14 @@ export function CookieConsentProvider({ children }: { children: ReactNode }) {
   };
 
   const saveConsent = async (action: string, prefs?: Partial<CookiePreferences>) => {
+    // Prepare the preferences to save
+    const prefsToSave = {
+      necessary: true,
+      functional: prefs?.functional ?? (action === "accept_all"),
+      analytics: prefs?.analytics ?? (action === "accept_all"),
+      marketing: prefs?.marketing ?? (action === "accept_all"),
+    };
+    
     try {
       const response = await fetch("/api/cookies/consent", {
         method: "POST",
@@ -131,10 +139,25 @@ export function CookieConsentProvider({ children }: { children: ReactNode }) {
           version: data.version || "1.0",
           updatedAt: new Date().toISOString(),
         }));
+        return;
       }
     } catch (error) {
-      console.error("Error saving consent:", error);
+      console.error("Error saving consent to API:", error);
     }
+    
+    // Fallback: Save locally even if API fails
+    console.log("Saving consent locally as fallback");
+    setPreferences(prefsToSave);
+    setHasConsent(true);
+    setShowBanner(false);
+    setShowSettingsModal(false);
+    setConsentVersion("1.0");
+    setLastUpdated(new Date().toISOString());
+    localStorage.setItem("cookie_consent", JSON.stringify(prefsToSave));
+    localStorage.setItem("cookie_consent_meta", JSON.stringify({
+      version: "1.0",
+      updatedAt: new Date().toISOString(),
+    }));
   };
 
   const acceptAll = useCallback(async () => {

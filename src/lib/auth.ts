@@ -1,4 +1,5 @@
 import { NextAuthOptions } from "next-auth"
+import type { Provider } from "next-auth/providers/index"
 import GoogleProvider from "next-auth/providers/google"
 import CredentialsProvider from "next-auth/providers/credentials"
 import { MySQLAdapter } from "./auth-adapter"
@@ -7,24 +8,43 @@ import bcrypt from "bcryptjs"
 import { loginHistoryService } from "./services/login-history-service"
 import { emailService } from "./services/email-service"
 
-// Helper to get pool with error handling
+// Helper to get pool with error handling - returns null if not configured
 function getDbPool() {
   const p = getPool();
   if (!p) {
-    throw new Error('Database not configured');
+    return null;
   }
   return p;
+}
+
+// Helper to check if database is available
+function hasDbConnection(): boolean {
+  return getDbPool() !== null;
+}
+
+// Build providers array conditionally
+function buildProviders(): Provider[] {
+  const providers: Provider[] = [];
+  
+  // Only add Google provider if credentials are configured
+  if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+    providers.push(
+      GoogleProvider({
+        clientId: process.env.GOOGLE_CLIENT_ID,
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+        allowDangerousEmailAccountLinking: true,
+      })
+    );
+  }
+  
+  return providers;
 }
 
 export const authOptions: NextAuthOptions = {
   adapter: MySQLAdapter(),
 
   providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      allowDangerousEmailAccountLinking: true,
-    }),
+    ...buildProviders(),
 
     CredentialsProvider({
       name: "credentials",
@@ -47,6 +67,10 @@ export const authOptions: NextAuthOptions = {
           "Unknown"
 
         const pool = getDbPool();
+        if (!pool) {
+          throw new Error("Base de données non configurée")
+        }
+        
         const [rows] = await pool.execute(
           `SELECT * FROM User WHERE email = ?`,
           [credentials.email]
@@ -145,32 +169,41 @@ export const authOptions: NextAuthOptions = {
         token.status = (user as any).status || "INACTIVE"
       }
       
-      // ✅ Si c'est une connexion Google, récupérer le rôle et le statut depuis la DB
-      if (account?.provider === "google" && user?.email) {
-        const dbPool = getDbPool();
-        const [rows] = await dbPool.execute(
-          `SELECT role, status FROM User WHERE email = ?`,
-          [user.email]
-        )
-        const users = rows as any[]
-        if (users.length > 0) {
-          token.role = users[0].role
-          token.status = users[0].status || "INACTIVE"
-        }
+      // Only query database if it's available
+      const dbPool = getDbPool();
+      if (!dbPool) {
+        return token;
       }
-
-      // Toujours récupérer le rôle et le statut les plus récents depuis la DB
-      if (token.email) {
-        const dbPool = getDbPool();
-        const [rows] = await dbPool.execute(
-          `SELECT role, status FROM User WHERE email = ?`,
-          [token.email]
-        )
-        const users = rows as any[]
-        if (users.length > 0) {
-          token.role = users[0].role
-          token.status = users[0].status
+      
+      try {
+        // ✅ Si c'est une connexion Google, récupérer le rôle et le statut depuis la DB
+        if (account?.provider === "google" && user?.email) {
+          const [rows] = await dbPool.execute(
+            `SELECT role, status FROM User WHERE email = ?`,
+            [user.email]
+          )
+          const users = rows as any[]
+          if (users.length > 0) {
+            token.role = users[0].role
+            token.status = users[0].status || "INACTIVE"
+          }
         }
+
+        // Toujours récupérer le rôle et le statut les plus récents depuis la DB
+        if (token.email) {
+          const [rows] = await dbPool.execute(
+            `SELECT role, status FROM User WHERE email = ?`,
+            [token.email]
+          )
+          const users = rows as any[]
+          if (users.length > 0) {
+            token.role = users[0].role
+            token.status = users[0].status
+          }
+        }
+      } catch (error) {
+        console.error("JWT callback DB error:", error);
+        // Continue with existing token data
       }
       
       return token
