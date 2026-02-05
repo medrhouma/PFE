@@ -3,6 +3,8 @@
  * GET /api/rh/pending-items
  */
 
+export const dynamic = "force-dynamic";
+
 import { withRole, successResponse, errorResponse } from "@/lib/api-helpers";
 import { query } from "@/lib/mysql-direct";
 import type { RowDataPacket } from "mysql2";

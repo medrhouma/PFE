@@ -2,13 +2,19 @@
   "name": "rh-platform",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": "18.x"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",
     "postinstall": "prisma generate",
     "start": "next start",
     "lint": "eslint",
-    "db:seed": "ts-node --compiler-options {\\\"module\\\":\\\"commonjs\\\"} prisma/seed.ts"
+    "db:seed": "ts-node --compiler-options {\\\"module\\\":\\\"commonjs\\\"} prisma/seed.ts",
+    "prisma:generate": "prisma generate",
+    "prisma:validate": "prisma validate",
+    "vercel-build": "prisma generate && next build"
   },
   "prisma": {
     "seed": "ts-node --compiler-options {\\\"module\\\":\\\"commonjs\\\"} prisma/seed.ts"

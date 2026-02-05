@@ -1,11 +1,21 @@
 import { Adapter, AdapterUser, AdapterAccount, AdapterSession } from "next-auth/adapters"
-import { pool } from "./db"
+import { pool as getPool } from "./db"
 import { v4 as uuid } from "uuid"
+
+// Helper to get pool with error handling
+function getDbPool() {
+  const p = getPool();
+  if (!p) {
+    throw new Error('Database not configured');
+  }
+  return p;
+}
 
 export function MySQLAdapter(): Adapter {
   return {
     async createUser(user: Omit<AdapterUser, "id">): Promise<AdapterUser & { role: string }> {
       const id: string = uuid()
+      const pool = getDbPool();
       await pool.execute(
       `INSERT INTO User (id, email, name, image, emailVerified, role) VALUES (?, ?, ?, ?, ?, ?)`,
       [id, user.email, user.name || null, user.image || null, user.emailVerified || null, "USER"]
@@ -14,6 +24,7 @@ export function MySQLAdapter(): Adapter {
     },
 
     async getUser(id) {
+      const pool = getDbPool();
       const [rows] = await pool.execute(`SELECT * FROM User WHERE id = ?`, [id])
       const users = rows as any[]
       if (users.length === 0) return null
@@ -28,6 +39,7 @@ export function MySQLAdapter(): Adapter {
     },
 
     async getUserByEmail(email) {
+      const pool = getDbPool();
       const [rows] = await pool.execute(`SELECT * FROM User WHERE email = ?`, [email])
       const users = rows as any[]
       if (users.length === 0) return null
@@ -42,6 +54,7 @@ export function MySQLAdapter(): Adapter {
     },
 
     async getUserByAccount({ provider, providerAccountId }) {
+      const pool = getDbPool();
       const [rows] = await pool.execute(
         `SELECT u.* FROM User u 
          JOIN Account a ON u. id = a.userId 
@@ -61,6 +74,7 @@ export function MySQLAdapter(): Adapter {
     },
 
     async updateUser(user) {
+      const pool = getDbPool();
       await pool.execute(
         `UPDATE User SET name = ?, email = ?, image = ?, emailVerified = ?  WHERE id = ?`,
         [user.name || null, user. email, user.image || null, user. emailVerified || null, user. id]
@@ -78,12 +92,14 @@ export function MySQLAdapter(): Adapter {
     },
 
     async deleteUser(id) {
+      const pool = getDbPool();
       await pool.execute(`DELETE FROM User WHERE id = ?`, [id])
     },
 
     // ✅ CORRIGÉ : Remplacer undefined par null
     async linkAccount(account: AdapterAccount): Promise<AdapterAccount> {
       const id: string = uuid()
+      const pool = getDbPool();
       await pool.execute(
       `INSERT INTO Account (id, userId, type, provider, providerAccountId, refresh_token, access_token, expires_at, token_type, scope, id_token, session_state)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -106,6 +122,7 @@ export function MySQLAdapter(): Adapter {
     },
 
     async unlinkAccount({ provider, providerAccountId }: { provider: string; providerAccountId: string }) {
+      const pool = getDbPool();
       await pool.execute(
         `DELETE FROM Account WHERE provider = ? AND providerAccountId = ?`,
         [provider, providerAccountId]
@@ -114,6 +131,7 @@ export function MySQLAdapter(): Adapter {
 
     async createSession(session) {
       const id = uuid()
+      const pool = getDbPool();
       await pool.execute(
         `INSERT INTO Session (id, sessionToken, userId, expires) VALUES (?, ?, ?, ?)`,
         [id, session.sessionToken, session.userId, session.expires]
@@ -122,6 +140,7 @@ export function MySQLAdapter(): Adapter {
     },
 
     async getSessionAndUser(sessionToken) {
+      const pool = getDbPool();
       const [rows] = await pool.execute(
         `SELECT s.*, u.* FROM Session s
          JOIN User u ON s.userId = u.id
@@ -149,6 +168,7 @@ export function MySQLAdapter(): Adapter {
     },
 
     async updateSession(session) {
+      const pool = getDbPool();
       await pool.execute(
         `UPDATE Session SET expires = ? WHERE sessionToken = ?`,
         [session.expires, session.sessionToken]
@@ -157,10 +177,12 @@ export function MySQLAdapter(): Adapter {
     },
 
     async deleteSession(sessionToken) {
-      await pool. execute(`DELETE FROM Session WHERE sessionToken = ?`, [sessionToken])
+      const pool = getDbPool();
+      await pool.execute(`DELETE FROM Session WHERE sessionToken = ?`, [sessionToken])
     },
 
     async createVerificationToken(token) {
+      const pool = getDbPool();
       await pool.execute(
         `INSERT INTO VerificationToken (identifier, token, expires) VALUES (?, ?, ?)`,
         [token. identifier, token.token, token. expires]
@@ -169,6 +191,7 @@ export function MySQLAdapter(): Adapter {
     },
 
     async useVerificationToken({ identifier, token }) {
+      const pool = getDbPool();
       const [rows] = await pool.execute(
         `SELECT * FROM VerificationToken WHERE identifier = ? AND token = ?`,
         [identifier, token]

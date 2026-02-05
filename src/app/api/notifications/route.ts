@@ -3,6 +3,8 @@
  * Manage user notifications with role-based filtering
  */
 
+export const dynamic = "force-dynamic";
+
 import { NextRequest, NextResponse } from "next/server";
 import { withAuth } from "@/lib/rbac";
 import { notificationService } from "@/lib/services/notification-service";

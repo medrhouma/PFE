@@ -4,12 +4,12 @@
  */
 
 export { Avatar } from './Avatar'
-export { default as Button } from './Button'
-export { default as Checkbox } from './Checkbox'
-export { ConfirmationModal } from './ConfirmationModal'
+export { Button } from './Button'
+export { Checkbox } from './Checkbox'
+export { default as ConfirmationModal } from './ConfirmationModal'
 export { EmptyState, EmptyStateInline } from './EmptyState'
 export { ErrorBoundary, withErrorBoundary, ErrorBoundaryWrapper } from './ErrorBoundary'
-export { default as Input } from './Input'
+export { Input } from './Input'
 export { 
   LoadingSpinner, 
   LoadingSkeleton, 
@@ -18,4 +18,11 @@ export {
   LoadingPage 
 } from './Loading'
 export { SafeImage } from './SafeImage'
-export { SplitScreen } from './SplitScreen'
+export { 
+  useSplitScreen, 
+  SplitScreenProvider, 
+  LayoutSelector, 
+  PanelSlot, 
+  SplitScreenContainer, 
+  SplitScreenToolbar 
+} from './SplitScreen'

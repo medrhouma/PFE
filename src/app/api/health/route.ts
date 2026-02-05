@@ -7,6 +7,8 @@
 import { NextResponse } from "next/server";
 import { pool } from "@/lib/db";
 
+export const dynamic = "force-dynamic";
+
 interface HealthStatus {
   status: 'healthy' | 'degraded' | 'unhealthy';
   timestamp: string;
@@ -48,11 +50,18 @@ export async function GET() {
 
   // Check database connection
   try {
-    const dbStart = Date.now();
-    const connection = await pool.getConnection();
-    await connection.ping();
-    connection.release();
-    health.checks.database.latency = Date.now() - dbStart;
+    const dbPool = pool();
+    if (!dbPool) {
+      health.checks.database.status = 'error';
+      health.checks.database.error = 'Database not configured';
+      health.status = 'unhealthy';
+    } else {
+      const dbStart = Date.now();
+      const connection = await dbPool.getConnection();
+      await connection.ping();
+      connection.release();
+      health.checks.database.latency = Date.now() - dbStart;
+    }
   } catch (error: any) {
     health.checks.database.status = 'error';
     health.checks.database.error = error.message;

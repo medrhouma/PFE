@@ -410,9 +410,27 @@ export default function PointagePage() {
         setCaptureMethod(null);
         setUseSecureCamera(true);
       } else {
+        // Handle specific error codes
+        let errorTitle = "Erreur";
+        let errorType: "error" | "warning" = "error";
+        
+        if (data.code === "ALREADY_CHECKED_IN") {
+          errorTitle = "Déjà pointé";
+          errorType = "warning";
+        } else if (data.code === "ALREADY_CHECKED_OUT") {
+          errorTitle = "Déjà sorti";
+          errorType = "warning";
+        } else if (data.code === "NO_CHECK_IN") {
+          errorTitle = "Check-in requis";
+          errorType = "warning";
+        } else if (data.code === "TOO_FREQUENT") {
+          errorTitle = "Trop rapide";
+          errorType = "warning";
+        }
+        
         showNotification({
-          type: "error",
-          title: "Erreur",
+          type: errorType,
+          title: errorTitle,
           message: data.error || "Erreur lors de l'enregistrement"
         });
       }

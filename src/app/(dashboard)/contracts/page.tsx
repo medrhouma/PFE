@@ -413,9 +413,11 @@ export default function ContractsPage() {
 
             <SignaturePad
               onSave={(sig) => setSignature(sig)}
-              onClear={() => setSignature(null)}
-              width={400}
-              height={200}
+              onCancel={() => {
+                setShowSignModal(false);
+                setSelectedContract(null);
+                setSignature(null);
+              }}
             />
 
             <div className="flex gap-3 mt-6">

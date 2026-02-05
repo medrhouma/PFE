@@ -2,10 +2,19 @@ import { NextAuthOptions } from "next-auth"
 import GoogleProvider from "next-auth/providers/google"
 import CredentialsProvider from "next-auth/providers/credentials"
 import { MySQLAdapter } from "./auth-adapter"
-import { pool } from "./db"
+import { pool as getPool } from "./db"
 import bcrypt from "bcryptjs"
 import { loginHistoryService } from "./services/login-history-service"
 import { emailService } from "./services/email-service"
+
+// Helper to get pool with error handling
+function getDbPool() {
+  const p = getPool();
+  if (!p) {
+    throw new Error('Database not configured');
+  }
+  return p;
+}
 
 export const authOptions: NextAuthOptions = {
   adapter: MySQLAdapter(),
@@ -37,6 +46,7 @@ export const authOptions: NextAuthOptions = {
           req?.headers?.["x-real-ip"] as string || 
           "Unknown"
 
+        const pool = getDbPool();
         const [rows] = await pool.execute(
           `SELECT * FROM User WHERE email = ?`,
           [credentials.email]
@@ -72,32 +82,15 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Mot de passe incorrect")
         }
 
-        // Check for suspicious activity before successful login
+        // Record successful login (checks suspicious activity internally)
         try {
-          const isSuspicious = await loginHistoryService.checkSuspiciousActivity(user.id, ipAddress)
-          
-          // Record successful login
           await loginHistoryService.recordLogin({
             userId: user.id,
             ipAddress,
             userAgent,
             loginMethod: "credentials",
             success: true,
-            isSuspicious,
           })
-
-          // Send security alert if suspicious
-          if (isSuspicious && user.email) {
-            await emailService.sendSecurityAlertEmail(
-              user.email,
-              user.name || "Utilisateur",
-              "Connexion suspecte détectée",
-              `Une connexion depuis une nouvelle adresse IP (${ipAddress}) a été détectée sur votre compte. Si ce n'était pas vous, veuillez sécuriser votre compte immédiatement.`,
-              ipAddress,
-              userAgent,
-              new Date().toISOString()
-            )
-          }
         } catch (e) {
           console.error("Failed to process login history:", e)
         }
@@ -154,7 +147,8 @@ export const authOptions: NextAuthOptions = {
       
       // ✅ Si c'est une connexion Google, récupérer le rôle et le statut depuis la DB
       if (account?.provider === "google" && user?.email) {
-        const [rows] = await pool.execute(
+        const dbPool = getDbPool();
+        const [rows] = await dbPool.execute(
           `SELECT role, status FROM User WHERE email = ?`,
           [user.email]
         )
@@ -167,7 +161,8 @@ export const authOptions: NextAuthOptions = {
 
       // Toujours récupérer le rôle et le statut les plus récents depuis la DB
       if (token.email) {
-        const [rows] = await pool.execute(
+        const dbPool = getDbPool();
+        const [rows] = await dbPool.execute(
           `SELECT role, status FROM User WHERE email = ?`,
           [token.email]
         )

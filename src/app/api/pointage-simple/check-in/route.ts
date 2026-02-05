@@ -1,8 +1,13 @@
+export const dynamic = "force-dynamic";
+
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { query, execute } from "@/lib/mysql-direct";
 import { notificationService } from "@/lib/services/notification-service";
+
+// Minimum time between pointage attempts (30 seconds)
+const MIN_POINTAGE_INTERVAL_MS = 30 * 1000;
 
 export async function POST(req: NextRequest) {
   try {
@@ -25,11 +30,73 @@ export async function POST(req: NextRequest) {
       verificationScore,
     } = await req.json();
 
+    const now = new Date();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    // ========== HARD RULE 1: Check if already checked in today without checkout ==========
+    try {
+      const existingCheckIns: any[] = await query(
+        `SELECT id, timestamp FROM pointages 
+         WHERE user_id = ? AND type = 'IN' 
+         AND timestamp >= ? AND timestamp < ?
+         ORDER BY timestamp DESC
+         LIMIT 1`,
+        [session.user.id, today.toISOString(), tomorrow.toISOString()]
+      );
+
+      if (existingCheckIns && existingCheckIns.length > 0) {
+        // Check if there's a corresponding checkout
+        const checkOuts: any[] = await query(
+          `SELECT COUNT(*) as count FROM pointages 
+           WHERE user_id = ? AND type = 'OUT' 
+           AND timestamp >= ? AND timestamp < ?`,
+          [session.user.id, today.toISOString(), tomorrow.toISOString()]
+        );
+
+        if (!checkOuts[0]?.count || checkOuts[0].count === 0) {
+          return NextResponse.json({ 
+            error: "Vous êtes déjà pointé comme présent. Veuillez d'abord faire votre check-out.",
+            code: "ALREADY_CHECKED_IN"
+          }, { status: 400 });
+        }
+      }
+    } catch (checkError) {
+      console.error("Error checking existing check-in:", checkError);
+      // Continue if table doesn't exist yet
+    }
+
+    // ========== HARD RULE 2: Minimum 30 seconds between pointage attempts ==========
+    try {
+      const recentPointages: any[] = await query(
+        `SELECT timestamp FROM pointages 
+         WHERE user_id = ? 
+         ORDER BY timestamp DESC 
+         LIMIT 1`,
+        [session.user.id]
+      );
+
+      if (recentPointages && recentPointages.length > 0) {
+        const lastPointageTime = new Date(recentPointages[0].timestamp).getTime();
+        const timeDiff = now.getTime() - lastPointageTime;
+        
+        if (timeDiff < MIN_POINTAGE_INTERVAL_MS) {
+          const remainingSeconds = Math.ceil((MIN_POINTAGE_INTERVAL_MS - timeDiff) / 1000);
+          return NextResponse.json({ 
+            error: `Veuillez attendre ${remainingSeconds} secondes avant de réessayer.`,
+            code: "TOO_FREQUENT",
+            remainingSeconds
+          }, { status: 429 });
+        }
+      }
+    } catch (rateError) {
+      console.error("Error checking rate limit:", rateError);
+    }
+
     // Générer un ID unique pour le pointage
     const pointageId = `ptg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
-    // Timestamp actuel
-    const timestamp = new Date();
     
     // Obtenir l'IP depuis les headers
     const ipAddress = req.headers.get("x-forwarded-for")?.split(",")[0] || 
@@ -39,50 +106,22 @@ export async function POST(req: NextRequest) {
     let anomalyDetected = false;
     let anomalyReason = null;
 
-    // Vérifier s'il y a déjà un check-in aujourd'hui sans check-out
-    try {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-
-      const existingCheckIns: any[] = await query(
-        `SELECT id FROM Pointage 
-         WHERE user_id = ? AND type = 'IN' 
-         AND timestamp >= ? AND timestamp < ?
-         LIMIT 1`,
-        [session.user.id, today.toISOString(), tomorrow.toISOString()]
-      );
-
-      if (existingCheckIns && existingCheckIns.length > 0) {
-        // Vérifier si ce check-in n'a pas de check-out correspondant
-        const checkOuts: any[] = await query(
-          `SELECT COUNT(*) as count FROM Pointage 
-           WHERE user_id = ? AND type = 'OUT' 
-           AND timestamp >= ? AND timestamp < ?`,
-          [session.user.id, today.toISOString(), tomorrow.toISOString()]
-        );
-
-        if (!checkOuts[0]?.count || checkOuts[0].count === 0) {
-          anomalyDetected = true;
-          anomalyReason = "Check-in déjà effectué aujourd'hui sans check-out";
-        }
-      }
-    } catch (checkError) {
-      console.error("Error checking existing check-in:", checkError);
-      // Continue même si la vérification échoue
+    // Check for anomalies (face verification failure, etc.)
+    if (!faceVerified && capturedPhoto) {
+      anomalyDetected = true;
+      anomalyReason = "Vérification faciale échouée";
     }
 
     // Insérer le pointage avec mysql-direct
     try {
       await execute(
-        `INSERT INTO Pointage (id, user_id, type, timestamp, status, ip_address, geolocation, captured_photo, face_verified, verification_score, anomaly_detected, anomaly_reason, created_at, updated_at)
-         VALUES (?, ?, 'IN', ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+        `INSERT INTO pointages (id, user_id, type, timestamp, status, ip_address, geolocation, captured_photo, face_verified, verification_score, anomaly_detected, anomaly_reason, created_at)
+         VALUES (?, ?, 'IN', ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
         [
           pointageId,
           session.user.id,
-          timestamp,
-          anomalyDetected ? 'PENDING' : 'VALID',
+          now,
+          anomalyDetected ? 'PENDING_REVIEW' : 'VALID',
           ipAddress,
           geolocation ? JSON.stringify(geolocation) : null,
           capturedPhoto || null,
@@ -134,7 +173,7 @@ export async function POST(req: NextRequest) {
             rhUserIds,
             userName,
             "check-in",
-            timestamp.toISOString()
+            now.toISOString()
           );
         }
       }
@@ -150,7 +189,7 @@ export async function POST(req: NextRequest) {
         : "Check-in enregistré avec succès",
       pointage: {
         id: pointageId,
-        timestamp: timestamp.toISOString(),
+        timestamp: now.toISOString(),
         status: anomalyDetected ? "ANOMALY" : "VALID",
         anomalyDetected,
         anomalyReason,
