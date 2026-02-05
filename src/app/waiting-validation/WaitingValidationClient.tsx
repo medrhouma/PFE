@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { LogoutButton } from "@/components/auth/LogoutButton";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -9,7 +9,6 @@ import {
   CheckCircle,
   Mail,
   RefreshCw,
-  BookOpen,
   Lightbulb,
   Gamepad2,
   ChevronRight,
@@ -21,6 +20,18 @@ import {
   Shield,
   Calendar,
   Building2,
+  Zap,
+  Target,
+  Star,
+  Heart,
+  Sparkles,
+  Timer,
+  Award,
+  TrendingUp,
+  Coffee,
+  Music,
+  Palette,
+  Puzzle,
 } from "lucide-react";
 
 interface WaitingValidationClientProps {
@@ -36,548 +47,778 @@ const onboardingSteps = [
   { icon: Calendar, titleFr: "Premier pointage", titleEn: "First check-in", titleAr: "أول تسجيل حضور", done: false },
 ];
 
-// HR Tips
-const hrTips = {
+// Fun Facts
+const funFacts = {
   fr: [
-    "💡 Astuce : Gardez toujours vos informations de contact à jour pour recevoir les notifications importantes.",
-    "📅 Planifiez vos congés à l'avance pour faciliter l'organisation de votre équipe.",
-    "🔐 Utilisez un mot de passe fort et unique pour protéger votre compte.",
-    "📱 Activez les notifications push pour ne manquer aucune information importante.",
-    "⏰ Pointez régulièrement pour un suivi précis de vos heures de travail.",
-    "📄 Signez vos contrats numériquement dès leur réception pour éviter les retards.",
-    "🎯 Consultez régulièrement vos objectifs et évaluations dans votre espace personnel.",
-    "🤝 Utilisez le chatbot pour des réponses rapides à vos questions RH courantes.",
+    "☕ Le café a été découvert par des chèvres en Éthiopie !",
+    "🎵 La musique peut améliorer la productivité de 15%.",
+    "🧠 Votre cerveau génère assez d'électricité pour allumer une ampoule.",
+    "🌍 Il y a plus d'étoiles dans l'univers que de grains de sable sur Terre.",
+    "😊 Sourire libère des endorphines même si c'est forcé !",
+    "🎨 La couleur violette était réservée aux rois dans l'antiquité.",
+    "⏰ Un humain passe en moyenne 6 mois de sa vie à attendre aux feux rouges.",
+    "🌸 Les abeilles peuvent reconnaître les visages humains.",
   ],
   en: [
-    "💡 Tip: Always keep your contact information up to date to receive important notifications.",
-    "📅 Plan your leave in advance to help your team organize better.",
-    "🔐 Use a strong and unique password to protect your account.",
-    "📱 Enable push notifications to never miss important information.",
-    "⏰ Clock in regularly for accurate tracking of your work hours.",
-    "📄 Sign your contracts digitally upon receipt to avoid delays.",
-    "🎯 Regularly check your goals and evaluations in your personal space.",
-    "🤝 Use the chatbot for quick answers to common HR questions.",
+    "☕ Coffee was discovered by goats in Ethiopia!",
+    "🎵 Music can improve productivity by 15%.",
+    "🧠 Your brain generates enough electricity to power a light bulb.",
+    "🌍 There are more stars in the universe than grains of sand on Earth.",
+    "😊 Smiling releases endorphins even if it's forced!",
+    "🎨 Purple was reserved for royalty in ancient times.",
+    "⏰ Humans spend an average of 6 months waiting at red lights.",
+    "🌸 Bees can recognize human faces.",
   ],
   ar: [
-    "💡 نصيحة: احتفظ دائمًا بمعلومات الاتصال الخاصة بك محدثة لتلقي الإشعارات المهمة.",
-    "📅 خطط لإجازاتك مسبقًا لمساعدة فريقك على التنظيم بشكل أفضل.",
-    "🔐 استخدم كلمة مرور قوية وفريدة لحماية حسابك.",
-    "📱 فعّل الإشعارات الفورية حتى لا تفوتك أي معلومات مهمة.",
-    "⏰ سجل حضورك بانتظام لتتبع دقيق لساعات عملك.",
-    "📄 وقّع عقودك رقميًا فور استلامها لتجنب التأخير.",
-    "🎯 راجع أهدافك وتقييماتك بانتظام في مساحتك الشخصية.",
-    "🤝 استخدم روبوت الدردشة للحصول على إجابات سريعة لأسئلة الموارد البشرية الشائعة.",
+    "☕ اكتشف الماعز القهوة في إثيوبيا!",
+    "🎵 يمكن للموسيقى تحسين الإنتاجية بنسبة 15%.",
+    "🧠 ينتج دماغك ما يكفي من الكهرباء لإضاءة مصباح.",
+    "🌍 هناك نجوم في الكون أكثر من حبات الرمل على الأرض.",
+    "😊 الابتسام يطلق الإندورفين حتى لو كان مصطنعًا!",
+    "🎨 كان اللون البنفسجي مخصصًا للملوك في العصور القديمة.",
+    "⏰ يقضي البشر في المتوسط 6 أشهر في انتظار إشارات المرور.",
+    "🌸 يمكن للنحل التعرف على وجوه البشر.",
   ],
 };
 
-// Articles
-const articles = {
+// Motivational quotes
+const quotes = {
   fr: [
-    {
-      title: "Bienvenue chez SANTEC",
-      content: "Découvrez notre culture d'entreprise axée sur l'innovation, le respect et la collaboration. Chez SANTEC, chaque collaborateur est valorisé et contribue à notre succès collectif.",
-      readTime: "3 min",
-    },
-    {
-      title: "Guide du nouvel employé",
-      content: "Ce guide vous accompagnera dans vos premiers pas au sein de l'entreprise. Vous y trouverez les informations essentielles sur nos processus, nos outils et notre organisation.",
-      readTime: "5 min",
-    },
-    {
-      title: "Nos valeurs fondamentales",
-      content: "L'intégrité, l'excellence et l'esprit d'équipe sont au cœur de notre identité. Ces valeurs guident nos décisions quotidiennes et façonnent notre avenir commun.",
-      readTime: "4 min",
-    },
+    { text: "Le succès n'est pas la clé du bonheur. Le bonheur est la clé du succès.", author: "Albert Schweitzer" },
+    { text: "La seule façon de faire du bon travail est d'aimer ce que vous faites.", author: "Steve Jobs" },
+    { text: "L'avenir appartient à ceux qui croient à la beauté de leurs rêves.", author: "Eleanor Roosevelt" },
+    { text: "Chaque accomplissement commence par la décision d'essayer.", author: "John F. Kennedy" },
   ],
   en: [
-    {
-      title: "Welcome to SANTEC",
-      content: "Discover our company culture focused on innovation, respect, and collaboration. At SANTEC, every employee is valued and contributes to our collective success.",
-      readTime: "3 min",
-    },
-    {
-      title: "New Employee Guide",
-      content: "This guide will help you through your first steps in the company. You'll find essential information about our processes, tools, and organization.",
-      readTime: "5 min",
-    },
-    {
-      title: "Our Core Values",
-      content: "Integrity, excellence, and teamwork are at the heart of our identity. These values guide our daily decisions and shape our shared future.",
-      readTime: "4 min",
-    },
+    { text: "Success is not the key to happiness. Happiness is the key to success.", author: "Albert Schweitzer" },
+    { text: "The only way to do great work is to love what you do.", author: "Steve Jobs" },
+    { text: "The future belongs to those who believe in the beauty of their dreams.", author: "Eleanor Roosevelt" },
+    { text: "Every accomplishment starts with the decision to try.", author: "John F. Kennedy" },
   ],
   ar: [
-    {
-      title: "مرحبًا بك في SANTEC",
-      content: "اكتشف ثقافة شركتنا التي تركز على الابتكار والاحترام والتعاون. في SANTEC، كل موظف مُقدَّر ويساهم في نجاحنا الجماعي.",
-      readTime: "3 دقائق",
-    },
-    {
-      title: "دليل الموظف الجديد",
-      content: "سيساعدك هذا الدليل خلال خطواتك الأولى في الشركة. ستجد معلومات أساسية حول عملياتنا وأدواتنا ومؤسستنا.",
-      readTime: "5 دقائق",
-    },
-    {
-      title: "قيمنا الأساسية",
-      content: "النزاهة والتميز وروح الفريق هي جوهر هويتنا. هذه القيم توجه قراراتنا اليومية وتشكل مستقبلنا المشترك.",
-      readTime: "4 دقائق",
-    },
+    { text: "النجاح ليس مفتاح السعادة. السعادة هي مفتاح النجاح.", author: "ألبرت شفايتزر" },
+    { text: "الطريقة الوحيدة للقيام بعمل رائع هي أن تحب ما تفعله.", author: "ستيف جوبز" },
+    { text: "المستقبل ملك لأولئك الذين يؤمنون بجمال أحلامهم.", author: "إليانور روزفلت" },
+    { text: "كل إنجاز يبدأ بقرار المحاولة.", author: "جون ف. كينيدي" },
   ],
 };
 
 const translations = {
   fr: {
     greeting: "Bonjour",
-    waitingTitle: "En attente de validation",
-    waitingDesc: "Votre profil a été soumis avec succès. Il est actuellement en cours de révision par l'équipe RH.",
-    emailNotice: "Vous recevrez une notification par email dès que votre profil sera validé.",
+    waitingTitle: "Votre profil est en cours de validation",
+    waitingDesc: "Notre équipe RH examine votre dossier. Profitez-en pour vous détendre !",
+    emailNotice: "Vous recevrez un email dès que votre profil sera validé.",
     profileSubmitted: "Profil soumis",
-    awaitingReview: "En attente de révision",
-    emailComingSoon: "Notification par email à venir",
-    refresh: "Actualiser le statut",
-    onboarding: "Votre parcours d'intégration",
-    tips: "Conseils RH",
-    articles: "À découvrir",
-    readMore: "Lire la suite",
-    playGame: "Mini-jeu",
-    memoryGame: "Jeu de mémoire",
+    awaitingReview: "En révision",
+    emailComingSoon: "Email à venir",
+    refresh: "Vérifier le statut",
+    onboarding: "Votre parcours",
+    games: "Mini-jeux",
+    discover: "Découvrir",
+    inspiration: "Inspiration",
+    memoryGame: "Memory",
+    clickGame: "Speed Click",
+    typingGame: "Dactylographie",
     moves: "Coups",
-    bestScore: "Meilleur score",
-    youWon: "Bravo ! Vous avez gagné !",
+    bestScore: "Record",
+    youWon: "Bravo !",
     playAgain: "Rejouer",
-    nextTip: "Conseil suivant",
-    prevTip: "Conseil précédent",
+    score: "Score",
+    timeLeft: "Temps",
+    clickFast: "Cliquez le plus vite possible !",
+    gameOver: "Partie terminée !",
+    start: "Commencer",
+    funFact: "Le saviez-vous ?",
+    quote: "Citation du jour",
+    nextTip: "Suivant",
+    estimatedTime: "Temps estimé : 24-48h",
+    relaxMessage: "Détendez-vous, on s'occupe de tout !",
+    yourScores: "Vos scores",
+    comingSoon: "Bientôt prêt !",
+    adventureBegins: "Votre aventure chez SANTEC commence très bientôt...",
+    back: "Retour",
+    findPairs: "Trouvez les paires cachées",
   },
   en: {
     greeting: "Hello",
-    waitingTitle: "Awaiting Validation",
-    waitingDesc: "Your profile has been successfully submitted. It is currently under review by the HR team.",
-    emailNotice: "You will receive an email notification once your profile is validated.",
+    waitingTitle: "Your profile is being validated",
+    waitingDesc: "Our HR team is reviewing your application. Take this time to relax!",
+    emailNotice: "You will receive an email once your profile is validated.",
     profileSubmitted: "Profile submitted",
-    awaitingReview: "Awaiting review",
-    emailComingSoon: "Email notification coming soon",
-    refresh: "Refresh status",
-    onboarding: "Your onboarding journey",
-    tips: "HR Tips",
-    articles: "Discover",
-    readMore: "Read more",
-    playGame: "Mini-game",
-    memoryGame: "Memory Game",
+    awaitingReview: "Under review",
+    emailComingSoon: "Email coming",
+    refresh: "Check status",
+    onboarding: "Your journey",
+    games: "Mini-games",
+    discover: "Discover",
+    inspiration: "Inspiration",
+    memoryGame: "Memory",
+    clickGame: "Speed Click",
+    typingGame: "Typing",
     moves: "Moves",
-    bestScore: "Best score",
-    youWon: "Congratulations! You won!",
+    bestScore: "Best",
+    youWon: "You won!",
     playAgain: "Play again",
-    nextTip: "Next tip",
-    prevTip: "Previous tip",
+    score: "Score",
+    timeLeft: "Time",
+    clickFast: "Click as fast as you can!",
+    gameOver: "Game over!",
+    start: "Start",
+    funFact: "Did you know?",
+    quote: "Quote of the day",
+    nextTip: "Next",
+    estimatedTime: "Estimated time: 24-48h",
+    relaxMessage: "Relax, we've got this!",
+    yourScores: "Your scores",
+    comingSoon: "Almost ready!",
+    adventureBegins: "Your adventure at SANTEC starts very soon...",
+    back: "Back",
+    findPairs: "Find the hidden pairs",
   },
   ar: {
     greeting: "مرحبًا",
-    waitingTitle: "في انتظار التحقق",
-    waitingDesc: "تم إرسال ملفك الشخصي بنجاح. يتم مراجعته حاليًا من قبل فريق الموارد البشرية.",
-    emailNotice: "ستتلقى إشعارًا عبر البريد الإلكتروني بمجرد التحقق من ملفك الشخصي.",
-    profileSubmitted: "تم إرسال الملف الشخصي",
-    awaitingReview: "في انتظار المراجعة",
-    emailComingSoon: "إشعار البريد الإلكتروني قادم قريبًا",
-    refresh: "تحديث الحالة",
-    onboarding: "رحلة التأهيل الخاصة بك",
-    tips: "نصائح الموارد البشرية",
-    articles: "اكتشف",
-    readMore: "اقرأ المزيد",
-    playGame: "لعبة صغيرة",
-    memoryGame: "لعبة الذاكرة",
+    waitingTitle: "ملفك الشخصي قيد التحقق",
+    waitingDesc: "يقوم فريق الموارد البشرية بمراجعة طلبك. استغل هذا الوقت للاسترخاء!",
+    emailNotice: "ستتلقى بريدًا إلكترونيًا بمجرد التحقق من ملفك الشخصي.",
+    profileSubmitted: "تم إرسال الملف",
+    awaitingReview: "قيد المراجعة",
+    emailComingSoon: "البريد قادم",
+    refresh: "تحقق من الحالة",
+    onboarding: "رحلتك",
+    games: "ألعاب مصغرة",
+    discover: "اكتشف",
+    inspiration: "إلهام",
+    memoryGame: "الذاكرة",
+    clickGame: "سرعة النقر",
+    typingGame: "الكتابة",
     moves: "الحركات",
-    bestScore: "أفضل نتيجة",
-    youWon: "مبروك! لقد فزت!",
+    bestScore: "الأفضل",
+    youWon: "فزت!",
     playAgain: "العب مرة أخرى",
-    nextTip: "النصيحة التالية",
-    prevTip: "النصيحة السابقة",
+    score: "النتيجة",
+    timeLeft: "الوقت",
+    clickFast: "انقر بأسرع ما يمكن!",
+    gameOver: "انتهت اللعبة!",
+    start: "ابدأ",
+    funFact: "هل تعلم؟",
+    quote: "اقتباس اليوم",
+    nextTip: "التالي",
+    estimatedTime: "الوقت المقدر: 24-48 ساعة",
+    relaxMessage: "استرخِ، نحن نتولى الأمر!",
+    yourScores: "نتائجك",
+    comingSoon: "جاهز قريبًا!",
+    adventureBegins: "مغامرتك في SANTEC تبدأ قريبًا جدًا...",
+    back: "رجوع",
+    findPairs: "اعثر على الأزواج المخفية",
   },
 };
 
-// Memory game emojis (pairs)
-const gameEmojis = ["🏢", "📊", "💼", "🎯", "🚀", "⭐"];
+// Memory game emojis
+const memoryEmojis = ["🎯", "🚀", "⭐", "🎨", "🎵", "💎"];
+
+// Speed click game target positions
+const getRandomPosition = () => ({
+  top: Math.random() * 70 + 10,
+  left: Math.random() * 70 + 10,
+});
 
 export default function WaitingValidationClient({ userName }: WaitingValidationClientProps) {
   const router = useRouter();
   const { language } = useLanguage();
   const t = translations[language as keyof typeof translations] || translations.fr;
-  const tips = hrTips[language as keyof typeof hrTips] || hrTips.fr;
-  const articlesList = articles[language as keyof typeof articles] || articles.fr;
+  const facts = funFacts[language as keyof typeof funFacts] || funFacts.fr;
+  const quotesList = quotes[language as keyof typeof quotes] || quotes.fr;
 
   // State
-  const [activeTab, setActiveTab] = useState<"tips" | "articles" | "game">("tips");
-  const [currentTipIndex, setCurrentTipIndex] = useState(0);
-  const [expandedArticle, setExpandedArticle] = useState<number | null>(null);
+  const [activeTab, setActiveTab] = useState<"games" | "discover" | "inspiration">("games");
+  const [activeGame, setActiveGame] = useState<"memory" | "click" | null>(null);
+  const [currentFactIndex, setCurrentFactIndex] = useState(0);
+  const [currentQuoteIndex, setCurrentQuoteIndex] = useState(0);
+  
+  // Animation states
+  const [pulseStatus, setPulseStatus] = useState(true);
   
   // Memory Game State
-  const [cards, setCards] = useState<{ id: number; emoji: string; isFlipped: boolean; isMatched: boolean }[]>([]);
+  const [memoryCards, setMemoryCards] = useState<{ id: number; emoji: string; isFlipped: boolean; isMatched: boolean }[]>([]);
   const [flippedCards, setFlippedCards] = useState<number[]>([]);
-  const [moves, setMoves] = useState(0);
-  const [bestScore, setBestScore] = useState<number | null>(null);
-  const [isWon, setIsWon] = useState(false);
+  const [memoryMoves, setMemoryMoves] = useState(0);
+  const [memoryBest, setMemoryBest] = useState<number | null>(null);
+  const [memoryWon, setMemoryWon] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
 
-  // Initialize game
-  const initializeGame = useCallback(() => {
-    const shuffledEmojis = [...gameEmojis, ...gameEmojis]
+  // Speed Click Game State
+  const [clickScore, setClickScore] = useState(0);
+  const [clickBest, setClickBest] = useState<number | null>(null);
+  const [clickTimeLeft, setClickTimeLeft] = useState(10);
+  const [clickGameActive, setClickGameActive] = useState(false);
+  const [targetPosition, setTargetPosition] = useState({ top: 50, left: 50 });
+  const clickTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Initialize memory game
+  const initMemoryGame = useCallback(() => {
+    const shuffled = [...memoryEmojis, ...memoryEmojis]
       .sort(() => Math.random() - 0.5)
-      .map((emoji, index) => ({
-        id: index,
-        emoji,
-        isFlipped: false,
-        isMatched: false,
-      }));
-    setCards(shuffledEmojis);
+      .map((emoji, i) => ({ id: i, emoji, isFlipped: false, isMatched: false }));
+    setMemoryCards(shuffled);
     setFlippedCards([]);
-    setMoves(0);
-    setIsWon(false);
+    setMemoryMoves(0);
+    setMemoryWon(false);
     setIsChecking(false);
   }, []);
 
+  // Load best scores
   useEffect(() => {
-    initializeGame();
-    // Load best score from localStorage
-    const saved = localStorage.getItem("santec_memory_best");
-    if (saved) setBestScore(parseInt(saved));
-  }, [initializeGame]);
+    initMemoryGame();
+    const memBest = localStorage.getItem("santec_memory_best");
+    const clkBest = localStorage.getItem("santec_click_best");
+    if (memBest) setMemoryBest(parseInt(memBest));
+    if (clkBest) setClickBest(parseInt(clkBest));
+  }, [initMemoryGame]);
 
-  // Handle card click
-  const handleCardClick = (id: number) => {
-    if (isChecking || isWon) return;
+  // Rotate facts and quotes
+  useEffect(() => {
+    const factInterval = setInterval(() => {
+      setCurrentFactIndex((prev) => (prev + 1) % facts.length);
+    }, 10000);
+    const quoteInterval = setInterval(() => {
+      setCurrentQuoteIndex((prev) => (prev + 1) % quotesList.length);
+    }, 15000);
+    return () => {
+      clearInterval(factInterval);
+      clearInterval(quoteInterval);
+    };
+  }, [facts.length, quotesList.length]);
+
+  // Pulse animation toggle
+  useEffect(() => {
+    const interval = setInterval(() => setPulseStatus(p => !p), 2000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Memory card click
+  const handleMemoryClick = (id: number) => {
+    if (isChecking || memoryWon) return;
     if (flippedCards.length === 2) return;
-    if (cards[id].isFlipped || cards[id].isMatched) return;
+    if (memoryCards[id].isFlipped || memoryCards[id].isMatched) return;
 
-    const newCards = [...cards];
+    const newCards = [...memoryCards];
     newCards[id].isFlipped = true;
-    setCards(newCards);
+    setMemoryCards(newCards);
 
     const newFlipped = [...flippedCards, id];
     setFlippedCards(newFlipped);
 
     if (newFlipped.length === 2) {
-      setMoves((m) => m + 1);
+      setMemoryMoves((m) => m + 1);
       setIsChecking(true);
 
       setTimeout(() => {
         const [first, second] = newFlipped;
-        if (cards[first].emoji === cards[second].emoji) {
-          // Match found
-          const matchedCards = [...cards];
-          matchedCards[first].isMatched = true;
-          matchedCards[second].isMatched = true;
-          setCards(matchedCards);
+        if (memoryCards[first].emoji === memoryCards[second].emoji) {
+          const matched = [...memoryCards];
+          matched[first].isMatched = true;
+          matched[second].isMatched = true;
+          setMemoryCards(matched);
 
-          // Check if won
-          if (matchedCards.every((c) => c.isMatched)) {
-            setIsWon(true);
-            const newMoves = moves + 1;
-            if (!bestScore || newMoves < bestScore) {
-              setBestScore(newMoves);
+          if (matched.every((c) => c.isMatched)) {
+            setMemoryWon(true);
+            const newMoves = memoryMoves + 1;
+            if (!memoryBest || newMoves < memoryBest) {
+              setMemoryBest(newMoves);
               localStorage.setItem("santec_memory_best", newMoves.toString());
             }
           }
         } else {
-          // No match
-          const resetCards = [...cards];
-          resetCards[first].isFlipped = false;
-          resetCards[second].isFlipped = false;
-          setCards(resetCards);
+          const reset = [...memoryCards];
+          reset[first].isFlipped = false;
+          reset[second].isFlipped = false;
+          setMemoryCards(reset);
         }
         setFlippedCards([]);
         setIsChecking(false);
-      }, 800);
+      }, 600);
     }
   };
 
-  // Rotate tips
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentTipIndex((prev) => (prev + 1) % tips.length);
-    }, 8000);
-    return () => clearInterval(interval);
-  }, [tips.length]);
+  // Speed click game
+  const startClickGame = () => {
+    setClickScore(0);
+    setClickTimeLeft(10);
+    setClickGameActive(true);
+    setTargetPosition(getRandomPosition());
 
-  const handleRefresh = () => {
-    router.refresh();
+    clickTimerRef.current = setInterval(() => {
+      setClickTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(clickTimerRef.current!);
+          setClickGameActive(false);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
   };
 
+  const handleTargetClick = () => {
+    if (!clickGameActive) return;
+    setClickScore((s) => s + 1);
+    setTargetPosition(getRandomPosition());
+  };
+
+  useEffect(() => {
+    if (!clickGameActive && clickScore > 0) {
+      if (!clickBest || clickScore > clickBest) {
+        setClickBest(clickScore);
+        localStorage.setItem("santec_click_best", clickScore.toString());
+      }
+    }
+  }, [clickGameActive, clickScore, clickBest]);
+
+  useEffect(() => {
+    return () => {
+      if (clickTimerRef.current) clearInterval(clickTimerRef.current);
+    };
+  }, []);
+
+  const handleRefresh = () => router.refresh();
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-violet-50/30 to-cyan-50/30 dark:from-gray-950 dark:via-violet-950/20 dark:to-cyan-950/20">
+      {/* Animated Background Elements */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-20 left-10 w-72 h-72 bg-violet-300/20 dark:bg-violet-600/10 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-cyan-300/20 dark:bg-cyan-600/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-pink-300/10 dark:bg-pink-600/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
+      </div>
+
       {/* Header */}
-      <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border-b border-gray-200/50 dark:border-gray-700/50 sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center">
-              <Building2 className="w-5 h-5 text-white" />
+      <header className="relative bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-800/50 sticky top-0 z-50">
+        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500 via-purple-500 to-fuchsia-500 flex items-center justify-center shadow-lg shadow-violet-500/25">
+                <Building2 className="w-6 h-6 text-white" />
+              </div>
+              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full border-2 border-white dark:border-gray-900" />
             </div>
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">{t.greeting}</p>
-              <p className="font-semibold text-gray-900 dark:text-white">{userName}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{t.greeting} 👋</p>
+              <p className="font-bold text-gray-900 dark:text-white text-lg">{userName}</p>
             </div>
           </div>
           <LogoutButton />
         </div>
-      </div>
+      </header>
 
-      <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-6">
-        {/* Status Card */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl shadow-violet-500/5 border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
+      <main className="relative max-w-6xl mx-auto p-4 sm:p-6 space-y-6 pb-20">
+        {/* Hero Status Card */}
+        <div className="relative overflow-hidden bg-white dark:bg-gray-900 rounded-3xl shadow-2xl shadow-violet-500/10 border border-gray-200/50 dark:border-gray-800/50">
+          {/* Decorative top gradient */}
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500" />
+          
           <div className="p-6 sm:p-8">
-            <div className="flex items-center gap-4 mb-6">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg shadow-orange-500/30 animate-pulse">
-                <Clock className="w-8 h-8 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t.waitingTitle}</h1>
-                <p className="text-gray-500 dark:text-gray-400">{t.waitingDesc}</p>
-              </div>
-            </div>
-
-            {/* Email Notice */}
-            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 mb-6">
-              <div className="flex items-center gap-3">
-                <Mail className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                <p className="text-sm text-blue-800 dark:text-blue-200">{t.emailNotice}</p>
-              </div>
-            </div>
-
-            {/* Status Indicators */}
-            <div className="flex flex-wrap gap-4 mb-6">
-              <div className="flex items-center gap-2 text-sm">
-                <CheckCircle className="w-4 h-4 text-green-500" />
-                <span className="text-gray-600 dark:text-gray-300">{t.profileSubmitted}</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <Clock className="w-4 h-4 text-amber-500 animate-pulse" />
-                <span className="text-gray-600 dark:text-gray-300">{t.awaitingReview}</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <Mail className="w-4 h-4 text-gray-400" />
-                <span className="text-gray-400">{t.emailComingSoon}</span>
-              </div>
-            </div>
-
-            <button
-              onClick={handleRefresh}
-              className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl hover:from-violet-700 hover:to-indigo-700 transition-all shadow-lg shadow-violet-500/30"
-            >
-              <RefreshCw className="w-4 h-4" />
-              {t.refresh}
-            </button>
-          </div>
-
-          {/* Onboarding Steps */}
-          <div className="bg-gray-50 dark:bg-gray-900/50 border-t border-gray-200 dark:border-gray-700 p-6">
-            <h3 className="font-semibold text-gray-900 dark:text-white mb-4">{t.onboarding}</h3>
-            <div className="flex flex-wrap gap-2">
-              {onboardingSteps.map((step, index) => (
-                <div
-                  key={index}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${
-                    step.done
-                      ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
-                      : step.current
-                      ? "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 ring-2 ring-amber-400"
-                      : "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500"
-                  }`}
-                >
-                  <step.icon className="w-4 h-4" />
-                  <span>
-                    {language === "fr" ? step.titleFr : language === "ar" ? step.titleAr : step.titleEn}
-                  </span>
-                  {step.done && <CheckCircle className="w-4 h-4" />}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Interactive Content Tabs */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl shadow-violet-500/5 border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
-          {/* Tab Headers */}
-          <div className="flex border-b border-gray-200 dark:border-gray-700">
-            <button
-              onClick={() => setActiveTab("tips")}
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-4 text-sm font-medium transition-colors ${
-                activeTab === "tips"
-                  ? "bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-400 border-b-2 border-violet-600"
-                  : "text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
-              }`}
-            >
-              <Lightbulb className="w-4 h-4" />
-              {t.tips}
-            </button>
-            <button
-              onClick={() => setActiveTab("articles")}
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-4 text-sm font-medium transition-colors ${
-                activeTab === "articles"
-                  ? "bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-400 border-b-2 border-violet-600"
-                  : "text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
-              }`}
-            >
-              <BookOpen className="w-4 h-4" />
-              {t.articles}
-            </button>
-            <button
-              onClick={() => setActiveTab("game")}
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-4 text-sm font-medium transition-colors ${
-                activeTab === "game"
-                  ? "bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-400 border-b-2 border-violet-600"
-                  : "text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
-              }`}
-            >
-              <Gamepad2 className="w-4 h-4" />
-              {t.playGame}
-            </button>
-          </div>
-
-          {/* Tab Content */}
-          <div className="p-6">
-            {/* Tips Tab */}
-            {activeTab === "tips" && (
-              <div className="space-y-4">
-                <div className="bg-gradient-to-r from-violet-50 to-indigo-50 dark:from-violet-900/20 dark:to-indigo-900/20 rounded-xl p-6 border border-violet-100 dark:border-violet-800">
-                  <p className="text-gray-700 dark:text-gray-300 text-lg leading-relaxed">
-                    {tips[currentTipIndex]}
-                  </p>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex gap-1">
-                    {tips.map((_, index) => (
-                      <button
-                        key={index}
-                        onClick={() => setCurrentTipIndex(index)}
-                        className={`w-2 h-2 rounded-full transition-colors ${
-                          index === currentTipIndex
-                            ? "bg-violet-600"
-                            : "bg-gray-300 dark:bg-gray-600 hover:bg-gray-400"
-                        }`}
-                      />
-                    ))}
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setCurrentTipIndex((prev) => (prev - 1 + tips.length) % tips.length)}
-                      className="p-2 text-gray-400 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-lg transition-colors"
-                      title={t.prevTip}
-                    >
-                      <ChevronLeft className="w-5 h-5" />
-                    </button>
-                    <button
-                      onClick={() => setCurrentTipIndex((prev) => (prev + 1) % tips.length)}
-                      className="p-2 text-gray-400 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-lg transition-colors"
-                      title={t.nextTip}
-                    >
-                      <ChevronRight className="w-5 h-5" />
-                    </button>
-                  </div>
+            <div className="flex flex-col lg:flex-row lg:items-center gap-6">
+              {/* Status Icon */}
+              <div className="flex-shrink-0">
+                <div className={`relative w-24 h-24 rounded-3xl bg-gradient-to-br from-amber-400 via-orange-400 to-rose-400 flex items-center justify-center shadow-2xl shadow-orange-500/30 ${pulseStatus ? 'scale-100' : 'scale-95'} transition-transform duration-1000`}>
+                  <Clock className="w-12 h-12 text-white" />
+                  <div className="absolute inset-0 rounded-3xl bg-white/20 animate-ping" style={{ animationDuration: '3s' }} />
                 </div>
               </div>
-            )}
 
-            {/* Articles Tab */}
-            {activeTab === "articles" && (
-              <div className="space-y-4">
-                {articlesList.map((article, index) => (
-                  <div
-                    key={index}
-                    className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4 border border-gray-100 dark:border-gray-700 hover:border-violet-200 dark:hover:border-violet-700 transition-colors"
-                  >
-                    <div
-                      className="flex items-center justify-between cursor-pointer"
-                      onClick={() => setExpandedArticle(expandedArticle === index ? null : index)}
-                    >
-                      <div>
-                        <h4 className="font-medium text-gray-900 dark:text-white">{article.title}</h4>
-                        <span className="text-xs text-gray-500 dark:text-gray-400">{article.readTime}</span>
-                      </div>
-                      <ChevronRight
-                        className={`w-5 h-5 text-gray-400 transition-transform ${
-                          expandedArticle === index ? "rotate-90" : ""
-                        }`}
-                      />
+              {/* Status Text */}
+              <div className="flex-1">
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                  {t.waitingTitle}
+                </h1>
+                <p className="text-gray-500 dark:text-gray-400 mb-4">{t.waitingDesc}</p>
+                
+                {/* Time estimate badge */}
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 rounded-full text-sm font-medium">
+                  <Timer className="w-4 h-4" />
+                  {t.estimatedTime}
+                </div>
+              </div>
+
+              {/* Refresh Button */}
+              <button
+                onClick={handleRefresh}
+                className="flex items-center justify-center gap-2 px-6 py-3.5 bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 text-white rounded-2xl hover:shadow-lg hover:shadow-violet-500/30 hover:scale-[1.02] transition-all font-semibold"
+              >
+                <RefreshCw className="w-5 h-5" />
+                {t.refresh}
+              </button>
+            </div>
+
+            {/* Progress Steps */}
+            <div className="mt-8 pt-6 border-t border-gray-100 dark:border-gray-800">
+              <div className="flex items-center justify-between overflow-x-auto pb-2 gap-2">
+                {onboardingSteps.map((step, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <div className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm whitespace-nowrap transition-all ${
+                      step.done 
+                        ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400" 
+                        : step.current 
+                          ? "bg-gradient-to-r from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30 text-amber-700 dark:text-amber-400 ring-2 ring-amber-400/50" 
+                          : "bg-gray-100 dark:bg-gray-800 text-gray-400"
+                    }`}>
+                      <step.icon className="w-4 h-4" />
+                      <span className="hidden sm:inline">{language === "fr" ? step.titleFr : language === "ar" ? step.titleAr : step.titleEn}</span>
+                      {step.done && <CheckCircle className="w-4 h-4" />}
+                      {step.current && <Sparkles className="w-4 h-4 animate-pulse" />}
                     </div>
-                    {expandedArticle === index && (
-                      <p className="mt-4 text-gray-600 dark:text-gray-300 text-sm leading-relaxed animate-fadeIn">
-                        {article.content}
-                      </p>
+                    {i < onboardingSteps.length - 1 && (
+                      <ChevronRight className={`w-4 h-4 flex-shrink-0 ${step.done ? 'text-emerald-400' : 'text-gray-300 dark:text-gray-600'}`} />
                     )}
                   </div>
                 ))}
               </div>
-            )}
+            </div>
+          </div>
 
-            {/* Memory Game Tab */}
-            {activeTab === "game" && (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                    <Gamepad2 className="w-5 h-5 text-violet-600" />
-                    {t.memoryGame}
-                  </h3>
-                  <div className="flex items-center gap-4 text-sm">
-                    <span className="text-gray-600 dark:text-gray-400">
-                      {t.moves}: <strong className="text-violet-600">{moves}</strong>
-                    </span>
-                    {bestScore && (
-                      <span className="text-gray-600 dark:text-gray-400 flex items-center gap-1">
-                        <Trophy className="w-4 h-4 text-amber-500" />
-                        {t.bestScore}: <strong className="text-amber-600">{bestScore}</strong>
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {isWon ? (
-                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl p-8 text-center border border-green-200 dark:border-green-800">
-                    <Trophy className="w-16 h-16 text-amber-500 mx-auto mb-4 animate-bounce" />
-                    <h3 className="text-xl font-bold text-green-700 dark:text-green-400 mb-2">{t.youWon}</h3>
-                    <p className="text-green-600 dark:text-green-300 mb-4">
-                      {t.moves}: {moves}
-                    </p>
-                    <button
-                      onClick={initializeGame}
-                      className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors mx-auto"
-                    >
-                      <RotateCcw className="w-4 h-4" />
-                      {t.playAgain}
-                    </button>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-4 gap-3 max-w-xs mx-auto">
-                    {cards.map((card) => (
-                      <button
-                        key={card.id}
-                        onClick={() => handleCardClick(card.id)}
-                        disabled={card.isFlipped || card.isMatched || isChecking}
-                        className={`aspect-square rounded-xl text-2xl flex items-center justify-center transition-all duration-300 transform ${
-                          card.isFlipped || card.isMatched
-                            ? "bg-violet-100 dark:bg-violet-900/50 rotate-0 scale-100"
-                            : "bg-gradient-to-br from-violet-500 to-indigo-600 hover:scale-105 cursor-pointer"
-                        } ${card.isMatched ? "ring-2 ring-green-500 bg-green-100 dark:bg-green-900/50" : ""}`}
-                      >
-                        {card.isFlipped || card.isMatched ? card.emoji : "?"}
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {!isWon && (
-                  <div className="text-center">
-                    <button
-                      onClick={initializeGame}
-                      className="text-sm text-gray-500 hover:text-violet-600 transition-colors"
-                    >
-                      <RotateCcw className="w-4 h-4 inline mr-1" />
-                      {t.playAgain}
-                    </button>
-                  </div>
-                )}
+          {/* Email Notice */}
+          <div className="px-6 sm:px-8 pb-6 sm:pb-8">
+            <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-2xl border border-blue-200/50 dark:border-blue-800/50">
+              <div className="w-10 h-10 rounded-xl bg-blue-500 flex items-center justify-center flex-shrink-0">
+                <Mail className="w-5 h-5 text-white" />
               </div>
-            )}
+              <p className="text-blue-800 dark:text-blue-200 text-sm">{t.emailNotice}</p>
+            </div>
           </div>
         </div>
-      </div>
+
+        {/* Interactive Content */}
+        <div className="grid lg:grid-cols-3 gap-6">
+          {/* Left Column - Games */}
+          <div className="lg:col-span-2 bg-white dark:bg-gray-900 rounded-3xl shadow-xl shadow-violet-500/5 border border-gray-200/50 dark:border-gray-800/50 overflow-hidden">
+            {/* Tab Headers */}
+            <div className="flex border-b border-gray-100 dark:border-gray-800">
+              {[
+                { id: "games", icon: Gamepad2, label: t.games },
+                { id: "discover", icon: Lightbulb, label: t.discover },
+                { id: "inspiration", icon: Star, label: t.inspiration },
+              ].map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => {
+                    setActiveTab(tab.id as "games" | "discover" | "inspiration");
+                    setActiveGame(null);
+                  }}
+                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-4 text-sm font-medium transition-all ${
+                    activeTab === tab.id
+                      ? "bg-gradient-to-b from-violet-50 to-transparent dark:from-violet-900/20 text-violet-700 dark:text-violet-400 border-b-2 border-violet-500"
+                      : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+                  }`}
+                >
+                  <tab.icon className="w-4 h-4" />
+                  <span className="hidden sm:inline">{tab.label}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Tab Content */}
+            <div className="p-6">
+              {/* Games Tab */}
+              {activeTab === "games" && (
+                <div>
+                  {!activeGame ? (
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      {/* Memory Game Card */}
+                      <button
+                        onClick={() => { initMemoryGame(); setActiveGame("memory"); }}
+                        className="group relative overflow-hidden p-6 bg-gradient-to-br from-violet-100 to-purple-100 dark:from-violet-900/30 dark:to-purple-900/30 rounded-2xl border border-violet-200/50 dark:border-violet-700/50 hover:shadow-lg hover:shadow-violet-500/20 hover:scale-[1.02] transition-all text-left"
+                      >
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-violet-300/30 dark:bg-violet-600/20 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
+                        <div className="relative">
+                          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center mb-4 shadow-lg shadow-violet-500/30">
+                            <Puzzle className="w-7 h-7 text-white" />
+                          </div>
+                          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">{t.memoryGame}</h3>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{t.findPairs}</p>
+                          {memoryBest && (
+                            <div className="flex items-center gap-1 text-sm text-amber-600 dark:text-amber-400">
+                              <Trophy className="w-4 h-4" />
+                              {t.bestScore}: {memoryBest}
+                            </div>
+                          )}
+                        </div>
+                      </button>
+
+                      {/* Speed Click Game Card */}
+                      <button
+                        onClick={() => setActiveGame("click")}
+                        className="group relative overflow-hidden p-6 bg-gradient-to-br from-cyan-100 to-blue-100 dark:from-cyan-900/30 dark:to-blue-900/30 rounded-2xl border border-cyan-200/50 dark:border-cyan-700/50 hover:shadow-lg hover:shadow-cyan-500/20 hover:scale-[1.02] transition-all text-left"
+                      >
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-300/30 dark:bg-cyan-600/20 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
+                        <div className="relative">
+                          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center mb-4 shadow-lg shadow-cyan-500/30">
+                            <Target className="w-7 h-7 text-white" />
+                          </div>
+                          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">{t.clickGame}</h3>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{t.clickFast}</p>
+                          {clickBest && (
+                            <div className="flex items-center gap-1 text-sm text-amber-600 dark:text-amber-400">
+                              <Trophy className="w-4 h-4" />
+                              {t.bestScore}: {clickBest}
+                            </div>
+                          )}
+                        </div>
+                      </button>
+                    </div>
+                  ) : activeGame === "memory" ? (
+                    /* Memory Game */
+                    <div>
+                      <div className="flex items-center justify-between mb-4">
+                        <button onClick={() => setActiveGame(null)} className="text-sm text-gray-500 hover:text-violet-600 flex items-center gap-1">
+                          <ChevronLeft className="w-4 h-4" /> {t.back}
+                        </button>
+                        <div className="flex items-center gap-4 text-sm">
+                          <span className="text-gray-600 dark:text-gray-400">{t.moves}: <strong className="text-violet-600">{memoryMoves}</strong></span>
+                          {memoryBest && (
+                            <span className="flex items-center gap-1 text-amber-600">
+                              <Trophy className="w-4 h-4" /> {memoryBest}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {memoryWon ? (
+                        <div className="text-center py-8 px-4 bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-900/20 dark:to-green-900/20 rounded-2xl">
+                          <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center shadow-lg animate-bounce">
+                            <Trophy className="w-10 h-10 text-white" />
+                          </div>
+                          <h3 className="text-2xl font-bold text-emerald-700 dark:text-emerald-400 mb-2">{t.youWon}</h3>
+                          <p className="text-emerald-600 dark:text-emerald-300 mb-4">{t.moves}: {memoryMoves}</p>
+                          <button onClick={initMemoryGame} className="px-6 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors flex items-center gap-2 mx-auto">
+                            <RotateCcw className="w-4 h-4" /> {t.playAgain}
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-4 gap-3 max-w-sm mx-auto">
+                          {memoryCards.map((card) => (
+                            <button
+                              key={card.id}
+                              onClick={() => handleMemoryClick(card.id)}
+                              disabled={card.isFlipped || card.isMatched || isChecking}
+                              className={`aspect-square rounded-2xl text-3xl flex items-center justify-center transition-all duration-300 transform shadow-lg ${
+                                card.isFlipped || card.isMatched
+                                  ? "bg-white dark:bg-gray-800 scale-100 rotate-0"
+                                  : "bg-gradient-to-br from-violet-500 to-purple-600 hover:scale-105 hover:shadow-violet-500/30 cursor-pointer"
+                              } ${card.isMatched ? "ring-2 ring-emerald-500 bg-emerald-50 dark:bg-emerald-900/30" : ""}`}
+                            >
+                              {card.isFlipped || card.isMatched ? card.emoji : <Sparkles className="w-6 h-6 text-white/60" />}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    /* Speed Click Game */
+                    <div>
+                      <div className="flex items-center justify-between mb-4">
+                        <button onClick={() => { setActiveGame(null); setClickGameActive(false); setClickScore(0); }} className="text-sm text-gray-500 hover:text-cyan-600 flex items-center gap-1">
+                          <ChevronLeft className="w-4 h-4" /> {t.back}
+                        </button>
+                        <div className="flex items-center gap-4 text-sm">
+                          <span className="text-gray-600 dark:text-gray-400">{t.score}: <strong className="text-cyan-600">{clickScore}</strong></span>
+                          <span className={`font-bold ${clickTimeLeft <= 3 ? 'text-red-500 animate-pulse' : 'text-gray-600 dark:text-gray-400'}`}>
+                            {t.timeLeft}: {clickTimeLeft}s
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="relative h-80 bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-900/20 dark:to-blue-900/20 rounded-2xl overflow-hidden border border-cyan-200/50 dark:border-cyan-700/50">
+                        {!clickGameActive && clickTimeLeft === 10 && clickScore === 0 ? (
+                          <div className="absolute inset-0 flex flex-col items-center justify-center">
+                            <Target className="w-16 h-16 text-cyan-500 mb-4" />
+                            <button
+                              onClick={startClickGame}
+                              className="px-8 py-4 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-2xl font-bold text-lg hover:shadow-lg hover:shadow-cyan-500/30 transition-all"
+                            >
+                              {t.start}
+                            </button>
+                          </div>
+                        ) : !clickGameActive && clickTimeLeft === 0 ? (
+                          <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
+                            <Award className="w-16 h-16 text-amber-500 mb-4 animate-bounce" />
+                            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{t.gameOver}</h3>
+                            <p className="text-cyan-600 text-xl mb-4">{t.score}: {clickScore}</p>
+                            {clickBest && <p className="text-amber-600 mb-4">{t.bestScore}: {clickBest}</p>}
+                            <button
+                              onClick={startClickGame}
+                              className="px-6 py-3 bg-cyan-600 text-white rounded-xl hover:bg-cyan-700 transition-colors flex items-center gap-2"
+                            >
+                              <RotateCcw className="w-4 h-4" /> {t.playAgain}
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={handleTargetClick}
+                            style={{ top: `${targetPosition.top}%`, left: `${targetPosition.left}%` }}
+                            className="absolute w-16 h-16 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 shadow-lg shadow-cyan-500/50 hover:scale-110 transition-transform flex items-center justify-center animate-pulse"
+                          >
+                            <Target className="w-8 h-8 text-white" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Discover Tab */}
+              {activeTab === "discover" && (
+                <div className="space-y-6">
+                  <div className="p-6 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-2xl border border-amber-200/50 dark:border-amber-700/50">
+                    <div className="flex items-start gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center flex-shrink-0">
+                        <Lightbulb className="w-6 h-6 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-amber-800 dark:text-amber-300 mb-2">{t.funFact}</h3>
+                        <p className="text-amber-700 dark:text-amber-200 text-lg leading-relaxed">
+                          {facts[currentFactIndex]}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between mt-4 pt-4 border-t border-amber-200/50 dark:border-amber-700/50">
+                      <div className="flex gap-1">
+                        {facts.map((_, i) => (
+                          <button
+                            key={i}
+                            onClick={() => setCurrentFactIndex(i)}
+                            className={`w-2 h-2 rounded-full transition-all ${i === currentFactIndex ? "w-6 bg-amber-500" : "bg-amber-300 dark:bg-amber-700 hover:bg-amber-400"}`}
+                          />
+                        ))}
+                      </div>
+                      <button
+                        onClick={() => setCurrentFactIndex((prev) => (prev + 1) % facts.length)}
+                        className="text-sm text-amber-600 hover:text-amber-700 font-medium flex items-center gap-1"
+                      >
+                        {t.nextTip} <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Fun Stats */}
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="p-4 bg-violet-50 dark:bg-violet-900/20 rounded-xl text-center">
+                      <Coffee className="w-8 h-8 mx-auto mb-2 text-violet-600" />
+                      <p className="text-2xl font-bold text-violet-700 dark:text-violet-400">☕</p>
+                      <p className="text-xs text-violet-600 dark:text-violet-400">Pause café</p>
+                    </div>
+                    <div className="p-4 bg-pink-50 dark:bg-pink-900/20 rounded-xl text-center">
+                      <Music className="w-8 h-8 mx-auto mb-2 text-pink-600" />
+                      <p className="text-2xl font-bold text-pink-700 dark:text-pink-400">🎵</p>
+                      <p className="text-xs text-pink-600 dark:text-pink-400">Musique</p>
+                    </div>
+                    <div className="p-4 bg-cyan-50 dark:bg-cyan-900/20 rounded-xl text-center">
+                      <Palette className="w-8 h-8 mx-auto mb-2 text-cyan-600" />
+                      <p className="text-2xl font-bold text-cyan-700 dark:text-cyan-400">🎨</p>
+                      <p className="text-xs text-cyan-600 dark:text-cyan-400">Créativité</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Inspiration Tab */}
+              {activeTab === "inspiration" && (
+                <div className="space-y-6">
+                  <div className="relative p-8 bg-gradient-to-br from-violet-100 via-purple-50 to-fuchsia-100 dark:from-violet-900/30 dark:via-purple-900/20 dark:to-fuchsia-900/30 rounded-2xl border border-violet-200/50 dark:border-violet-700/50 overflow-hidden">
+                    <div className="absolute top-4 right-4 text-6xl opacity-20">❝</div>
+                    <blockquote className="relative">
+                      <p className="text-xl sm:text-2xl font-medium text-gray-800 dark:text-gray-200 leading-relaxed mb-4 italic">
+                        &ldquo;{quotesList[currentQuoteIndex].text}&rdquo;
+                      </p>
+                      <footer className="text-violet-600 dark:text-violet-400 font-semibold">
+                        — {quotesList[currentQuoteIndex].author}
+                      </footer>
+                    </blockquote>
+                    <div className="flex items-center justify-between mt-6 pt-4 border-t border-violet-200/50 dark:border-violet-700/50">
+                      <div className="flex gap-1">
+                        {quotesList.map((_, i) => (
+                          <button
+                            key={i}
+                            onClick={() => setCurrentQuoteIndex(i)}
+                            className={`w-2 h-2 rounded-full transition-all ${i === currentQuoteIndex ? "w-6 bg-violet-500" : "bg-violet-300 dark:bg-violet-700 hover:bg-violet-400"}`}
+                          />
+                        ))}
+                      </div>
+                      <button
+                        onClick={() => setCurrentQuoteIndex((prev) => (prev + 1) % quotesList.length)}
+                        className="text-sm text-violet-600 hover:text-violet-700 font-medium flex items-center gap-1"
+                      >
+                        {t.nextTip} <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Right Column - Sidebar */}
+          <div className="space-y-6">
+            {/* Relax Card */}
+            <div className="bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-500 rounded-3xl p-6 text-white shadow-xl shadow-emerald-500/20">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center">
+                  <Heart className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg">{t.relaxMessage}</h3>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 text-emerald-100">
+                <CheckCircle className="w-4 h-4" />
+                <span className="text-sm">{t.profileSubmitted}</span>
+              </div>
+              <div className="flex items-center gap-2 text-emerald-100 mt-1">
+                <Clock className="w-4 h-4 animate-spin" style={{ animationDuration: '3s' }} />
+                <span className="text-sm">{t.awaitingReview}</span>
+              </div>
+            </div>
+
+            {/* Quick Stats */}
+            <div className="bg-white dark:bg-gray-900 rounded-3xl p-6 shadow-xl shadow-violet-500/5 border border-gray-200/50 dark:border-gray-800/50">
+              <h3 className="font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-violet-500" />
+                {t.yourScores}
+              </h3>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-3 bg-violet-50 dark:bg-violet-900/20 rounded-xl">
+                  <div className="flex items-center gap-2">
+                    <Puzzle className="w-5 h-5 text-violet-500" />
+                    <span className="text-sm text-gray-700 dark:text-gray-300">Memory</span>
+                  </div>
+                  <span className="font-bold text-violet-600">{memoryBest || "-"}</span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-cyan-50 dark:bg-cyan-900/20 rounded-xl">
+                  <div className="flex items-center gap-2">
+                    <Target className="w-5 h-5 text-cyan-500" />
+                    <span className="text-sm text-gray-700 dark:text-gray-300">Speed Click</span>
+                  </div>
+                  <span className="font-bold text-cyan-600">{clickBest || "-"}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Decorative Card */}
+            <div className="relative overflow-hidden bg-gradient-to-br from-violet-600 via-purple-600 to-fuchsia-600 rounded-3xl p-6 text-white">
+              <div className="absolute -top-10 -right-10 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
+              <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
+              <div className="relative">
+                <Zap className="w-8 h-8 mb-3" />
+                <h3 className="font-bold text-lg mb-1">{t.comingSoon}</h3>
+                <p className="text-violet-200 text-sm">
+                  {t.adventureBegins}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
     </div>
   );
 }
