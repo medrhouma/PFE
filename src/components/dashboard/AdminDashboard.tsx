@@ -2,6 +2,9 @@ import { getPool } from '@/lib/mysql-direct';
 
 const query = async (sql: string, params?: any[]) => {
   const pool = getPool();
+  if (!pool) {
+    throw new Error('Database not configured');
+  }
   const [rows] = await pool.execute(sql, params || []);
   return rows;
 };

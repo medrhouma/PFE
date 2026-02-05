@@ -130,9 +130,8 @@ export async function POST(request: NextRequest) {
       ipAddress,
       userAgent,
       {
-        name: newDocument.name,
+        filename: newDocument.name,
         type: documentType,
-        mimeType: file.type,
         size: file.size
       }
     );
@@ -245,7 +244,7 @@ export async function DELETE(request: NextRequest) {
       ipAddress,
       userAgent,
       {
-        name: deletedDoc.name,
+        filename: deletedDoc.name,
         type: deletedDoc.type
       }
     );

@@ -7,10 +7,20 @@ import { NextRequest, NextResponse } from "next/server";
 import { withAuth, getClientInfo } from "@/lib/rbac";
 import { contractService } from "@/lib/services/contract-service";
 
+export const dynamic = "force-dynamic";
+
+// Helper to extract ID from URL pathname
+function extractIdFromUrl(req: NextRequest): string {
+  const pathname = req.nextUrl.pathname;
+  const segments = pathname.split('/');
+  // URL is /api/contracts/[id], so id is the last segment
+  return segments[segments.length - 1];
+}
+
 // Get contract by ID
-export const GET = withAuth(async (req: NextRequest, user, { params }: { params: { id: string } }) => {
+export const GET = withAuth(async (req: NextRequest, user) => {
   try {
-    const { id } = await params;
+    const id = extractIdFromUrl(req);
     const contract = await contractService.getById(id);
     
     if (!contract) {
@@ -46,9 +56,9 @@ export const GET = withAuth(async (req: NextRequest, user, { params }: { params:
 });
 
 // Update contract (send for signature, archive, etc.)
-export const PATCH = withAuth(async (req: NextRequest, user, { params }: { params: { id: string } }) => {
+export const PATCH = withAuth(async (req: NextRequest, user) => {
   try {
-    const { id } = await params;
+    const id = extractIdFromUrl(req);
     console.log("🔵 PATCH /api/contracts/[id] - contractId:", id);
     
     const { action, signatureData } = await req.json();

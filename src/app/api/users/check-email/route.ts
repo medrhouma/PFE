@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { pool } from "@/lib/db";
+import { pool as getPool } from "@/lib/db";
+
+export const dynamic = "force-dynamic";
 
 /**
  * GET /api/users/check-email?email=test@example.com
@@ -18,7 +20,14 @@ export async function GET(req: NextRequest) {
     }
 
     // Check if email exists
-    const [rows] = await pool.execute(
+    const dbPool = getPool();
+    if (!dbPool) {
+      return NextResponse.json(
+        { error: "Database not configured" },
+        { status: 503 }
+      );
+    }
+    const [rows] = await dbPool.execute(
       `SELECT id FROM User WHERE email = ? LIMIT 1`,
       [email.toLowerCase().trim()]
     );

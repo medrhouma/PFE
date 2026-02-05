@@ -1,5 +1,7 @@
+export const dynamic = "force-dynamic";
+
 import { NextRequest, NextResponse } from "next/server"
-import { pool } from "@/lib/db"
+import { pool as getPool } from "@/lib/db"
 import bcrypt from "bcryptjs"
 import { v4 as uuid } from "uuid"
 import { checkRateLimit, getClientIP } from "@/lib/security-middleware"
@@ -97,7 +99,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if email already exists
-    const [existingUsers] = await pool.execute(
+    const dbPool = getPool();
+    if (!dbPool) {
+      return NextResponse.json(
+        { error: "Service de base de données non disponible" },
+        { status: 503 }
+      )
+    }
+    const [existingUsers] = await dbPool.execute(
       `SELECT id FROM User WHERE email = ?`,
       [email.toLowerCase().trim()]
     )
@@ -116,7 +125,7 @@ export async function POST(request: NextRequest) {
     const id = uuid()
 
     // Insert user - use 'role' column (not roleEnum, which is Prisma field name)
-    await pool.execute(
+    await dbPool.execute(
       `INSERT INTO User (id, name, email, password, role, status) 
        VALUES (?, ?, ?, ?, ?, ?)`,
       [id, name.trim(), email.toLowerCase().trim(), hashedPassword, "USER", "INACTIVE"]

@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getPool } from "@/lib/mysql-direct";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -18,6 +20,9 @@ export async function GET(request: NextRequest) {
 
     // Get all notifications with user information
     const pool = getPool();
+    if (!pool) {
+      return NextResponse.json({ error: "Database not configured" }, { status: 503 });
+    }
     const [notifications] = await pool.query(
       `SELECT 
         n.*,

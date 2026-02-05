@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/Button"
 import { Checkbox } from "@/components/ui/Checkbox"
 import { GoogleButton } from "./GoogleButton"
 import { OTPInput } from "./OTPInput"
-import { Mail, ArrowLeft, RefreshCw, Shield, Clock } from "lucide-react"
+import { Mail, ArrowLeft, RefreshCw, Shield, Clock, Eye, EyeOff, Loader2 } from "lucide-react"
 import Link from "next/link"
 
 type LoginStep = "credentials" | "otp"
@@ -23,6 +23,8 @@ export function LoginForm() {
   const [otpCode, setOtpCode] = useState("")
   const [countdown, setCountdown] = useState(0)
   const [expiresAt, setExpiresAt] = useState<Date | null>(null)
+  const [showPassword, setShowPassword] = useState(false)
+  const [errorShake, setErrorShake] = useState(false)
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -65,6 +67,7 @@ export function LoginForm() {
     setIsLoading(true)
     setError("")
     setSuccess("")
+    setErrorShake(false)
 
     try {
       const res = await fetch("/api/auth/send-otp", {
@@ -80,6 +83,8 @@ export function LoginForm() {
 
       if (!res.ok) {
         setError(data.error || "Erreur lors de l'envoi du code OTP")
+        setErrorShake(true)
+        setTimeout(() => setErrorShake(false), 500)
         return
       }
 
@@ -89,6 +94,8 @@ export function LoginForm() {
       setSuccess("Code envoyé à " + formData.email)
     } catch (err) {
       setError("Erreur de connexion au serveur")
+      setErrorShake(true)
+      setTimeout(() => setErrorShake(false), 500)
     } finally {
       setIsLoading(false)
     }
@@ -295,11 +302,18 @@ export function LoginForm() {
     <div className="w-full max-w-md space-y-8">
       {/* Header */}
       <div className="text-center">
+        {/* Logo */}
+        <div className="mx-auto w-16 h-16 bg-gradient-to-br from-violet-600 to-indigo-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-violet-500/30">
+          <span className="text-white font-bold text-2xl">S</span>
+        </div>
         <h1 className="text-3xl font-bold text-gray-900">
           Connexion
         </h1>
         <p className="mt-2 text-gray-600">
           Connectez-vous à votre compte
+        </p>
+        <p className="mt-1 text-sm text-violet-600 font-medium">
+          Bienvenue sur Santec RH
         </p>
       </div>
 
@@ -321,28 +335,51 @@ export function LoginForm() {
       {/* Form */}
       <form onSubmit={handleSendOTP} className="space-y-5">
         {error && (
-          <div className="p-3 rounded-lg bg-red-50 border border-red-200">
-            <p className="text-sm text-red-600">{error}</p>
+          <div className={`p-3 rounded-lg bg-red-50 border border-red-200 transition-all duration-300 ${errorShake ? 'animate-shake' : ''}`}>
+            <p className="text-sm text-red-600 flex items-center gap-2">
+              <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+              {error}
+            </p>
           </div>
         )}
 
-        <Input
-          label="Email"
-          type="email"
-          placeholder="votre@email.com"
-          value={formData.email}
-          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-          required
-        />
+        <div className="space-y-1">
+          <label className="block text-sm font-medium text-gray-700">Email</label>
+          <input
+            type="email"
+            placeholder="votre@email.com"
+            value={formData.email}
+            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            required
+            disabled={isLoading}
+            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent focus:shadow-lg focus:shadow-violet-500/20 transition-all duration-200 placeholder:text-gray-400 disabled:opacity-50 disabled:cursor-not-allowed"
+          />
+        </div>
 
-        <Input
-          label="Mot de passe"
-          type="password"
-          placeholder="••••••••"
-          value={formData.password}
-          onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-          required
-        />
+        <div className="space-y-1">
+          <label className="block text-sm font-medium text-gray-700">Mot de passe</label>
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              placeholder="••••••••"
+              value={formData.password}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              required
+              disabled={isLoading}
+              className="w-full px-4 py-3 pr-12 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent focus:shadow-lg focus:shadow-violet-500/20 transition-all duration-200 placeholder:text-gray-400 disabled:opacity-50 disabled:cursor-not-allowed"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              disabled={isLoading}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-violet-600 transition-colors disabled:opacity-50"
+            >
+              {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+            </button>
+          </div>
+        </div>
 
         <div className="flex items-center justify-between">
           <Checkbox
@@ -352,24 +389,40 @@ export function LoginForm() {
           />
           <Link
             href="/forgot-password"
-            className="text-sm font-medium text-violet-600 hover:text-violet-500"
+            className="text-sm font-medium text-violet-600 hover:text-violet-500 transition-colors"
           >
             Mot de passe oublié ?
           </Link>
         </div>
 
-        <Button type="submit" isLoading={isLoading}>
-          Continuer
-        </Button>
+        <button
+          type="submit"
+          disabled={isLoading || !formData.email || !formData.password}
+          className="w-full py-3 px-4 bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-semibold rounded-lg shadow-lg shadow-violet-500/30 hover:shadow-xl hover:shadow-violet-500/40 hover:from-violet-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none flex items-center justify-center gap-2"
+        >
+          {isLoading ? (
+            <>
+              <Loader2 className="w-5 h-5 animate-spin" />
+              <span>Vérification...</span>
+            </>
+          ) : (
+            "Continuer"
+          )}
+        </button>
 
         {/* Security Notice */}
-        <div className="flex items-start gap-3 p-3 bg-violet-50 rounded-lg">
+        <div className="flex items-start gap-3 p-3 bg-gradient-to-r from-violet-50 to-indigo-50 rounded-lg border border-violet-100">
           <Shield className="w-5 h-5 text-violet-600 flex-shrink-0 mt-0.5" />
           <p className="text-xs text-violet-700">
             Pour votre sécurité, un code de vérification sera envoyé à votre email après validation de vos identifiants.
           </p>
         </div>
       </form>
+
+      {/* Footer version */}
+      <p className="text-center text-xs text-gray-400 pt-4">
+        Santec RH v2.0.0 • Plateforme sécurisée
+      </p>
     </div>
   )
 }

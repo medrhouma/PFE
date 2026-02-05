@@ -3,6 +3,8 @@
  * CRUD operations for employee contracts with signature workflow
  */
 
+export const dynamic = "force-dynamic";
+
 import { NextRequest, NextResponse } from "next/server";
 import { withAuth, getClientInfo } from "@/lib/rbac";
 import { contractService } from "@/lib/services/contract-service";

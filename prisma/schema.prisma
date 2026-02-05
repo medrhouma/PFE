@@ -685,7 +685,7 @@ model Contract {
   userId            String           @map("user_id")
   user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   title             String
-  type              ContractType
+  type              ContratType
   description       String?          @db.Text
   originalPdfPath   String           @db.Text @map("original_pdf_path")
   signedPdfPath     String?          @db.Text @map("signed_pdf_path")

@@ -1,8 +1,30 @@
 import mysql, { RowDataPacket, OkPacket, ResultSetHeader, PoolConnection } from 'mysql2/promise'
 
+/**
+ * MySQL Direct Connection Pool
+ * Used for raw SQL queries when Prisma is not suitable
+ * Optimized for serverless environments (Vercel)
+ */
+
 let pool: mysql.Pool | null = null
 
+// Check if we have valid database configuration
+function hasValidDbConfig(): boolean {
+  return !!(
+    process.env.DB_HOST &&
+    process.env.DB_USER &&
+    process.env.DB_PASSWORD &&
+    process.env.DB_NAME
+  )
+}
+
 export function getPool() {
+  // Return null pool for build time or missing config
+  if (!hasValidDbConfig()) {
+    console.warn('Database configuration not available - skipping pool creation')
+    return null
+  }
+
   if (!pool) {
     pool = mysql.createPool({
       host: process.env.DB_HOST,
@@ -19,10 +41,10 @@ export function getPool() {
       idleTimeout: 60000,
     })
     
-    // Handle pool errors gracefully
-    pool.on('error', (err) => {
-      console.error('Database pool error:', err.message)
-      if (err.code === 'PROTOCOL_CONNECTION_LOST' || err.code === 'ECONNRESET') {
+    // Handle pool errors gracefully - use type assertion for error handling
+    ;(pool as any).on('error', (err: any) => {
+      console.error('Database pool error:', err?.message || err)
+      if (err?.code === 'PROTOCOL_CONNECTION_LOST' || err?.code === 'ECONNRESET') {
         pool = null // Reset pool to force reconnection
       }
     })
@@ -31,16 +53,26 @@ export function getPool() {
 }
 
 export async function getConnection(): Promise<PoolConnection> {
-  return await getPool().getConnection()
+  const currentPool = getPool()
+  if (!currentPool) {
+    throw new Error('Database pool not available')
+  }
+  return await currentPool.getConnection()
 }
 
 export async function query<T extends RowDataPacket[] = RowDataPacket[]>(
   sql: string, 
   params?: any[]
 ): Promise<T> {
+  const currentPool = getPool()
+  if (!currentPool) {
+    console.warn('Database not configured, returning empty result')
+    return [] as unknown as T
+  }
+
   let connection: PoolConnection | null = null
   try {
-    connection = await getPool().getConnection()
+    connection = await currentPool.getConnection()
     const [rows] = await connection.execute<T>(sql, params)
     return rows
   } catch (error: any) {
@@ -61,9 +93,14 @@ export async function execute(
   sql: string, 
   params?: any[]
 ): Promise<OkPacket | ResultSetHeader> {
+  const currentPool = getPool()
+  if (!currentPool) {
+    throw new Error('Database pool not available')
+  }
+
   let connection: PoolConnection | null = null
   try {
-    connection = await getPool().getConnection()
+    connection = await currentPool.getConnection()
     const [result] = await connection.execute<OkPacket | ResultSetHeader>(sql, params)
     return result
   } catch (error: any) {

@@ -1,8 +1,13 @@
+export const dynamic = "force-dynamic";
+
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { query, execute } from "@/lib/mysql-direct";
 import { notificationService } from "@/lib/services/notification-service";
+
+// Minimum time between pointage attempts (30 seconds)
+const MIN_POINTAGE_INTERVAL_MS = 30 * 1000;
 
 export async function POST(req: NextRequest) {
   try {
@@ -25,12 +30,13 @@ export async function POST(req: NextRequest) {
       verificationScore,
     } = await req.json();
 
-    // Trouver le check-in le plus récent sans check-out
+    const now = new Date();
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    // ========== HARD RULE 1: Must have a check-in first ==========
     const lastCheckIns: any[] = await query(
-      `SELECT id, timestamp FROM Pointage 
+      `SELECT id, timestamp FROM pointages 
        WHERE user_id = ? AND type = 'IN' AND timestamp >= ?
        ORDER BY timestamp DESC LIMIT 1`,
       [session.user.id, today.toISOString()]
@@ -38,39 +44,63 @@ export async function POST(req: NextRequest) {
 
     if (!lastCheckIns || lastCheckIns.length === 0) {
       return NextResponse.json(
-        { error: "Aucun check-in trouvé pour aujourd'hui" },
+        { error: "Vous devez d'abord faire votre check-in avant de pointer la sortie.", code: "NO_CHECK_IN" },
         { status: 400 }
       );
     }
 
     const lastCheckIn = lastCheckIns[0];
+    const checkInTime = new Date(lastCheckIn.timestamp);
 
-    // Vérifier si ce check-in a déjà un check-out
+    // ========== HARD RULE 2: Already checked out ==========
     const existingCheckOuts: any[] = await query(
-      `SELECT id FROM Pointage 
+      `SELECT id FROM pointages 
        WHERE user_id = ? AND type = 'OUT' AND timestamp >= ?
        LIMIT 1`,
-      [session.user.id, new Date(lastCheckIn.timestamp).toISOString()]
+      [session.user.id, checkInTime.toISOString()]
     );
 
     if (existingCheckOuts && existingCheckOuts.length > 0) {
       return NextResponse.json(
-        { error: "Un check-out existe déjà pour ce check-in" },
+        { error: "Vous avez déjà fait votre check-out aujourd'hui.", code: "ALREADY_CHECKED_OUT" },
         { status: 400 }
       );
     }
 
+    // ========== HARD RULE 3: Minimum 30 seconds between pointage attempts ==========
+    try {
+      const recentPointages: any[] = await query(
+        `SELECT timestamp FROM pointages 
+         WHERE user_id = ? 
+         ORDER BY timestamp DESC 
+         LIMIT 1`,
+        [session.user.id]
+      );
+
+      if (recentPointages && recentPointages.length > 0) {
+        const lastPointageTime = new Date(recentPointages[0].timestamp).getTime();
+        const timeDiff = now.getTime() - lastPointageTime;
+        
+        if (timeDiff < MIN_POINTAGE_INTERVAL_MS) {
+          const remainingSeconds = Math.ceil((MIN_POINTAGE_INTERVAL_MS - timeDiff) / 1000);
+          return NextResponse.json({ 
+            error: `Veuillez attendre ${remainingSeconds} secondes avant de réessayer.`,
+            code: "TOO_FREQUENT",
+            remainingSeconds
+          }, { status: 429 });
+        }
+      }
+    } catch (rateError) {
+      console.error("Error checking rate limit:", rateError);
+    }
+
     const checkInId = lastCheckIn.id;
-    const checkInTime = new Date(lastCheckIn.timestamp);
     
     // Générer un ID unique pour le pointage
     const pointageId = `ptg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
-    // Timestamp actuel
-    const timestamp = new Date();
-    
     // Calculer la durée en heures
-    const durationMs = timestamp.getTime() - checkInTime.getTime();
+    const durationMs = now.getTime() - checkInTime.getTime();
     const hoursWorked = durationMs / (1000 * 60 * 60);
     
     // Obtenir l'IP depuis les headers
@@ -90,24 +120,28 @@ export async function POST(req: NextRequest) {
       anomalyReason = "Durée de travail excessive (plus de 12 heures)";
     }
 
+    // Check face verification
+    if (!faceVerified && capturedPhoto) {
+      anomalyDetected = true;
+      anomalyReason = anomalyReason ? `${anomalyReason}, Vérification faciale échouée` : "Vérification faciale échouée";
+    }
+
     // Insérer le check-out avec mysql-direct
     await execute(
-      `INSERT INTO Pointage (id, user_id, type, timestamp, status, ip_address, geolocation, captured_photo, face_verified, verification_score, anomaly_detected, anomaly_reason, hours_worked, check_in_id, created_at, updated_at)
-       VALUES (?, ?, 'OUT', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+      `INSERT INTO pointages (id, user_id, type, timestamp, status, ip_address, geolocation, captured_photo, face_verified, verification_score, anomaly_detected, anomaly_reason, created_at)
+       VALUES (?, ?, 'OUT', ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
       [
         pointageId,
         session.user.id,
-        timestamp,
-        anomalyDetected ? 'PENDING' : 'VALID',
+        now,
+        anomalyDetected ? 'PENDING_REVIEW' : 'VALID',
         ipAddress,
         geolocation ? JSON.stringify(geolocation) : null,
         capturedPhoto || null,
         faceVerified ? 1 : 0,
         verificationScore || null,
         anomalyDetected ? 1 : 0,
-        anomalyReason,
-        hoursWorked,
-        checkInId
+        anomalyReason
       ]
     );
 
@@ -149,7 +183,7 @@ export async function POST(req: NextRequest) {
             rhUserIds,
             userName,
             "check-out",
-            timestamp.toISOString()
+            now.toISOString()
           );
         }
       }
@@ -165,7 +199,7 @@ export async function POST(req: NextRequest) {
         : `Check-out enregistré avec succès (${hoursWorked.toFixed(2)}h)`,
       pointage: {
         id: pointageId,
-        timestamp: timestamp.toISOString(),
+        timestamp: now.toISOString(),
         status: anomalyDetected ? "ANOMALY" : "VALID",
         hoursWorked: hoursWorked.toFixed(2),
         anomalyDetected,

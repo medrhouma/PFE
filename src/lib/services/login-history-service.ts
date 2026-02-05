@@ -221,29 +221,84 @@ class LoginHistoryService {
   /**
    * Get login history for a user
    */
-  async getUserLoginHistory(userId: string, limit: number = 20): Promise<any[]> {
-    return await query(
-      `SELECT * FROM login_history 
-       WHERE user_id = ? 
-       ORDER BY created_at DESC 
-       LIMIT ?`,
-      [userId, limit]
-    ) as any[];
+  async getUserLoginHistory(userId: string, limit: number = 20, offset: number = 0): Promise<any[]> {
+    try {
+      const results = await query(
+        `SELECT id, user_id, login_at, ip_address, user_agent, device_type, 
+                browser, os, location, is_suspicious, suspicious_reason, 
+                login_method, success, failure_reason
+         FROM login_history 
+         WHERE user_id = ? 
+         ORDER BY login_at DESC 
+         LIMIT ? OFFSET ?`,
+        [userId, limit, offset]
+      ) as any[];
+      return results || [];
+    } catch (error: any) {
+      console.error("Error fetching user login history:", error);
+      // Return empty array on table not found
+      if (error.code === "ER_NO_SUCH_TABLE") {
+        return [];
+      }
+      throw error;
+    }
   }
 
   /**
-   * Get all suspicious logins (for RH/Admin)
+   * Get suspicious logins for a user (or all if no userId)
    */
-  async getSuspiciousLogins(limit: number = 50): Promise<any[]> {
-    return await query(
-      `SELECT lh.*, u.name as userName, u.email as userEmail
-       FROM login_history lh
-       JOIN User u ON lh.user_id = u.id COLLATE utf8mb4_unicode_ci
-       WHERE lh.is_suspicious = 1
-       ORDER BY lh.created_at DESC
-       LIMIT ?`,
-      [limit]
-    ) as any[];
+  async getSuspiciousLogins(userId?: string, limit: number = 50): Promise<any[]> {
+    try {
+      if (userId) {
+        return await query(
+          `SELECT id, user_id, login_at, ip_address, user_agent, device_type,
+                  browser, os, location, suspicious_reason, login_method
+           FROM login_history 
+           WHERE user_id = ? AND is_suspicious = 1
+           ORDER BY login_at DESC
+           LIMIT ?`,
+          [userId, limit]
+        ) as any[];
+      }
+      return await query(
+        `SELECT lh.*, u.name as userName, u.email as userEmail
+         FROM login_history lh
+         LEFT JOIN User u ON lh.user_id = u.id
+         WHERE lh.is_suspicious = 1
+         ORDER BY lh.login_at DESC
+         LIMIT ?`,
+        [limit]
+      ) as any[];
+    } catch (error: any) {
+      console.error("Error fetching suspicious logins:", error);
+      if (error.code === "ER_NO_SUCH_TABLE") {
+        return [];
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Get failed login attempts for a user
+   */
+  async getFailedAttempts(userId: string, limit: number = 10): Promise<any[]> {
+    try {
+      return await query(
+        `SELECT id, user_id, login_at, ip_address, user_agent, device_type,
+                browser, os, failure_reason, login_method
+         FROM login_history 
+         WHERE user_id = ? AND success = 0
+         ORDER BY login_at DESC
+         LIMIT ?`,
+        [userId, limit]
+      ) as any[];
+    } catch (error: any) {
+      console.error("Error fetching failed login attempts:", error);
+      if (error.code === "ER_NO_SUCH_TABLE") {
+        return [];
+      }
+      throw error;
+    }
   }
 
   /**
