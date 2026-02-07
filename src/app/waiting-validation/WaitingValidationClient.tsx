@@ -9,10 +9,7 @@ import {
   CheckCircle,
   Mail,
   RefreshCw,
-  Lightbulb,
   Gamepad2,
-  ChevronRight,
-  ChevronLeft,
   Trophy,
   RotateCcw,
   User,
@@ -20,34 +17,84 @@ import {
   Shield,
   Calendar,
   Building2,
-  Zap,
   Target,
-  Star,
-  Heart,
-  Sparkles,
   Timer,
   Award,
-  TrendingUp,
-  Coffee,
+  Play,
+  Pause,
+  SkipForward,
+  SkipBack,
+  Volume2,
+  VolumeX,
   Music,
-  Palette,
   Puzzle,
+  Zap,
+  Circle,
+  Dice1,
+  Dice2,
+  Dice3,
+  Dice4,
+  Dice5,
+  Dice6,
+  Sun,
+  Moon,
+  Video,
+  X,
+  Maximize2,
+  Minimize2,
+  Plus,
+  ExternalLink,
+  Headphones,
 } from "lucide-react";
 
 interface WaitingValidationClientProps {
   userName: string;
 }
 
-// Onboarding steps data
-const onboardingSteps = [
-  { icon: User, titleFr: "Créer votre compte", titleEn: "Create account", titleAr: "إنشاء حساب", done: true },
-  { icon: FileText, titleFr: "Compléter votre profil", titleEn: "Complete profile", titleAr: "إكمال الملف الشخصي", done: true },
-  { icon: Clock, titleFr: "Validation RH en cours", titleEn: "HR validation in progress", titleAr: "التحقق من الموارد البشرية", done: false, current: true },
-  { icon: Shield, titleFr: "Accès à la plateforme", titleEn: "Platform access", titleAr: "الوصول إلى المنصة", done: false },
-  { icon: Calendar, titleFr: "Premier pointage", titleEn: "First check-in", titleAr: "أول تسجيل حضور", done: false },
+// Progress steps for the tracker
+const progressSteps = [
+  { id: 1, titleFr: "Compte créé", titleEn: "Account created", titleAr: "تم إنشاء الحساب", done: true },
+  { id: 2, titleFr: "Profil complété", titleEn: "Profile completed", titleAr: "اكتمل الملف", done: true },
+  { id: 3, titleFr: "Validation RH", titleEn: "HR Validation", titleAr: "تحقق الموارد البشرية", done: false, current: true },
+  { id: 4, titleFr: "Accès plateforme", titleEn: "Platform access", titleAr: "الوصول للمنصة", done: false },
+  { id: 5, titleFr: "Premier pointage", titleEn: "First check-in", titleAr: "أول تسجيل", done: false },
 ];
 
-// Fun Facts
+// Free music tracks with real URLs (royalty-free)
+const defaultMusicTracks = [
+  { 
+    id: 1, 
+    title: "Relaxing Piano", 
+    artist: "Free Music", 
+    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
+  },
+  { 
+    id: 2, 
+    title: "Electronic Chill", 
+    artist: "SoundHelix", 
+    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3"
+  },
+  { 
+    id: 3, 
+    title: "Ambient Dreams", 
+    artist: "SoundHelix", 
+    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3"
+  },
+  { 
+    id: 4, 
+    title: "Soft Melody", 
+    artist: "SoundHelix", 
+    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3"
+  },
+  { 
+    id: 5, 
+    title: "Peaceful Vibes", 
+    artist: "SoundHelix", 
+    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3"
+  },
+];
+
+// Fun facts
 const funFacts = {
   fr: [
     "☕ Le café a été découvert par des chèvres en Éthiopie !",
@@ -81,164 +128,207 @@ const funFacts = {
   ],
 };
 
-// Motivational quotes
-const quotes = {
-  fr: [
-    { text: "Le succès n'est pas la clé du bonheur. Le bonheur est la clé du succès.", author: "Albert Schweitzer" },
-    { text: "La seule façon de faire du bon travail est d'aimer ce que vous faites.", author: "Steve Jobs" },
-    { text: "L'avenir appartient à ceux qui croient à la beauté de leurs rêves.", author: "Eleanor Roosevelt" },
-    { text: "Chaque accomplissement commence par la décision d'essayer.", author: "John F. Kennedy" },
-  ],
-  en: [
-    { text: "Success is not the key to happiness. Happiness is the key to success.", author: "Albert Schweitzer" },
-    { text: "The only way to do great work is to love what you do.", author: "Steve Jobs" },
-    { text: "The future belongs to those who believe in the beauty of their dreams.", author: "Eleanor Roosevelt" },
-    { text: "Every accomplishment starts with the decision to try.", author: "John F. Kennedy" },
-  ],
-  ar: [
-    { text: "النجاح ليس مفتاح السعادة. السعادة هي مفتاح النجاح.", author: "ألبرت شفايتزر" },
-    { text: "الطريقة الوحيدة للقيام بعمل رائع هي أن تحب ما تفعله.", author: "ستيف جوبز" },
-    { text: "المستقبل ملك لأولئك الذين يؤمنون بجمال أحلامهم.", author: "إليانور روزفلت" },
-    { text: "كل إنجاز يبدأ بقرار المحاولة.", author: "جون ف. كينيدي" },
-  ],
-};
-
 const translations = {
   fr: {
     greeting: "Bonjour",
     waitingTitle: "Votre profil est en cours de validation",
     waitingDesc: "Notre équipe RH examine votre dossier. Profitez-en pour vous détendre !",
     emailNotice: "Vous recevrez un email dès que votre profil sera validé.",
-    profileSubmitted: "Profil soumis",
-    awaitingReview: "En révision",
-    emailComingSoon: "Email à venir",
     refresh: "Vérifier le statut",
-    onboarding: "Votre parcours",
     games: "Mini-jeux",
-    discover: "Découvrir",
-    inspiration: "Inspiration",
     memoryGame: "Memory",
     clickGame: "Speed Click",
-    typingGame: "Dactylographie",
+    diceGame: "Lancé de dés",
+    tictactoe: "Morpion",
     moves: "Coups",
     bestScore: "Record",
     youWon: "Bravo !",
+    youLost: "Perdu !",
+    draw: "Égalité !",
     playAgain: "Rejouer",
     score: "Score",
     timeLeft: "Temps",
-    clickFast: "Cliquez le plus vite possible !",
+    clickFast: "Cliquez vite !",
     gameOver: "Partie terminée !",
     start: "Commencer",
+    roll: "Lancer",
+    yourTurn: "Votre tour",
+    cpuTurn: "Tour de l'ordi",
+    music: "Musique",
+    video: "Vidéo",
+    nowPlaying: "En lecture",
     funFact: "Le saviez-vous ?",
-    quote: "Citation du jour",
-    nextTip: "Suivant",
     estimatedTime: "Temps estimé : 24-48h",
-    relaxMessage: "Détendez-vous, on s'occupe de tout !",
-    yourScores: "Vos scores",
-    comingSoon: "Bientôt prêt !",
-    adventureBegins: "Votre aventure chez SANTEC commence très bientôt...",
     back: "Retour",
-    findPairs: "Trouvez les paires cachées",
+    findPairs: "Trouvez les paires",
+    yourScores: "Vos records",
+    progressTracker: "Suivi de votre demande",
+    lightMode: "Mode clair",
+    darkMode: "Mode sombre",
+    addUrl: "Ajouter une URL",
+    enterUrl: "Entrez l'URL de la musique ou vidéo",
+    add: "Ajouter",
+    cancel: "Annuler",
+    mediaPlayer: "Lecteur média",
+    noMedia: "Aucun média en cours",
+    enterVideoUrl: "Entrez une URL vidéo (YouTube, MP4...)",
+    watchVideo: "Regarder",
   },
   en: {
     greeting: "Hello",
     waitingTitle: "Your profile is being validated",
     waitingDesc: "Our HR team is reviewing your application. Take this time to relax!",
     emailNotice: "You will receive an email once your profile is validated.",
-    profileSubmitted: "Profile submitted",
-    awaitingReview: "Under review",
-    emailComingSoon: "Email coming",
     refresh: "Check status",
-    onboarding: "Your journey",
     games: "Mini-games",
-    discover: "Discover",
-    inspiration: "Inspiration",
     memoryGame: "Memory",
     clickGame: "Speed Click",
-    typingGame: "Typing",
+    diceGame: "Dice Roll",
+    tictactoe: "Tic-Tac-Toe",
     moves: "Moves",
     bestScore: "Best",
     youWon: "You won!",
+    youLost: "You lost!",
+    draw: "It's a draw!",
     playAgain: "Play again",
     score: "Score",
     timeLeft: "Time",
-    clickFast: "Click as fast as you can!",
+    clickFast: "Click fast!",
     gameOver: "Game over!",
     start: "Start",
+    roll: "Roll",
+    yourTurn: "Your turn",
+    cpuTurn: "CPU's turn",
+    music: "Music",
+    video: "Video",
+    nowPlaying: "Now playing",
     funFact: "Did you know?",
-    quote: "Quote of the day",
-    nextTip: "Next",
     estimatedTime: "Estimated time: 24-48h",
-    relaxMessage: "Relax, we've got this!",
-    yourScores: "Your scores",
-    comingSoon: "Almost ready!",
-    adventureBegins: "Your adventure at SANTEC starts very soon...",
     back: "Back",
-    findPairs: "Find the hidden pairs",
+    findPairs: "Find the pairs",
+    yourScores: "Your scores",
+    progressTracker: "Request tracking",
+    lightMode: "Light mode",
+    darkMode: "Dark mode",
+    addUrl: "Add URL",
+    enterUrl: "Enter music or video URL",
+    add: "Add",
+    cancel: "Cancel",
+    mediaPlayer: "Media Player",
+    noMedia: "No media playing",
+    enterVideoUrl: "Enter video URL (YouTube, MP4...)",
+    watchVideo: "Watch",
   },
   ar: {
     greeting: "مرحبًا",
     waitingTitle: "ملفك الشخصي قيد التحقق",
     waitingDesc: "يقوم فريق الموارد البشرية بمراجعة طلبك. استغل هذا الوقت للاسترخاء!",
     emailNotice: "ستتلقى بريدًا إلكترونيًا بمجرد التحقق من ملفك الشخصي.",
-    profileSubmitted: "تم إرسال الملف",
-    awaitingReview: "قيد المراجعة",
-    emailComingSoon: "البريد قادم",
     refresh: "تحقق من الحالة",
-    onboarding: "رحلتك",
     games: "ألعاب مصغرة",
-    discover: "اكتشف",
-    inspiration: "إلهام",
     memoryGame: "الذاكرة",
     clickGame: "سرعة النقر",
-    typingGame: "الكتابة",
+    diceGame: "رمي النرد",
+    tictactoe: "إكس أو",
     moves: "الحركات",
     bestScore: "الأفضل",
     youWon: "فزت!",
+    youLost: "خسرت!",
+    draw: "تعادل!",
     playAgain: "العب مرة أخرى",
     score: "النتيجة",
     timeLeft: "الوقت",
-    clickFast: "انقر بأسرع ما يمكن!",
+    clickFast: "انقر بسرعة!",
     gameOver: "انتهت اللعبة!",
     start: "ابدأ",
+    roll: "ارمِ",
+    yourTurn: "دورك",
+    cpuTurn: "دور الكمبيوتر",
+    music: "موسيقى",
+    video: "فيديو",
+    nowPlaying: "قيد التشغيل",
     funFact: "هل تعلم؟",
-    quote: "اقتباس اليوم",
-    nextTip: "التالي",
     estimatedTime: "الوقت المقدر: 24-48 ساعة",
-    relaxMessage: "استرخِ، نحن نتولى الأمر!",
-    yourScores: "نتائجك",
-    comingSoon: "جاهز قريبًا!",
-    adventureBegins: "مغامرتك في SANTEC تبدأ قريبًا جدًا...",
     back: "رجوع",
-    findPairs: "اعثر على الأزواج المخفية",
+    findPairs: "اعثر على الأزواج",
+    yourScores: "نتائجك",
+    progressTracker: "تتبع الطلب",
+    lightMode: "الوضع الفاتح",
+    darkMode: "الوضع الداكن",
+    addUrl: "إضافة رابط",
+    enterUrl: "أدخل رابط الموسيقى أو الفيديو",
+    add: "إضافة",
+    cancel: "إلغاء",
+    mediaPlayer: "مشغل الوسائط",
+    noMedia: "لا توجد وسائط",
+    enterVideoUrl: "أدخل رابط فيديو (يوتيوب، MP4...)",
+    watchVideo: "مشاهدة",
   },
 };
 
 // Memory game emojis
 const memoryEmojis = ["🎯", "🚀", "⭐", "🎨", "🎵", "💎"];
 
-// Speed click game target positions
+// Speed click target position
 const getRandomPosition = () => ({
   top: Math.random() * 70 + 10,
   left: Math.random() * 70 + 10,
 });
+
+// Dice icons
+const diceIcons = [Dice1, Dice2, Dice3, Dice4, Dice5, Dice6];
+
+// Helper to convert YouTube URL to embed
+const getYouTubeEmbedUrl = (url: string): string | null => {
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+  const match = url.match(regExp);
+  if (match && match[2].length === 11) {
+    return `https://www.youtube.com/embed/${match[2]}?autoplay=1`;
+  }
+  return null;
+};
 
 export default function WaitingValidationClient({ userName }: WaitingValidationClientProps) {
   const router = useRouter();
   const { language } = useLanguage();
   const t = translations[language as keyof typeof translations] || translations.fr;
   const facts = funFacts[language as keyof typeof funFacts] || funFacts.fr;
-  const quotesList = quotes[language as keyof typeof quotes] || quotes.fr;
 
-  // State
-  const [activeTab, setActiveTab] = useState<"games" | "discover" | "inspiration">("games");
-  const [activeGame, setActiveGame] = useState<"memory" | "click" | null>(null);
+  // Theme state
+  const [isDarkMode, setIsDarkMode] = useState(true);
+
+  // Progress tracker animation
+  const [pulseStep, setPulseStep] = useState(true);
+
+  // Active game state
+  const [activeGame, setActiveGame] = useState<"memory" | "click" | "tictactoe" | "dice" | null>(null);
+  
+  // Fun fact rotation
   const [currentFactIndex, setCurrentFactIndex] = useState(0);
-  const [currentQuoteIndex, setCurrentQuoteIndex] = useState(0);
-  
-  // Animation states
-  const [pulseStatus, setPulseStatus] = useState(true);
-  
+
+  // Audio player state
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [musicTracks, setMusicTracks] = useState(defaultMusicTracks);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
+  const [musicProgress, setMusicProgress] = useState(0);
+  const [musicDuration, setMusicDuration] = useState(0);
+  const [volume, setVolume] = useState(0.7);
+
+  // Video player state
+  const [videoUrl, setVideoUrl] = useState("");
+  const [activeVideoUrl, setActiveVideoUrl] = useState<string | null>(null);
+  const [isVideoFullscreen, setIsVideoFullscreen] = useState(false);
+
+  // Add URL modal
+  const [showAddUrlModal, setShowAddUrlModal] = useState(false);
+  const [newUrl, setNewUrl] = useState("");
+  const [newTitle, setNewTitle] = useState("");
+
+  // Media tab
+  const [mediaTab, setMediaTab] = useState<"music" | "video">("music");
+
   // Memory Game State
   const [memoryCards, setMemoryCards] = useState<{ id: number; emoji: string; isFlipped: boolean; isMatched: boolean }[]>([]);
   const [flippedCards, setFlippedCards] = useState<number[]>([]);
@@ -255,6 +345,34 @@ export default function WaitingValidationClient({ userName }: WaitingValidationC
   const [targetPosition, setTargetPosition] = useState({ top: 50, left: 50 });
   const clickTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Tic-Tac-Toe State
+  const [tttBoard, setTttBoard] = useState<(string | null)[]>(Array(9).fill(null));
+  const [tttIsXNext, setTttIsXNext] = useState(true);
+  const [tttWinner, setTttWinner] = useState<string | null>(null);
+  const [tttWins, setTttWins] = useState(0);
+
+  // Dice Game State
+  const [playerDice, setPlayerDice] = useState<number>(1);
+  const [cpuDice, setCpuDice] = useState<number>(1);
+  const [diceResult, setDiceResult] = useState<"win" | "lose" | "draw" | null>(null);
+  const [isRolling, setIsRolling] = useState(false);
+  const [diceWins, setDiceWins] = useState(0);
+
+  // Load theme from localStorage
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("santec_theme");
+    if (savedTheme) {
+      setIsDarkMode(savedTheme === "dark");
+    }
+  }, []);
+
+  // Save theme to localStorage
+  const toggleTheme = () => {
+    const newTheme = !isDarkMode;
+    setIsDarkMode(newTheme);
+    localStorage.setItem("santec_theme", newTheme ? "dark" : "light");
+  };
+
   // Initialize memory game
   const initMemoryGame = useCallback(() => {
     const shuffled = [...memoryEmojis, ...memoryEmojis]
@@ -267,34 +385,167 @@ export default function WaitingValidationClient({ userName }: WaitingValidationC
     setIsChecking(false);
   }, []);
 
+  // Initialize Tic-Tac-Toe
+  const initTicTacToe = useCallback(() => {
+    setTttBoard(Array(9).fill(null));
+    setTttIsXNext(true);
+    setTttWinner(null);
+  }, []);
+
   // Load best scores
   useEffect(() => {
     initMemoryGame();
     const memBest = localStorage.getItem("santec_memory_best");
     const clkBest = localStorage.getItem("santec_click_best");
+    const tWins = localStorage.getItem("santec_ttt_wins");
+    const dWins = localStorage.getItem("santec_dice_wins");
     if (memBest) setMemoryBest(parseInt(memBest));
     if (clkBest) setClickBest(parseInt(clkBest));
+    if (tWins) setTttWins(parseInt(tWins));
+    if (dWins) setDiceWins(parseInt(dWins));
   }, [initMemoryGame]);
 
-  // Rotate facts and quotes
+  // Progress tracker pulse
   useEffect(() => {
-    const factInterval = setInterval(() => {
-      setCurrentFactIndex((prev) => (prev + 1) % facts.length);
-    }, 10000);
-    const quoteInterval = setInterval(() => {
-      setCurrentQuoteIndex((prev) => (prev + 1) % quotesList.length);
-    }, 15000);
-    return () => {
-      clearInterval(factInterval);
-      clearInterval(quoteInterval);
-    };
-  }, [facts.length, quotesList.length]);
-
-  // Pulse animation toggle
-  useEffect(() => {
-    const interval = setInterval(() => setPulseStatus(p => !p), 2000);
+    const interval = setInterval(() => setPulseStep((p) => !p), 1000);
     return () => clearInterval(interval);
   }, []);
+
+  // Rotate facts
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentFactIndex((prev) => (prev + 1) % facts.length);
+    }, 8000);
+    return () => clearInterval(interval);
+  }, [facts.length]);
+
+  // Audio player setup
+  useEffect(() => {
+    if (!audioRef.current) {
+      audioRef.current = new Audio();
+      audioRef.current.volume = volume;
+    }
+
+    const audio = audioRef.current;
+    
+    const handleTimeUpdate = () => {
+      setMusicProgress(audio.currentTime);
+    };
+
+    const handleLoadedMetadata = () => {
+      setMusicDuration(audio.duration);
+    };
+
+    const handleEnded = () => {
+      nextTrack();
+    };
+
+    audio.addEventListener("timeupdate", handleTimeUpdate);
+    audio.addEventListener("loadedmetadata", handleLoadedMetadata);
+    audio.addEventListener("ended", handleEnded);
+
+    return () => {
+      audio.removeEventListener("timeupdate", handleTimeUpdate);
+      audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
+      audio.removeEventListener("ended", handleEnded);
+    };
+  }, []);
+
+  // Load track when index changes
+  useEffect(() => {
+    if (audioRef.current && musicTracks[currentTrackIndex]) {
+      audioRef.current.src = musicTracks[currentTrackIndex].url;
+      if (isPlaying) {
+        audioRef.current.play().catch(() => {});
+      }
+    }
+  }, [currentTrackIndex, musicTracks]);
+
+  // Play/pause
+  const togglePlay = () => {
+    if (!audioRef.current) return;
+    
+    if (isPlaying) {
+      audioRef.current.pause();
+    } else {
+      audioRef.current.play().catch(() => {});
+    }
+    setIsPlaying(!isPlaying);
+  };
+
+  // Mute/unmute
+  const toggleMute = () => {
+    if (audioRef.current) {
+      audioRef.current.muted = !isMuted;
+      setIsMuted(!isMuted);
+    }
+  };
+
+  // Volume change
+  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newVolume = parseFloat(e.target.value);
+    setVolume(newVolume);
+    if (audioRef.current) {
+      audioRef.current.volume = newVolume;
+    }
+  };
+
+  // Seek
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const time = parseFloat(e.target.value);
+    if (audioRef.current) {
+      audioRef.current.currentTime = time;
+      setMusicProgress(time);
+    }
+  };
+
+  // Next/prev track
+  const nextTrack = () => {
+    setCurrentTrackIndex((prev) => (prev + 1) % musicTracks.length);
+    setMusicProgress(0);
+  };
+
+  const prevTrack = () => {
+    setCurrentTrackIndex((prev) => (prev - 1 + musicTracks.length) % musicTracks.length);
+    setMusicProgress(0);
+  };
+
+  // Add custom URL
+  const handleAddUrl = () => {
+    if (!newUrl.trim()) return;
+    
+    const newTrack = {
+      id: musicTracks.length + 1,
+      title: newTitle.trim() || `Track ${musicTracks.length + 1}`,
+      artist: "Custom",
+      url: newUrl.trim(),
+    };
+    
+    setMusicTracks([...musicTracks, newTrack]);
+    setNewUrl("");
+    setNewTitle("");
+    setShowAddUrlModal(false);
+  };
+
+  // Watch video
+  const handleWatchVideo = () => {
+    if (!videoUrl.trim()) return;
+    
+    const youtubeEmbed = getYouTubeEmbedUrl(videoUrl);
+    if (youtubeEmbed) {
+      setActiveVideoUrl(youtubeEmbed);
+    } else {
+      // Direct video URL
+      setActiveVideoUrl(videoUrl);
+    }
+  };
+
+  // Format time
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
 
   // Memory card click
   const handleMemoryClick = (id: number) => {
@@ -381,96 +632,235 @@ export default function WaitingValidationClient({ userName }: WaitingValidationC
     };
   }, []);
 
+  // Tic-Tac-Toe logic
+  const checkTTTWinner = (board: (string | null)[]) => {
+    const lines = [
+      [0, 1, 2], [3, 4, 5], [6, 7, 8],
+      [0, 3, 6], [1, 4, 7], [2, 5, 8],
+      [0, 4, 8], [2, 4, 6],
+    ];
+    for (const [a, b, c] of lines) {
+      if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+        return board[a];
+      }
+    }
+    return null;
+  };
+
+  const handleTTTClick = (index: number) => {
+    if (tttBoard[index] || tttWinner || !tttIsXNext) return;
+    
+    const newBoard = [...tttBoard];
+    newBoard[index] = "X";
+    setTttBoard(newBoard);
+    
+    const winner = checkTTTWinner(newBoard);
+    if (winner) {
+      setTttWinner(winner);
+      if (winner === "X") {
+        const newWins = tttWins + 1;
+        setTttWins(newWins);
+        localStorage.setItem("santec_ttt_wins", newWins.toString());
+      }
+      return;
+    }
+    
+    if (newBoard.every((cell) => cell !== null)) {
+      setTttWinner("draw");
+      return;
+    }
+    
+    setTttIsXNext(false);
+    
+    setTimeout(() => {
+      const emptyIndices = newBoard.map((cell, i) => (cell === null ? i : -1)).filter((i) => i !== -1);
+      if (emptyIndices.length > 0) {
+        const cpuMove = emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
+        const cpuBoard = [...newBoard];
+        cpuBoard[cpuMove] = "O";
+        setTttBoard(cpuBoard);
+        
+        const cpuWinner = checkTTTWinner(cpuBoard);
+        if (cpuWinner) {
+          setTttWinner(cpuWinner);
+        } else if (cpuBoard.every((cell) => cell !== null)) {
+          setTttWinner("draw");
+        }
+        setTttIsXNext(true);
+      }
+    }, 500);
+  };
+
+  // Dice game
+  const rollDice = () => {
+    if (isRolling) return;
+    setIsRolling(true);
+    setDiceResult(null);
+    
+    let rollCount = 0;
+    const rollInterval = setInterval(() => {
+      setPlayerDice(Math.floor(Math.random() * 6) + 1);
+      setCpuDice(Math.floor(Math.random() * 6) + 1);
+      rollCount++;
+      
+      if (rollCount >= 10) {
+        clearInterval(rollInterval);
+        const finalPlayer = Math.floor(Math.random() * 6) + 1;
+        const finalCpu = Math.floor(Math.random() * 6) + 1;
+        setPlayerDice(finalPlayer);
+        setCpuDice(finalCpu);
+        
+        if (finalPlayer > finalCpu) {
+          setDiceResult("win");
+          const newWins = diceWins + 1;
+          setDiceWins(newWins);
+          localStorage.setItem("santec_dice_wins", newWins.toString());
+        } else if (finalPlayer < finalCpu) {
+          setDiceResult("lose");
+        } else {
+          setDiceResult("draw");
+        }
+        setIsRolling(false);
+      }
+    }, 100);
+  };
+
   const handleRefresh = () => router.refresh();
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-violet-50/30 to-cyan-50/30 dark:from-gray-950 dark:via-violet-950/20 dark:to-cyan-950/20">
-      {/* Animated Background Elements */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-violet-300/20 dark:bg-violet-600/10 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-cyan-300/20 dark:bg-cyan-600/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
-        <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-pink-300/10 dark:bg-pink-600/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
-      </div>
+  const PlayerDiceIcon = diceIcons[playerDice - 1];
+  const CpuDiceIcon = diceIcons[cpuDice - 1];
 
+  // Theme classes
+  const themeClasses = isDarkMode
+    ? {
+        bg: "bg-slate-900",
+        bgCard: "bg-slate-800/80",
+        bgCardHover: "hover:bg-slate-700/80",
+        border: "border-slate-700",
+        text: "text-white",
+        textMuted: "text-slate-400",
+        textSecondary: "text-slate-300",
+        accent: "text-blue-400",
+        accentBg: "bg-blue-500",
+        inputBg: "bg-slate-700",
+      }
+    : {
+        bg: "bg-gray-50",
+        bgCard: "bg-white",
+        bgCardHover: "hover:bg-gray-50",
+        border: "border-gray-200",
+        text: "text-gray-900",
+        textMuted: "text-gray-500",
+        textSecondary: "text-gray-600",
+        accent: "text-blue-600",
+        accentBg: "bg-blue-600",
+        inputBg: "bg-gray-100",
+      };
+
+  return (
+    <div className={`min-h-screen ${themeClasses.bg} transition-colors duration-300`}>
       {/* Header */}
-      <header className="relative bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-800/50 sticky top-0 z-50">
+      <header className={`${themeClasses.bgCard} border-b ${themeClasses.border} sticky top-0 z-50 backdrop-blur-sm`}>
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="relative">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500 via-purple-500 to-fuchsia-500 flex items-center justify-center shadow-lg shadow-violet-500/25">
-                <Building2 className="w-6 h-6 text-white" />
-              </div>
-              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full border-2 border-white dark:border-gray-900" />
+            <div className={`w-12 h-12 rounded-xl ${themeClasses.accentBg} flex items-center justify-center shadow-lg`}>
+              <Building2 className="w-6 h-6 text-white" />
             </div>
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">{t.greeting} 👋</p>
-              <p className="font-bold text-gray-900 dark:text-white text-lg">{userName}</p>
+              <p className={`text-sm ${themeClasses.textMuted}`}>{t.greeting} 👋</p>
+              <p className={`font-bold ${themeClasses.text} text-lg`}>{userName}</p>
             </div>
           </div>
-          <LogoutButton />
+          <div className="flex items-center gap-3">
+            {/* Theme Toggle */}
+            <button
+              onClick={toggleTheme}
+              className={`p-2.5 rounded-xl ${themeClasses.bgCard} border ${themeClasses.border} ${themeClasses.bgCardHover} transition-colors`}
+              title={isDarkMode ? t.lightMode : t.darkMode}
+            >
+              {isDarkMode ? (
+                <Sun className="w-5 h-5 text-yellow-400" />
+              ) : (
+                <Moon className="w-5 h-5 text-slate-700" />
+              )}
+            </button>
+            <LogoutButton />
+          </div>
         </div>
       </header>
 
-      <main className="relative max-w-6xl mx-auto p-4 sm:p-6 space-y-6 pb-20">
-        {/* Hero Status Card */}
-        <div className="relative overflow-hidden bg-white dark:bg-gray-900 rounded-3xl shadow-2xl shadow-violet-500/10 border border-gray-200/50 dark:border-gray-800/50">
-          {/* Decorative top gradient */}
-          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500" />
-          
-          <div className="p-6 sm:p-8">
-            <div className="flex flex-col lg:flex-row lg:items-center gap-6">
-              {/* Status Icon */}
-              <div className="flex-shrink-0">
-                <div className={`relative w-24 h-24 rounded-3xl bg-gradient-to-br from-amber-400 via-orange-400 to-rose-400 flex items-center justify-center shadow-2xl shadow-orange-500/30 ${pulseStatus ? 'scale-100' : 'scale-95'} transition-transform duration-1000`}>
-                  <Clock className="w-12 h-12 text-white" />
-                  <div className="absolute inset-0 rounded-3xl bg-white/20 animate-ping" style={{ animationDuration: '3s' }} />
-                </div>
+      <main className="max-w-6xl mx-auto p-4 sm:p-6 space-y-6 pb-20">
+        {/* Status Card */}
+        <div className={`${themeClasses.bgCard} rounded-2xl border ${themeClasses.border} p-6 sm:p-8`}>
+          <div className="flex flex-col lg:flex-row lg:items-center gap-6 mb-8">
+            <div className="flex-shrink-0">
+              <div className="w-20 h-20 rounded-2xl bg-amber-500 flex items-center justify-center shadow-xl">
+                <Clock className="w-10 h-10 text-white" />
               </div>
-
-              {/* Status Text */}
-              <div className="flex-1">
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                  {t.waitingTitle}
-                </h1>
-                <p className="text-gray-500 dark:text-gray-400 mb-4">{t.waitingDesc}</p>
-                
-                {/* Time estimate badge */}
-                <div className="inline-flex items-center gap-2 px-4 py-2 bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 rounded-full text-sm font-medium">
-                  <Timer className="w-4 h-4" />
-                  {t.estimatedTime}
-                </div>
-              </div>
-
-              {/* Refresh Button */}
-              <button
-                onClick={handleRefresh}
-                className="flex items-center justify-center gap-2 px-6 py-3.5 bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 text-white rounded-2xl hover:shadow-lg hover:shadow-violet-500/30 hover:scale-[1.02] transition-all font-semibold"
-              >
-                <RefreshCw className="w-5 h-5" />
-                {t.refresh}
-              </button>
             </div>
+            <div className="flex-1">
+              <h1 className={`text-2xl sm:text-3xl font-bold ${themeClasses.text} mb-2`}>{t.waitingTitle}</h1>
+              <p className={`${themeClasses.textMuted} mb-3`}>{t.waitingDesc}</p>
+              <div className={`inline-flex items-center gap-2 px-4 py-2 ${isDarkMode ? 'bg-blue-500/20 text-blue-300' : 'bg-blue-100 text-blue-700'} rounded-full text-sm font-medium`}>
+                <Timer className="w-4 h-4" />
+                {t.estimatedTime}
+              </div>
+            </div>
+            <button
+              onClick={handleRefresh}
+              className={`flex items-center gap-2 px-6 py-3 ${themeClasses.accentBg} text-white rounded-xl hover:opacity-90 transition-all font-semibold shadow-lg`}
+            >
+              <RefreshCw className="w-5 h-5" />
+              {t.refresh}
+            </button>
+          </div>
 
-            {/* Progress Steps */}
-            <div className="mt-8 pt-6 border-t border-gray-100 dark:border-gray-800">
-              <div className="flex items-center justify-between overflow-x-auto pb-2 gap-2">
-                {onboardingSteps.map((step, i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <div className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm whitespace-nowrap transition-all ${
-                      step.done 
-                        ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400" 
-                        : step.current 
-                          ? "bg-gradient-to-r from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30 text-amber-700 dark:text-amber-400 ring-2 ring-amber-400/50" 
-                          : "bg-gray-100 dark:bg-gray-800 text-gray-400"
-                    }`}>
-                      <step.icon className="w-4 h-4" />
-                      <span className="hidden sm:inline">{language === "fr" ? step.titleFr : language === "ar" ? step.titleAr : step.titleEn}</span>
-                      {step.done && <CheckCircle className="w-4 h-4" />}
-                      {step.current && <Sparkles className="w-4 h-4 animate-pulse" />}
+          {/* Progress Tracker */}
+          <div className="mb-6">
+            <h3 className={`text-sm font-medium ${themeClasses.textMuted} mb-4`}>{t.progressTracker}</h3>
+            <div className="relative">
+              {/* Track Line */}
+              <div className={`absolute top-6 left-0 right-0 h-1 ${isDarkMode ? 'bg-slate-700' : 'bg-gray-300'} rounded-full`} />
+              <div 
+                className="absolute top-6 left-0 h-1 bg-blue-500 rounded-full transition-all duration-500"
+                style={{ width: "40%" }}
+              />
+              
+              {/* Steps */}
+              <div className="relative flex justify-between">
+                {progressSteps.map((step) => (
+                  <div key={step.id} className="flex flex-col items-center" style={{ width: "20%" }}>
+                    <div
+                      className={`relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 ${
+                        step.done
+                          ? "bg-blue-500 text-white shadow-lg"
+                          : step.current
+                          ? `bg-amber-500 text-white shadow-lg ${pulseStep ? "scale-110 ring-4 ring-amber-500/30" : "scale-100"}`
+                          : isDarkMode ? "bg-slate-700 text-slate-500" : "bg-gray-300 text-gray-500"
+                      }`}
+                    >
+                      {step.done ? (
+                        <CheckCircle className="w-6 h-6" />
+                      ) : step.current ? (
+                        <Clock className={`w-6 h-6 ${pulseStep ? "opacity-100" : "opacity-60"}`} />
+                      ) : (
+                        <Circle className="w-6 h-6" />
+                      )}
+                      
+                      {step.current && (
+                        <div className={`absolute inset-0 rounded-full border-2 border-amber-400 ${pulseStep ? "scale-150 opacity-0" : "scale-100 opacity-50"} transition-all duration-1000`} />
+                      )}
                     </div>
-                    {i < onboardingSteps.length - 1 && (
-                      <ChevronRight className={`w-4 h-4 flex-shrink-0 ${step.done ? 'text-emerald-400' : 'text-gray-300 dark:text-gray-600'}`} />
-                    )}
+                    
+                    <p className={`mt-3 text-xs sm:text-sm text-center font-medium ${
+                      step.done
+                        ? themeClasses.accent
+                        : step.current
+                        ? "text-amber-500"
+                        : themeClasses.textMuted
+                    }`}>
+                      {language === "fr" ? step.titleFr : language === "ar" ? step.titleAr : step.titleEn}
+                    </p>
                   </div>
                 ))}
               </div>
@@ -478,347 +868,556 @@ export default function WaitingValidationClient({ userName }: WaitingValidationC
           </div>
 
           {/* Email Notice */}
-          <div className="px-6 sm:px-8 pb-6 sm:pb-8">
-            <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-2xl border border-blue-200/50 dark:border-blue-800/50">
-              <div className="w-10 h-10 rounded-xl bg-blue-500 flex items-center justify-center flex-shrink-0">
-                <Mail className="w-5 h-5 text-white" />
-              </div>
-              <p className="text-blue-800 dark:text-blue-200 text-sm">{t.emailNotice}</p>
+          <div className={`flex items-center gap-4 p-4 ${isDarkMode ? 'bg-slate-700/50' : 'bg-blue-50'} rounded-xl border ${isDarkMode ? 'border-slate-600' : 'border-blue-200'}`}>
+            <div className={`w-10 h-10 rounded-lg ${themeClasses.accentBg} flex items-center justify-center`}>
+              <Mail className="w-5 h-5 text-white" />
             </div>
+            <p className={themeClasses.textSecondary}>{t.emailNotice}</p>
           </div>
         </div>
 
-        {/* Interactive Content */}
+        {/* Main Content Grid */}
         <div className="grid lg:grid-cols-3 gap-6">
-          {/* Left Column - Games */}
-          <div className="lg:col-span-2 bg-white dark:bg-gray-900 rounded-3xl shadow-xl shadow-violet-500/5 border border-gray-200/50 dark:border-gray-800/50 overflow-hidden">
-            {/* Tab Headers */}
-            <div className="flex border-b border-gray-100 dark:border-gray-800">
-              {[
-                { id: "games", icon: Gamepad2, label: t.games },
-                { id: "discover", icon: Lightbulb, label: t.discover },
-                { id: "inspiration", icon: Star, label: t.inspiration },
-              ].map(tab => (
-                <button
-                  key={tab.id}
-                  onClick={() => {
-                    setActiveTab(tab.id as "games" | "discover" | "inspiration");
-                    setActiveGame(null);
-                  }}
-                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-4 text-sm font-medium transition-all ${
-                    activeTab === tab.id
-                      ? "bg-gradient-to-b from-violet-50 to-transparent dark:from-violet-900/20 text-violet-700 dark:text-violet-400 border-b-2 border-violet-500"
-                      : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
-                  }`}
-                >
-                  <tab.icon className="w-4 h-4" />
-                  <span className="hidden sm:inline">{tab.label}</span>
-                </button>
-              ))}
+          {/* Games Section */}
+          <div className={`lg:col-span-2 ${themeClasses.bgCard} rounded-2xl border ${themeClasses.border} overflow-hidden`}>
+            <div className={`flex items-center gap-2 p-4 border-b ${themeClasses.border}`}>
+              <Gamepad2 className={themeClasses.accent} />
+              <h2 className={`font-semibold ${themeClasses.text}`}>{t.games}</h2>
             </div>
 
-            {/* Tab Content */}
             <div className="p-6">
-              {/* Games Tab */}
-              {activeTab === "games" && (
-                <div>
-                  {!activeGame ? (
-                    <div className="grid sm:grid-cols-2 gap-4">
-                      {/* Memory Game Card */}
-                      <button
-                        onClick={() => { initMemoryGame(); setActiveGame("memory"); }}
-                        className="group relative overflow-hidden p-6 bg-gradient-to-br from-violet-100 to-purple-100 dark:from-violet-900/30 dark:to-purple-900/30 rounded-2xl border border-violet-200/50 dark:border-violet-700/50 hover:shadow-lg hover:shadow-violet-500/20 hover:scale-[1.02] transition-all text-left"
-                      >
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-violet-300/30 dark:bg-violet-600/20 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
-                        <div className="relative">
-                          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center mb-4 shadow-lg shadow-violet-500/30">
-                            <Puzzle className="w-7 h-7 text-white" />
-                          </div>
-                          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">{t.memoryGame}</h3>
-                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{t.findPairs}</p>
-                          {memoryBest && (
-                            <div className="flex items-center gap-1 text-sm text-amber-600 dark:text-amber-400">
-                              <Trophy className="w-4 h-4" />
-                              {t.bestScore}: {memoryBest}
-                            </div>
-                          )}
-                        </div>
-                      </button>
-
-                      {/* Speed Click Game Card */}
-                      <button
-                        onClick={() => setActiveGame("click")}
-                        className="group relative overflow-hidden p-6 bg-gradient-to-br from-cyan-100 to-blue-100 dark:from-cyan-900/30 dark:to-blue-900/30 rounded-2xl border border-cyan-200/50 dark:border-cyan-700/50 hover:shadow-lg hover:shadow-cyan-500/20 hover:scale-[1.02] transition-all text-left"
-                      >
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-300/30 dark:bg-cyan-600/20 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
-                        <div className="relative">
-                          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center mb-4 shadow-lg shadow-cyan-500/30">
-                            <Target className="w-7 h-7 text-white" />
-                          </div>
-                          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">{t.clickGame}</h3>
-                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{t.clickFast}</p>
-                          {clickBest && (
-                            <div className="flex items-center gap-1 text-sm text-amber-600 dark:text-amber-400">
-                              <Trophy className="w-4 h-4" />
-                              {t.bestScore}: {clickBest}
-                            </div>
-                          )}
-                        </div>
-                      </button>
+              {!activeGame ? (
+                <div className="grid sm:grid-cols-2 gap-4">
+                  {/* Memory Game */}
+                  <button
+                    onClick={() => { initMemoryGame(); setActiveGame("memory"); }}
+                    className={`group p-5 ${isDarkMode ? 'bg-blue-500/10 border-blue-500/20 hover:border-blue-500/40' : 'bg-blue-50 border-blue-200 hover:border-blue-400'} rounded-xl border transition-all text-left`}
+                  >
+                    <div className="w-12 h-12 rounded-xl bg-blue-500 flex items-center justify-center mb-3 shadow-lg">
+                      <Puzzle className="w-6 h-6 text-white" />
                     </div>
-                  ) : activeGame === "memory" ? (
-                    /* Memory Game */
-                    <div>
-                      <div className="flex items-center justify-between mb-4">
-                        <button onClick={() => setActiveGame(null)} className="text-sm text-gray-500 hover:text-violet-600 flex items-center gap-1">
-                          <ChevronLeft className="w-4 h-4" /> {t.back}
-                        </button>
-                        <div className="flex items-center gap-4 text-sm">
-                          <span className="text-gray-600 dark:text-gray-400">{t.moves}: <strong className="text-violet-600">{memoryMoves}</strong></span>
-                          {memoryBest && (
-                            <span className="flex items-center gap-1 text-amber-600">
-                              <Trophy className="w-4 h-4" /> {memoryBest}
-                            </span>
-                          )}
-                        </div>
+                    <h3 className={`font-bold ${themeClasses.text} mb-1`}>{t.memoryGame}</h3>
+                    <p className={`text-sm ${themeClasses.textMuted} mb-2`}>{t.findPairs}</p>
+                    {memoryBest && (
+                      <div className="flex items-center gap-1 text-sm text-amber-500">
+                        <Trophy className="w-4 h-4" /> {t.bestScore}: {memoryBest}
                       </div>
+                    )}
+                  </button>
 
-                      {memoryWon ? (
-                        <div className="text-center py-8 px-4 bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-900/20 dark:to-green-900/20 rounded-2xl">
-                          <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center shadow-lg animate-bounce">
-                            <Trophy className="w-10 h-10 text-white" />
-                          </div>
-                          <h3 className="text-2xl font-bold text-emerald-700 dark:text-emerald-400 mb-2">{t.youWon}</h3>
-                          <p className="text-emerald-600 dark:text-emerald-300 mb-4">{t.moves}: {memoryMoves}</p>
-                          <button onClick={initMemoryGame} className="px-6 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors flex items-center gap-2 mx-auto">
-                            <RotateCcw className="w-4 h-4" /> {t.playAgain}
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="grid grid-cols-4 gap-3 max-w-sm mx-auto">
-                          {memoryCards.map((card) => (
-                            <button
-                              key={card.id}
-                              onClick={() => handleMemoryClick(card.id)}
-                              disabled={card.isFlipped || card.isMatched || isChecking}
-                              className={`aspect-square rounded-2xl text-3xl flex items-center justify-center transition-all duration-300 transform shadow-lg ${
-                                card.isFlipped || card.isMatched
-                                  ? "bg-white dark:bg-gray-800 scale-100 rotate-0"
-                                  : "bg-gradient-to-br from-violet-500 to-purple-600 hover:scale-105 hover:shadow-violet-500/30 cursor-pointer"
-                              } ${card.isMatched ? "ring-2 ring-emerald-500 bg-emerald-50 dark:bg-emerald-900/30" : ""}`}
-                            >
-                              {card.isFlipped || card.isMatched ? card.emoji : <Sparkles className="w-6 h-6 text-white/60" />}
-                            </button>
-                          ))}
-                        </div>
-                      )}
+                  {/* Speed Click */}
+                  <button
+                    onClick={() => setActiveGame("click")}
+                    className={`group p-5 ${isDarkMode ? 'bg-green-500/10 border-green-500/20 hover:border-green-500/40' : 'bg-green-50 border-green-200 hover:border-green-400'} rounded-xl border transition-all text-left`}
+                  >
+                    <div className="w-12 h-12 rounded-xl bg-green-500 flex items-center justify-center mb-3 shadow-lg">
+                      <Target className="w-6 h-6 text-white" />
+                    </div>
+                    <h3 className={`font-bold ${themeClasses.text} mb-1`}>{t.clickGame}</h3>
+                    <p className={`text-sm ${themeClasses.textMuted} mb-2`}>{t.clickFast}</p>
+                    {clickBest && (
+                      <div className="flex items-center gap-1 text-sm text-amber-500">
+                        <Trophy className="w-4 h-4" /> {t.bestScore}: {clickBest}
+                      </div>
+                    )}
+                  </button>
+
+                  {/* Tic-Tac-Toe */}
+                  <button
+                    onClick={() => { initTicTacToe(); setActiveGame("tictactoe"); }}
+                    className={`group p-5 ${isDarkMode ? 'bg-purple-500/10 border-purple-500/20 hover:border-purple-500/40' : 'bg-purple-50 border-purple-200 hover:border-purple-400'} rounded-xl border transition-all text-left`}
+                  >
+                    <div className="w-12 h-12 rounded-xl bg-purple-500 flex items-center justify-center mb-3 shadow-lg text-white font-bold text-lg">
+                      X O
+                    </div>
+                    <h3 className={`font-bold ${themeClasses.text} mb-1`}>{t.tictactoe}</h3>
+                    <p className={`text-sm ${themeClasses.textMuted} mb-2`}>VS CPU</p>
+                    {tttWins > 0 && (
+                      <div className="flex items-center gap-1 text-sm text-amber-500">
+                        <Trophy className="w-4 h-4" /> {t.score}: {tttWins}
+                      </div>
+                    )}
+                  </button>
+
+                  {/* Dice Game */}
+                  <button
+                    onClick={() => { setDiceResult(null); setActiveGame("dice"); }}
+                    className={`group p-5 ${isDarkMode ? 'bg-orange-500/10 border-orange-500/20 hover:border-orange-500/40' : 'bg-orange-50 border-orange-200 hover:border-orange-400'} rounded-xl border transition-all text-left`}
+                  >
+                    <div className="w-12 h-12 rounded-xl bg-orange-500 flex items-center justify-center mb-3 shadow-lg">
+                      <Dice6 className="w-6 h-6 text-white" />
+                    </div>
+                    <h3 className={`font-bold ${themeClasses.text} mb-1`}>{t.diceGame}</h3>
+                    <p className={`text-sm ${themeClasses.textMuted} mb-2`}>VS CPU</p>
+                    {diceWins > 0 && (
+                      <div className="flex items-center gap-1 text-sm text-amber-500">
+                        <Trophy className="w-4 h-4" /> {t.score}: {diceWins}
+                      </div>
+                    )}
+                  </button>
+                </div>
+              ) : activeGame === "memory" ? (
+                /* Memory Game */
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <button onClick={() => setActiveGame(null)} className={`text-sm ${themeClasses.textMuted} hover:${themeClasses.accent} flex items-center gap-1`}>
+                      ← {t.back}
+                    </button>
+                    <div className="flex items-center gap-4 text-sm">
+                      <span className={themeClasses.textMuted}>{t.moves}: <strong className={themeClasses.accent}>{memoryMoves}</strong></span>
+                      {memoryBest && <span className="text-amber-500"><Trophy className="w-4 h-4 inline mr-1" />{memoryBest}</span>}
+                    </div>
+                  </div>
+
+                  {memoryWon ? (
+                    <div className={`text-center py-8 ${isDarkMode ? 'bg-green-500/20' : 'bg-green-100'} rounded-xl border ${isDarkMode ? 'border-green-500/30' : 'border-green-300'}`}>
+                      <Trophy className="w-16 h-16 mx-auto mb-4 text-amber-500 animate-bounce" />
+                      <h3 className="text-2xl font-bold text-green-500 mb-2">{t.youWon}</h3>
+                      <p className="text-green-400 mb-4">{t.moves}: {memoryMoves}</p>
+                      <button onClick={initMemoryGame} className="px-6 py-3 bg-green-500 text-white rounded-xl flex items-center gap-2 mx-auto">
+                        <RotateCcw className="w-4 h-4" /> {t.playAgain}
+                      </button>
                     </div>
                   ) : (
-                    /* Speed Click Game */
-                    <div>
-                      <div className="flex items-center justify-between mb-4">
-                        <button onClick={() => { setActiveGame(null); setClickGameActive(false); setClickScore(0); }} className="text-sm text-gray-500 hover:text-cyan-600 flex items-center gap-1">
-                          <ChevronLeft className="w-4 h-4" /> {t.back}
+                    <div className="grid grid-cols-4 gap-3 max-w-sm mx-auto">
+                      {memoryCards.map((card) => (
+                        <button
+                          key={card.id}
+                          onClick={() => handleMemoryClick(card.id)}
+                          disabled={card.isFlipped || card.isMatched || isChecking}
+                          className={`aspect-square rounded-xl text-3xl flex items-center justify-center transition-all duration-300 shadow-lg ${
+                            card.isFlipped || card.isMatched
+                              ? isDarkMode ? "bg-slate-700" : "bg-gray-200"
+                              : "bg-blue-500 hover:scale-105 cursor-pointer"
+                          } ${card.isMatched ? "ring-2 ring-green-500" : ""}`}
+                        >
+                          {card.isFlipped || card.isMatched ? card.emoji : "?"}
                         </button>
-                        <div className="flex items-center gap-4 text-sm">
-                          <span className="text-gray-600 dark:text-gray-400">{t.score}: <strong className="text-cyan-600">{clickScore}</strong></span>
-                          <span className={`font-bold ${clickTimeLeft <= 3 ? 'text-red-500 animate-pulse' : 'text-gray-600 dark:text-gray-400'}`}>
-                            {t.timeLeft}: {clickTimeLeft}s
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="relative h-80 bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-900/20 dark:to-blue-900/20 rounded-2xl overflow-hidden border border-cyan-200/50 dark:border-cyan-700/50">
-                        {!clickGameActive && clickTimeLeft === 10 && clickScore === 0 ? (
-                          <div className="absolute inset-0 flex flex-col items-center justify-center">
-                            <Target className="w-16 h-16 text-cyan-500 mb-4" />
-                            <button
-                              onClick={startClickGame}
-                              className="px-8 py-4 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-2xl font-bold text-lg hover:shadow-lg hover:shadow-cyan-500/30 transition-all"
-                            >
-                              {t.start}
-                            </button>
-                          </div>
-                        ) : !clickGameActive && clickTimeLeft === 0 ? (
-                          <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
-                            <Award className="w-16 h-16 text-amber-500 mb-4 animate-bounce" />
-                            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{t.gameOver}</h3>
-                            <p className="text-cyan-600 text-xl mb-4">{t.score}: {clickScore}</p>
-                            {clickBest && <p className="text-amber-600 mb-4">{t.bestScore}: {clickBest}</p>}
-                            <button
-                              onClick={startClickGame}
-                              className="px-6 py-3 bg-cyan-600 text-white rounded-xl hover:bg-cyan-700 transition-colors flex items-center gap-2"
-                            >
-                              <RotateCcw className="w-4 h-4" /> {t.playAgain}
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={handleTargetClick}
-                            style={{ top: `${targetPosition.top}%`, left: `${targetPosition.left}%` }}
-                            className="absolute w-16 h-16 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 shadow-lg shadow-cyan-500/50 hover:scale-110 transition-transform flex items-center justify-center animate-pulse"
-                          >
-                            <Target className="w-8 h-8 text-white" />
-                          </button>
-                        )}
-                      </div>
+                      ))}
                     </div>
                   )}
                 </div>
-              )}
-
-              {/* Discover Tab */}
-              {activeTab === "discover" && (
-                <div className="space-y-6">
-                  <div className="p-6 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-2xl border border-amber-200/50 dark:border-amber-700/50">
-                    <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center flex-shrink-0">
-                        <Lightbulb className="w-6 h-6 text-white" />
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-amber-800 dark:text-amber-300 mb-2">{t.funFact}</h3>
-                        <p className="text-amber-700 dark:text-amber-200 text-lg leading-relaxed">
-                          {facts[currentFactIndex]}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between mt-4 pt-4 border-t border-amber-200/50 dark:border-amber-700/50">
-                      <div className="flex gap-1">
-                        {facts.map((_, i) => (
-                          <button
-                            key={i}
-                            onClick={() => setCurrentFactIndex(i)}
-                            className={`w-2 h-2 rounded-full transition-all ${i === currentFactIndex ? "w-6 bg-amber-500" : "bg-amber-300 dark:bg-amber-700 hover:bg-amber-400"}`}
-                          />
-                        ))}
-                      </div>
-                      <button
-                        onClick={() => setCurrentFactIndex((prev) => (prev + 1) % facts.length)}
-                        className="text-sm text-amber-600 hover:text-amber-700 font-medium flex items-center gap-1"
-                      >
-                        {t.nextTip} <ChevronRight className="w-4 h-4" />
-                      </button>
+              ) : activeGame === "click" ? (
+                /* Speed Click */
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <button onClick={() => { setActiveGame(null); setClickGameActive(false); setClickScore(0); setClickTimeLeft(10); }} className={`text-sm ${themeClasses.textMuted}`}>
+                      ← {t.back}
+                    </button>
+                    <div className="flex items-center gap-4 text-sm">
+                      <span className={themeClasses.textMuted}>{t.score}: <strong className="text-green-500">{clickScore}</strong></span>
+                      <span className={`font-bold ${clickTimeLeft <= 3 ? "text-red-500 animate-pulse" : themeClasses.textMuted}`}>
+                        {t.timeLeft}: {clickTimeLeft}s
+                      </span>
                     </div>
                   </div>
 
-                  {/* Fun Stats */}
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="p-4 bg-violet-50 dark:bg-violet-900/20 rounded-xl text-center">
-                      <Coffee className="w-8 h-8 mx-auto mb-2 text-violet-600" />
-                      <p className="text-2xl font-bold text-violet-700 dark:text-violet-400">☕</p>
-                      <p className="text-xs text-violet-600 dark:text-violet-400">Pause café</p>
-                    </div>
-                    <div className="p-4 bg-pink-50 dark:bg-pink-900/20 rounded-xl text-center">
-                      <Music className="w-8 h-8 mx-auto mb-2 text-pink-600" />
-                      <p className="text-2xl font-bold text-pink-700 dark:text-pink-400">🎵</p>
-                      <p className="text-xs text-pink-600 dark:text-pink-400">Musique</p>
-                    </div>
-                    <div className="p-4 bg-cyan-50 dark:bg-cyan-900/20 rounded-xl text-center">
-                      <Palette className="w-8 h-8 mx-auto mb-2 text-cyan-600" />
-                      <p className="text-2xl font-bold text-cyan-700 dark:text-cyan-400">🎨</p>
-                      <p className="text-xs text-cyan-600 dark:text-cyan-400">Créativité</p>
-                    </div>
+                  <div className={`relative h-72 ${isDarkMode ? 'bg-slate-700/50' : 'bg-gray-100'} rounded-xl overflow-hidden border ${themeClasses.border}`}>
+                    {!clickGameActive && clickTimeLeft === 10 && clickScore === 0 ? (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center">
+                        <Target className="w-16 h-16 text-green-500 mb-4" />
+                        <button onClick={startClickGame} className="px-8 py-4 bg-green-500 text-white rounded-xl font-bold text-lg hover:bg-green-600 transition-all">
+                          {t.start}
+                        </button>
+                      </div>
+                    ) : !clickGameActive && clickTimeLeft === 0 ? (
+                      <div className={`absolute inset-0 flex flex-col items-center justify-center ${isDarkMode ? 'bg-slate-900/80' : 'bg-white/90'} backdrop-blur-sm`}>
+                        <Award className="w-16 h-16 text-amber-500 mb-4 animate-bounce" />
+                        <h3 className={`text-2xl font-bold ${themeClasses.text} mb-2`}>{t.gameOver}</h3>
+                        <p className="text-green-500 text-xl mb-4">{t.score}: {clickScore}</p>
+                        {clickBest && <p className="text-amber-500 mb-4">{t.bestScore}: {clickBest}</p>}
+                        <button onClick={startClickGame} className="px-6 py-3 bg-green-500 text-white rounded-xl flex items-center gap-2">
+                          <RotateCcw className="w-4 h-4" /> {t.playAgain}
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={handleTargetClick}
+                        style={{ top: `${targetPosition.top}%`, left: `${targetPosition.left}%` }}
+                        className="absolute w-14 h-14 -translate-x-1/2 -translate-y-1/2 rounded-full bg-green-500 shadow-lg hover:scale-110 transition-transform flex items-center justify-center animate-pulse"
+                      >
+                        <Target className="w-7 h-7 text-white" />
+                      </button>
+                    )}
                   </div>
                 </div>
-              )}
+              ) : activeGame === "tictactoe" ? (
+                /* Tic-Tac-Toe */
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <button onClick={() => setActiveGame(null)} className={`text-sm ${themeClasses.textMuted}`}>
+                      ← {t.back}
+                    </button>
+                    <span className={`text-sm font-medium ${tttIsXNext ? "text-purple-500" : themeClasses.textMuted}`}>
+                      {tttIsXNext ? t.yourTurn : t.cpuTurn}
+                    </span>
+                  </div>
 
-              {/* Inspiration Tab */}
-              {activeTab === "inspiration" && (
-                <div className="space-y-6">
-                  <div className="relative p-8 bg-gradient-to-br from-violet-100 via-purple-50 to-fuchsia-100 dark:from-violet-900/30 dark:via-purple-900/20 dark:to-fuchsia-900/30 rounded-2xl border border-violet-200/50 dark:border-violet-700/50 overflow-hidden">
-                    <div className="absolute top-4 right-4 text-6xl opacity-20">❝</div>
-                    <blockquote className="relative">
-                      <p className="text-xl sm:text-2xl font-medium text-gray-800 dark:text-gray-200 leading-relaxed mb-4 italic">
-                        &ldquo;{quotesList[currentQuoteIndex].text}&rdquo;
-                      </p>
-                      <footer className="text-violet-600 dark:text-violet-400 font-semibold">
-                        — {quotesList[currentQuoteIndex].author}
-                      </footer>
-                    </blockquote>
-                    <div className="flex items-center justify-between mt-6 pt-4 border-t border-violet-200/50 dark:border-violet-700/50">
-                      <div className="flex gap-1">
-                        {quotesList.map((_, i) => (
-                          <button
-                            key={i}
-                            onClick={() => setCurrentQuoteIndex(i)}
-                            className={`w-2 h-2 rounded-full transition-all ${i === currentQuoteIndex ? "w-6 bg-violet-500" : "bg-violet-300 dark:bg-violet-700 hover:bg-violet-400"}`}
-                          />
-                        ))}
-                      </div>
-                      <button
-                        onClick={() => setCurrentQuoteIndex((prev) => (prev + 1) % quotesList.length)}
-                        className="text-sm text-violet-600 hover:text-violet-700 font-medium flex items-center gap-1"
-                      >
-                        {t.nextTip} <ChevronRight className="w-4 h-4" />
+                  {tttWinner ? (
+                    <div className={`text-center py-8 ${isDarkMode ? 'bg-purple-500/20' : 'bg-purple-100'} rounded-xl border ${isDarkMode ? 'border-purple-500/30' : 'border-purple-300'}`}>
+                      <h3 className={`text-2xl font-bold mb-4 ${tttWinner === "X" ? "text-green-500" : tttWinner === "O" ? "text-red-500" : "text-amber-500"}`}>
+                        {tttWinner === "X" ? t.youWon : tttWinner === "O" ? t.youLost : t.draw}
+                      </h3>
+                      <button onClick={initTicTacToe} className="px-6 py-3 bg-purple-500 text-white rounded-xl flex items-center gap-2 mx-auto">
+                        <RotateCcw className="w-4 h-4" /> {t.playAgain}
                       </button>
                     </div>
+                  ) : (
+                    <div className="grid grid-cols-3 gap-2 max-w-xs mx-auto">
+                      {tttBoard.map((cell, index) => (
+                        <button
+                          key={index}
+                          onClick={() => handleTTTClick(index)}
+                          disabled={!!cell || !tttIsXNext}
+                          className={`aspect-square rounded-xl text-3xl font-bold flex items-center justify-center transition-all ${
+                            cell
+                              ? cell === "X"
+                                ? isDarkMode ? "bg-purple-500/30 text-purple-400" : "bg-purple-100 text-purple-600"
+                                : isDarkMode ? "bg-slate-600/30 text-slate-400" : "bg-gray-200 text-gray-600"
+                              : isDarkMode ? "bg-slate-700/50 hover:bg-slate-700" : "bg-gray-100 hover:bg-gray-200"
+                          } cursor-pointer`}
+                        >
+                          {cell}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                /* Dice Game */
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <button onClick={() => setActiveGame(null)} className={`text-sm ${themeClasses.textMuted}`}>
+                      ← {t.back}
+                    </button>
+                    <span className="text-sm text-amber-500"><Trophy className="w-4 h-4 inline mr-1" />{diceWins}</span>
                   </div>
+
+                  <div className="flex items-center justify-center gap-12 py-8">
+                    <div className="text-center">
+                      <p className={`text-sm ${themeClasses.textMuted} mb-3`}>You</p>
+                      <div className={`w-20 h-20 rounded-xl bg-orange-500 flex items-center justify-center shadow-xl ${isRolling ? "animate-bounce" : ""}`}>
+                        <PlayerDiceIcon className="w-12 h-12 text-white" />
+                      </div>
+                    </div>
+
+                    <span className={`text-2xl ${themeClasses.textMuted}`}>VS</span>
+
+                    <div className="text-center">
+                      <p className={`text-sm ${themeClasses.textMuted} mb-3`}>CPU</p>
+                      <div className={`w-20 h-20 rounded-xl ${isDarkMode ? 'bg-slate-600' : 'bg-gray-400'} flex items-center justify-center shadow-xl ${isRolling ? "animate-bounce" : ""}`}>
+                        <CpuDiceIcon className="w-12 h-12 text-white" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {diceResult && (
+                    <div className={`text-center text-xl font-bold mb-4 ${
+                      diceResult === "win" ? "text-green-500" : diceResult === "lose" ? "text-red-500" : "text-amber-500"
+                    }`}>
+                      {diceResult === "win" ? t.youWon : diceResult === "lose" ? t.youLost : t.draw}
+                    </div>
+                  )}
+
+                  <button
+                    onClick={rollDice}
+                    disabled={isRolling}
+                    className="mx-auto flex items-center gap-2 px-8 py-3 bg-orange-500 text-white rounded-xl font-bold hover:bg-orange-600 disabled:opacity-50"
+                  >
+                    <Zap className="w-5 h-5" />
+                    {t.roll}
+                  </button>
                 </div>
               )}
             </div>
           </div>
 
-          {/* Right Column - Sidebar */}
+          {/* Right Sidebar */}
           <div className="space-y-6">
-            {/* Relax Card */}
-            <div className="bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-500 rounded-3xl p-6 text-white shadow-xl shadow-emerald-500/20">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center">
-                  <Heart className="w-6 h-6" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-lg">{t.relaxMessage}</h3>
-                </div>
+            {/* Media Player */}
+            <div className={`${themeClasses.bgCard} rounded-2xl border ${themeClasses.border} overflow-hidden`}>
+              {/* Tabs */}
+              <div className={`flex border-b ${themeClasses.border}`}>
+                <button
+                  onClick={() => setMediaTab("music")}
+                  className={`flex-1 flex items-center justify-center gap-2 p-3 text-sm font-medium transition-colors ${
+                    mediaTab === "music"
+                      ? `${themeClasses.accent} border-b-2 border-blue-500`
+                      : themeClasses.textMuted
+                  }`}
+                >
+                  <Headphones className="w-4 h-4" />
+                  {t.music}
+                </button>
+                <button
+                  onClick={() => setMediaTab("video")}
+                  className={`flex-1 flex items-center justify-center gap-2 p-3 text-sm font-medium transition-colors ${
+                    mediaTab === "video"
+                      ? `${themeClasses.accent} border-b-2 border-blue-500`
+                      : themeClasses.textMuted
+                  }`}
+                >
+                  <Video className="w-4 h-4" />
+                  {t.video}
+                </button>
               </div>
-              <div className="flex items-center gap-2 text-emerald-100">
-                <CheckCircle className="w-4 h-4" />
-                <span className="text-sm">{t.profileSubmitted}</span>
-              </div>
-              <div className="flex items-center gap-2 text-emerald-100 mt-1">
-                <Clock className="w-4 h-4 animate-spin" style={{ animationDuration: '3s' }} />
-                <span className="text-sm">{t.awaitingReview}</span>
+
+              <div className="p-4">
+                {mediaTab === "music" ? (
+                  /* Music Player */
+                  <div>
+                    {/* Now Playing */}
+                    <div className={`${isDarkMode ? 'bg-blue-500/20' : 'bg-blue-100'} rounded-xl p-4 mb-4`}>
+                      <p className={`text-xs ${themeClasses.accent} mb-1`}>{t.nowPlaying}</p>
+                      <p className={`font-semibold ${themeClasses.text} truncate`}>
+                        {musicTracks[currentTrackIndex]?.title || t.noMedia}
+                      </p>
+                      <p className={`text-sm ${themeClasses.textMuted}`}>
+                        {musicTracks[currentTrackIndex]?.artist}
+                      </p>
+                      
+                      {/* Progress Bar */}
+                      <div className="mt-3">
+                        <input
+                          type="range"
+                          min={0}
+                          max={musicDuration || 100}
+                          value={musicProgress}
+                          onChange={handleSeek}
+                          className="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                        />
+                        <div className={`flex justify-between mt-1 text-xs ${themeClasses.textMuted}`}>
+                          <span>{formatTime(musicProgress)}</span>
+                          <span>{formatTime(musicDuration)}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Controls */}
+                    <div className="flex items-center justify-center gap-4 mb-4">
+                      <button onClick={prevTrack} className={`p-2 ${themeClasses.textMuted} hover:${themeClasses.text}`}>
+                        <SkipBack className="w-5 h-5" />
+                      </button>
+                      <button
+                        onClick={togglePlay}
+                        className={`w-12 h-12 rounded-full ${themeClasses.accentBg} flex items-center justify-center text-white shadow-lg hover:opacity-90`}
+                      >
+                        {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
+                      </button>
+                      <button onClick={nextTrack} className={`p-2 ${themeClasses.textMuted} hover:${themeClasses.text}`}>
+                        <SkipForward className="w-5 h-5" />
+                      </button>
+                    </div>
+
+                    {/* Volume */}
+                    <div className="flex items-center gap-2 mb-4">
+                      <button onClick={toggleMute} className={themeClasses.textMuted}>
+                        {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                      </button>
+                      <input
+                        type="range"
+                        min={0}
+                        max={1}
+                        step={0.1}
+                        value={volume}
+                        onChange={handleVolumeChange}
+                        className="flex-1 h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                      />
+                    </div>
+
+                    {/* Track List */}
+                    <div className="space-y-1 max-h-32 overflow-y-auto">
+                      {musicTracks.map((track, index) => (
+                        <button
+                          key={track.id}
+                          onClick={() => { setCurrentTrackIndex(index); setMusicProgress(0); }}
+                          className={`w-full flex items-center gap-2 p-2 rounded-lg text-left transition-colors ${
+                            index === currentTrackIndex
+                              ? isDarkMode ? "bg-blue-500/20 text-blue-300" : "bg-blue-100 text-blue-700"
+                              : `${themeClasses.bgCardHover} ${themeClasses.textMuted}`
+                          }`}
+                        >
+                          <Music className="w-4 h-4 flex-shrink-0" />
+                          <span className="text-sm truncate">{track.title}</span>
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Add URL Button */}
+                    <button
+                      onClick={() => setShowAddUrlModal(true)}
+                      className={`w-full mt-3 flex items-center justify-center gap-2 p-2 rounded-lg border border-dashed ${themeClasses.border} ${themeClasses.textMuted} hover:${themeClasses.accent}`}
+                    >
+                      <Plus className="w-4 h-4" />
+                      {t.addUrl}
+                    </button>
+                  </div>
+                ) : (
+                  /* Video Player */
+                  <div>
+                    {activeVideoUrl ? (
+                      <div className="relative">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className={`text-sm ${themeClasses.textMuted}`}>{t.nowPlaying}</span>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => setIsVideoFullscreen(!isVideoFullscreen)}
+                              className={themeClasses.textMuted}
+                            >
+                              {isVideoFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                            </button>
+                            <button onClick={() => setActiveVideoUrl(null)} className={themeClasses.textMuted}>
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                        
+                        {activeVideoUrl.includes("youtube.com") ? (
+                          <iframe
+                            src={activeVideoUrl}
+                            className={`w-full ${isVideoFullscreen ? 'h-96' : 'h-48'} rounded-xl`}
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                          />
+                        ) : (
+                          <video
+                            src={activeVideoUrl}
+                            controls
+                            autoPlay
+                            className={`w-full ${isVideoFullscreen ? 'h-96' : 'h-48'} rounded-xl bg-black`}
+                          />
+                        )}
+                      </div>
+                    ) : (
+                      <div>
+                        <p className={`text-sm ${themeClasses.textMuted} mb-3`}>{t.enterVideoUrl}</p>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={videoUrl}
+                            onChange={(e) => setVideoUrl(e.target.value)}
+                            placeholder="https://youtube.com/watch?v=..."
+                            className={`flex-1 px-3 py-2 rounded-lg ${themeClasses.inputBg} ${themeClasses.text} border ${themeClasses.border} text-sm`}
+                          />
+                          <button
+                            onClick={handleWatchVideo}
+                            className={`px-4 py-2 ${themeClasses.accentBg} text-white rounded-lg text-sm flex items-center gap-1`}
+                          >
+                            <Play className="w-4 h-4" />
+                          </button>
+                        </div>
+                        
+                        {/* Sample Videos */}
+                        <div className="mt-4">
+                          <p className={`text-xs ${themeClasses.textMuted} mb-2`}>Try these:</p>
+                          <div className="space-y-2">
+                            {[
+                              { title: "Lo-Fi Beats", url: "https://www.youtube.com/watch?v=jfKfPfyJRdk" },
+                              { title: "Nature Sounds", url: "https://www.youtube.com/watch?v=eKFTSSKCzWA" },
+                            ].map((video, i) => (
+                              <button
+                                key={i}
+                                onClick={() => {
+                                  setVideoUrl(video.url);
+                                  const embed = getYouTubeEmbedUrl(video.url);
+                                  if (embed) setActiveVideoUrl(embed);
+                                }}
+                                className={`w-full flex items-center gap-2 p-2 rounded-lg ${themeClasses.bgCardHover} ${themeClasses.textMuted} text-left text-sm`}
+                              >
+                                <Video className="w-4 h-4" />
+                                {video.title}
+                                <ExternalLink className="w-3 h-3 ml-auto" />
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Quick Stats */}
-            <div className="bg-white dark:bg-gray-900 rounded-3xl p-6 shadow-xl shadow-violet-500/5 border border-gray-200/50 dark:border-gray-800/50">
-              <h3 className="font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-violet-500" />
+            {/* Fun Fact */}
+            <div className={`${isDarkMode ? 'bg-amber-500/10 border-amber-500/20' : 'bg-amber-50 border-amber-200'} rounded-2xl border p-5`}>
+              <h3 className="font-semibold text-amber-500 mb-3 flex items-center gap-2">
+                💡 {t.funFact}
+              </h3>
+              <p className={themeClasses.textSecondary}>
+                {facts[currentFactIndex]}
+              </p>
+            </div>
+
+            {/* Scores */}
+            <div className={`${themeClasses.bgCard} rounded-2xl border ${themeClasses.border} p-5`}>
+              <h3 className={`font-semibold ${themeClasses.text} mb-4 flex items-center gap-2`}>
+                <Trophy className="w-5 h-5 text-amber-500" />
                 {t.yourScores}
               </h3>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 bg-violet-50 dark:bg-violet-900/20 rounded-xl">
-                  <div className="flex items-center gap-2">
-                    <Puzzle className="w-5 h-5 text-violet-500" />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">Memory</span>
+              <div className="space-y-2">
+                {[
+                  { name: t.memoryGame, score: memoryBest, color: "blue" },
+                  { name: t.clickGame, score: clickBest, color: "green" },
+                  { name: t.tictactoe, score: tttWins || null, color: "purple" },
+                  { name: t.diceGame, score: diceWins || null, color: "orange" },
+                ].map((game, i) => (
+                  <div key={i} className={`flex items-center justify-between p-2 rounded-lg ${isDarkMode ? `bg-${game.color}-500/10` : `bg-${game.color}-50`}`}>
+                    <span className={`text-sm ${themeClasses.textSecondary}`}>{game.name}</span>
+                    <span className={`font-bold text-${game.color}-500`}>{game.score || "-"}</span>
                   </div>
-                  <span className="font-bold text-violet-600">{memoryBest || "-"}</span>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-cyan-50 dark:bg-cyan-900/20 rounded-xl">
-                  <div className="flex items-center gap-2">
-                    <Target className="w-5 h-5 text-cyan-500" />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">Speed Click</span>
-                  </div>
-                  <span className="font-bold text-cyan-600">{clickBest || "-"}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Decorative Card */}
-            <div className="relative overflow-hidden bg-gradient-to-br from-violet-600 via-purple-600 to-fuchsia-600 rounded-3xl p-6 text-white">
-              <div className="absolute -top-10 -right-10 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
-              <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
-              <div className="relative">
-                <Zap className="w-8 h-8 mb-3" />
-                <h3 className="font-bold text-lg mb-1">{t.comingSoon}</h3>
-                <p className="text-violet-200 text-sm">
-                  {t.adventureBegins}
-                </p>
+                ))}
               </div>
             </div>
           </div>
         </div>
       </main>
+
+      {/* Add URL Modal */}
+      {showAddUrlModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className={`${themeClasses.bgCard} rounded-2xl p-6 w-full max-w-md border ${themeClasses.border}`}>
+            <h3 className={`text-lg font-semibold ${themeClasses.text} mb-4`}>{t.addUrl}</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className={`text-sm ${themeClasses.textMuted} mb-1 block`}>Title</label>
+                <input
+                  type="text"
+                  value={newTitle}
+                  onChange={(e) => setNewTitle(e.target.value)}
+                  placeholder="Track name"
+                  className={`w-full px-3 py-2 rounded-lg ${themeClasses.inputBg} ${themeClasses.text} border ${themeClasses.border}`}
+                />
+              </div>
+              <div>
+                <label className={`text-sm ${themeClasses.textMuted} mb-1 block`}>URL</label>
+                <input
+                  type="text"
+                  value={newUrl}
+                  onChange={(e) => setNewUrl(e.target.value)}
+                  placeholder="https://..."
+                  className={`w-full px-3 py-2 rounded-lg ${themeClasses.inputBg} ${themeClasses.text} border ${themeClasses.border}`}
+                />
+              </div>
+            </div>
+            
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setShowAddUrlModal(false)}
+                className={`flex-1 px-4 py-2 rounded-lg border ${themeClasses.border} ${themeClasses.text}`}
+              >
+                {t.cancel}
+              </button>
+              <button
+                onClick={handleAddUrl}
+                className={`flex-1 px-4 py-2 rounded-lg ${themeClasses.accentBg} text-white`}
+              >
+                {t.add}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
