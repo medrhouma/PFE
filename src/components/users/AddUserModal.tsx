@@ -25,6 +25,7 @@ export default function AddUserModal({ onClose, onSave }: AddUserModalProps) {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [role, setRole] = useState("SUPER_ADMIN")
+  const [accountType, setAccountType] = useState<"USER" | "EMPLOYEE">("EMPLOYEE")
   const [provider, setProvider] = useState("Credentials")
   const [saving, setSaving] = useState(false)
   const [checkingEmail, setCheckingEmail] = useState(false)
@@ -103,6 +104,7 @@ export default function AddUserModal({ onClose, onSave }: AddUserModalProps) {
           email,
           password,
           role,
+          accountType: role === "USER" ? accountType : undefined,
           provider
         })
       })
@@ -315,6 +317,88 @@ export default function AddUserModal({ onClose, onSave }: AddUserModalProps) {
               <option value="USER">User</option>
             </select>
           </div>
+
+          {/* Account Type - Only shown when role is USER */}
+          {role === "USER" && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                Type de compte
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                {/* User simple */}
+                <label
+                  className={`relative flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                    accountType === "USER"
+                      ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20"
+                      : "border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="accountType"
+                    value="USER"
+                    checked={accountType === "USER"}
+                    onChange={() => setAccountType("USER")}
+                    className="sr-only"
+                  />
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                    accountType === "USER" ? "border-indigo-500" : "border-gray-300 dark:border-gray-500"
+                  }`}>
+                    {accountType === "USER" && (
+                      <div className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
+                    )}
+                  </div>
+                  <div>
+                    <span className="block text-sm font-semibold text-gray-900 dark:text-white">
+                      Utilisateur
+                    </span>
+                    <span className="block text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                      Accès direct au dashboard
+                    </span>
+                  </div>
+                </label>
+
+                {/* Employé */}
+                <label
+                  className={`relative flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                    accountType === "EMPLOYEE"
+                      ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20"
+                      : "border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="accountType"
+                    value="EMPLOYEE"
+                    checked={accountType === "EMPLOYEE"}
+                    onChange={() => setAccountType("EMPLOYEE")}
+                    className="sr-only"
+                  />
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                    accountType === "EMPLOYEE" ? "border-indigo-500" : "border-gray-300 dark:border-gray-500"
+                  }`}>
+                    {accountType === "EMPLOYEE" && (
+                      <div className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
+                    )}
+                  </div>
+                  <div>
+                    <span className="block text-sm font-semibold text-gray-900 dark:text-white">
+                      Employé
+                    </span>
+                    <span className="block text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                      Doit compléter son profil
+                    </span>
+                  </div>
+                </label>
+              </div>
+              <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                {accountType === "USER" 
+                  ? "L'utilisateur accèdera directement au dashboard sans compléter de profil employé."
+                  : "L'employé devra compléter son profil avant d'accéder à la plateforme."
+                }
+              </p>
+            </div>
+          )}
 
           {/* Info Message */}
           <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl px-4 py-3">

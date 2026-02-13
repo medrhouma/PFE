@@ -57,9 +57,9 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    const { name, email, password } = body
+    const { name, email, password, role, accountType } = body
     
-    console.log("📝 Register attempt:", { name: name?.substring(0, 20), email, hasPassword: !!password })
+    console.log("📝 Register attempt:", { name: name?.substring(0, 20), email, hasPassword: !!password, role, accountType })
 
     // Validate required fields
     if (!name || !email || !password) {
@@ -121,14 +121,24 @@ export async function POST(request: NextRequest) {
     
     console.log("✅ All validations passed, creating user...")
 
+    // Validate role
+    const validRoles = ['SUPER_ADMIN', 'RH', 'USER']
+    const userRole = validRoles.includes(role) ? role : 'USER'
+    
+    // Validate accountType (only for USER role)
+    const validAccountTypes = ['USER', 'EMPLOYEE']
+    const userAccountType = userRole === 'USER' && validAccountTypes.includes(accountType) ? accountType : 'EMPLOYEE'
+
     const hashedPassword = await bcrypt.hash(password, 12)
     const id = uuid()
 
-    // Insert user - use 'role' column (not roleEnum, which is Prisma field name)
+    // Insert user with role and accountType
     await dbPool.execute(
-      `INSERT INTO User (id, name, email, password, role, status) 
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [id, name.trim(), email.toLowerCase().trim(), hashedPassword, "USER", "INACTIVE"]
+      `INSERT INTO User (id, name, email, password, role, status, accountType) 
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [id, name.trim(), email.toLowerCase().trim(), hashedPassword, userRole, 
+       userRole === 'USER' && userAccountType === 'USER' ? 'ACTIVE' : 'INACTIVE',
+       userRole === 'USER' ? userAccountType : null]
     )
 
     // Log successful registration

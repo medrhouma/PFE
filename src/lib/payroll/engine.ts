@@ -92,7 +92,7 @@ export async function calculateAllSalaries(
   const activeEmployees = await prisma.user.findMany({
     where: {
       status: 'ACTIVE',
-      roleEnum: 'USER', // Only regular employees
+      role: 'USER', // Only regular employees
     },
     select: { id: true },
   });
@@ -166,7 +166,7 @@ async function loadEmploymentTerms(userId: string): Promise<EmploymentTerms> {
 
   const employe = user.employee;
   const baseSalary = employe?.baseSalary ?? 0;
-  const contractType = (employe?.typeContrat ?? user.typeContrat ?? 'CDI') as ContractType;
+  const contractType = (employe?.typeContrat ?? 'CDI') as ContractType;
 
   // Calculate hourly rate if not explicitly set
   const hourlyRate = employe?.hourlyRate ?? calculateHourlyRate(baseSalary);
@@ -179,7 +179,7 @@ async function loadEmploymentTerms(userId: string): Promise<EmploymentTerms> {
     hourlyRate,
     contractType,
     annualLeaveAllowance: employe?.annualLeave ?? 26,
-    dateEmbauche: employe?.dateEmbauche ?? user.dateEmbauche ?? null,
+    dateEmbauche: employe?.dateEmbauche ?? null,
   };
 }
 

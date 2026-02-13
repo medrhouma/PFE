@@ -50,7 +50,7 @@ model ChatMessage {
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model Employe {
   id                 String                @id @db.VarChar(36)
-  user_id            String                @unique(map: "user_id") @db.VarChar(36)
+  userId             String                @unique(map: "user_id") @map("user_id") @db.VarChar(36)
   nom                String?               @db.VarChar(255)
   prenom             String?               @db.VarChar(255)
   email              String?               @db.VarChar(255)
@@ -59,27 +59,27 @@ model Employe {
   rib                String?               @db.VarChar(24)
   adresse            String?               @db.VarChar(500)
   telephone          String?               @db.VarChar(50)
-  date_embauche      DateTime?             @db.Date
+  dateEmbauche       DateTime?             @map("date_embauche") @db.Date
   photo              String?               @db.MediumText
   cv                 String?               @db.MediumText
-  autres_documents   String?               @db.LongText
-  type_contrat       Employe_type_contrat?
-  created_at         DateTime?             @default(now()) @db.DateTime(0)
-  updated_at         DateTime?             @default(now()) @db.DateTime(0)
-  rejection_reason   String?               @db.Text
-  approved_by        String?
-  approved_at        DateTime?
+  autresDocuments    String?               @map("autres_documents") @db.LongText
+  typeContrat        Employe_type_contrat? @map("type_contrat")
+  createdAt          DateTime?             @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt          DateTime?             @default(now()) @map("updated_at") @db.DateTime(0)
+  rejectionReason    String?               @map("rejection_reason") @db.Text
+  approvedBy         String?               @map("approved_by")
+  approvedAt         DateTime?             @map("approved_at")
   status             Employe_status?       @default(EN_ATTENTE)
-  contract_file      String?               @db.MediumText
-  contract_signature String?               @db.MediumText
-  contract_signed_at DateTime?             @db.DateTime(0)
-  base_salary        Float?                @db.Double
-  hourly_rate        Float?                @db.Double
-  annual_leave       Int?                  @default(26)
-  User               User                  @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_employe_user")
+  contractFile       String?               @map("contract_file") @db.MediumText
+  contractSignature  String?               @map("contract_signature") @db.MediumText
+  contractSignedAt   DateTime?             @map("contract_signed_at") @db.DateTime(0)
+  baseSalary         Float?                @map("base_salary") @db.Double
+  hourlyRate         Float?                @map("hourly_rate") @db.Double
+  annualLeave        Int?                  @default(26) @map("annual_leave")
+  User               User                  @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_employe_user")
   rh_decisions       rh_decisions[]
 
-  @@index([user_id], map: "idx_user_id")
+  @@index([userId], map: "idx_user_id")
 }
 
 model LeaveRequest {
@@ -171,6 +171,7 @@ model User {
   id                       String                @id @default(dbgenerated("(uuid())")) @db.VarChar(36)
   email                    String                @unique(map: "email") @db.VarChar(255)
   name                     String?               @db.VarChar(255)
+  lastName                 String?               @map("last_name") @db.VarChar(255)
   password                 String?               @db.VarChar(255)
   role                     User_role?            @default(USER)
   image                    String?               @db.VarChar(500)
@@ -178,21 +179,22 @@ model User {
   createdAt                DateTime?             @default(now()) @db.DateTime(0)
   updatedAt                DateTime?             @default(now()) @db.DateTime(0)
   status                   User_status           @default(INACTIVE)
-  Employe                  Employe?
+  accountType              User_accountType?     @default(EMPLOYEE)
+  employee                 Employe?
   UserPreferences          UserPreferences?
   audit_logs               audit_logs[]
   cookie_consents          cookie_consents[]
-  demande_conge            demande_conge[]
+  demande_conge            DemandeConge[]
   device_fingerprints      device_fingerprints[]
   dossier_employe          dossier_employe[]
   notifications            notifications[]
   rh_decisions             rh_decisions[]
-  attendance_sessions      attendance_sessions[]
-  reward_days_user         reward_days[]         @relation("reward_days_user")
-  reward_days_granted_by   reward_days[]         @relation("reward_days_granted_by")
-  salary_reports_user      salary_reports[]      @relation("salary_reports_user")
-  salary_reports_reviewer  salary_reports[]      @relation("salary_reports_reviewer")
-  salary_reports_approver  salary_reports[]      @relation("salary_reports_approver")
+  attendance_sessions      AttendanceSession[]
+  reward_days_user         RewardDay[]           @relation("reward_days_user")
+  reward_days_granted_by   RewardDay[]           @relation("reward_days_granted_by")
+  salary_reports_user      SalaryReport[]        @relation("salary_reports_user")
+  salary_reports_reviewer  SalaryReport[]        @relation("salary_reports_reviewer")
+  salary_reports_approver  SalaryReport[]        @relation("salary_reports_approver")
 }
 
 model UserPreferences {
@@ -307,23 +309,24 @@ model cookie_consents {
   @@index([user_id], map: "idx_user_id")
 }
 
-model demande_conge {
+model DemandeConge {
   id               String                         @id
   userId           String                         @db.VarChar(36)
   type             demande_conge_type?
-  date_debut       DateTime
-  date_fin         DateTime
+  dateDebut        DateTime                       @map("date_debut")
+  dateFin          DateTime                       @map("date_fin")
   status           demande_conge_status           @default(EN_ATTENTE)
   commentaire      String?
-  is_half_day      Boolean?                       @default(false)
-  half_day_session demande_conge_half_day_session?
-  impact_on_salary Boolean?                       @default(true)
-  approved_by_id   String?                        @db.VarChar(36)
-  approved_at      DateTime?                      @db.DateTime(3)
-  duration_days    Float?                         @db.Double
+  isHalfDay        Boolean?                       @default(false) @map("is_half_day")
+  halfDaySession   demande_conge_half_day_session? @map("half_day_session")
+  impactOnSalary   Boolean?                       @default(true) @map("impact_on_salary")
+  approvedById     String?                        @map("approved_by_id") @db.VarChar(36)
+  approvedAt       DateTime?                      @map("approved_at") @db.DateTime(3)
+  durationDays     Float?                         @map("duration_days") @db.Double
   User             User                           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId], map: "demande_conge_userId_fkey")
+  @@map("demande_conge")
 }
 
 model device_fingerprints {
@@ -344,90 +347,94 @@ model device_fingerprints {
   @@index([user_id])
 }
 
-model attendance_sessions {
+model AttendanceSession {
   id                  String                        @id @default(dbgenerated("(uuid())")) @db.VarChar(191)
-  user_id             String                        @db.VarChar(36)
+  userId              String                        @map("user_id") @db.VarChar(36)
   date                DateTime                      @db.Date
-  session_type        attendance_sessions_session_type
-  check_in_time       DateTime?                     @db.DateTime(3)
-  check_out_time      DateTime?                     @db.DateTime(3)
-  duration_minutes    Int?
+  sessionType         attendance_sessions_session_type @map("session_type")
+  checkIn             DateTime?                     @map("check_in_time") @db.DateTime(3)
+  checkOut            DateTime?                     @map("check_out_time") @db.DateTime(3)
+  durationMinutes     Int?                          @map("duration_minutes")
   status              attendance_sessions_status    @default(PRESENT)
-  check_in_photo      String?                       @db.LongText
-  check_out_photo     String?                       @db.LongText
-  check_in_ip         String?                       @db.VarChar(45)
-  check_out_ip        String?                       @db.VarChar(45)
-  device_fingerprint  String?                       @db.Text
-  anomaly_detected    Boolean?                      @default(false)
-  anomaly_reason      String?                       @db.Text
-  created_at          DateTime                      @default(now()) @db.DateTime(3)
-  updated_at          DateTime                      @default(now()) @db.DateTime(3)
-  User                User                          @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  checkInPhoto        String?                       @map("check_in_photo") @db.LongText
+  checkOutPhoto       String?                       @map("check_out_photo") @db.LongText
+  checkInIp           String?                       @map("check_in_ip") @db.VarChar(45)
+  checkOutIp          String?                       @map("check_out_ip") @db.VarChar(45)
+  deviceFingerprint   String?                       @map("device_fingerprint") @db.Text
+  anomalyDetected     Boolean?                      @default(false) @map("anomaly_detected")
+  anomalyReason       String?                       @map("anomaly_reason") @db.Text
+  createdAt           DateTime                      @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt           DateTime                      @default(now()) @updatedAt @map("updated_at") @db.DateTime(3)
+  user                User                          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([user_id])
-  @@index([date])
-  @@unique([user_id, date, session_type])
+  @@unique([userId, date, sessionType], map: "attendance_sessions_user_id_date_session_type_key")
+  @@index([userId], map: "attendance_sessions_user_id_idx")
+  @@index([date], map: "attendance_sessions_date_idx")
+  @@map("attendance_sessions")
 }
 
-model reward_days {
+model RewardDay {
   id              String             @id @default(dbgenerated("(uuid())")) @db.VarChar(191)
-  user_id         String             @db.VarChar(36)
-  granted_by_id   String             @db.VarChar(36)
+  userId          String             @map("user_id") @db.VarChar(36)
+  grantedById     String             @map("granted_by_id") @db.VarChar(36)
   date            DateTime           @db.Date
   reason          String             @db.Text
   status          reward_days_status @default(APPROVED)
-  salary_impact   Float?             @db.Double
-  created_at      DateTime           @default(now()) @db.DateTime(3)
-  updated_at      DateTime           @default(now()) @db.DateTime(3)
-  User            User               @relation("reward_days_user", fields: [user_id], references: [id], onDelete: Cascade)
-  GrantedBy       User               @relation("reward_days_granted_by", fields: [granted_by_id], references: [id], onDelete: Cascade)
+  salaryImpact    Float?             @map("salary_impact") @db.Double
+  createdAt       DateTime           @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt       DateTime           @default(now()) @updatedAt @map("updated_at") @db.DateTime(3)
+  user            User               @relation("reward_days_user", fields: [userId], references: [id], onDelete: Cascade)
+  grantedBy       User               @relation("reward_days_granted_by", fields: [grantedById], references: [id], onDelete: Cascade)
 
-  @@index([user_id])
-  @@index([date])
+  @@unique([userId, date], map: "reward_days_user_id_date_key")
+  @@index([userId], map: "reward_days_user_id_idx")
+  @@index([date], map: "reward_days_date_idx")
+  @@map("reward_days")
 }
 
-model salary_reports {
+model SalaryReport {
   id                       String                 @id @default(dbgenerated("(uuid())")) @db.VarChar(191)
-  user_id                  String                 @db.VarChar(36)
+  userId                   String                 @map("user_id") @db.VarChar(36)
   month                    Int
   year                     Int
-  contract_type            String?                @db.VarChar(50)
-  base_salary              Float?                 @db.Double
-  hourly_rate              Float?                 @db.Double
-  worked_days              Float?                 @db.Double
-  expected_work_days       Float?                 @db.Double
-  worked_hours             Float?                 @db.Double
-  expected_work_hours      Float?                 @db.Double
-  absence_days             Float?                 @db.Double
-  absence_hours            Float?                 @db.Double
-  unpaid_absence_days      Float?                 @db.Double
-  paid_leave_days          Float?                 @db.Double
-  unpaid_leave_days        Float?                 @db.Double
-  sick_leave_days          Float?                 @db.Double
-  other_leave_days         Float?                 @db.Double
-  reward_days              Float?                 @db.Double
-  reward_salary            Float?                 @db.Double
-  overtime_hours           Float?                 @db.Double
-  overtime_rate            Float?                 @db.Double
-  overtime_salary          Float?                 @db.Double
-  gross_salary             Float?                 @db.Double
+  contractType             String?                @map("contract_type") @db.VarChar(50)
+  baseSalary               Float?                 @map("base_salary") @db.Double
+  hourlyRate               Float?                 @map("hourly_rate") @db.Double
+  totalWorkedDays          Float?                 @map("worked_days") @db.Double
+  totalWorkedHours         Float?                 @map("worked_hours") @db.Double
+  expectedWorkDays         Float?                 @map("expected_work_days") @db.Double
+  expectedWorkHours        Float?                 @map("expected_work_hours") @db.Double
+  absentDays               Float?                 @map("absence_days") @db.Double
+  absentHours              Float?                 @map("absence_hours") @db.Double
+  unpaidAbsenceDays        Float?                 @map("unpaid_absence_days") @db.Double
+  paidLeaveDays            Float?                 @map("paid_leave_days") @db.Double
+  unpaidLeaveDays          Float?                 @map("unpaid_leave_days") @db.Double
+  sickLeaveDays            Float?                 @map("sick_leave_days") @db.Double
+  otherLeaveDays           Float?                 @map("other_leave_days") @db.Double
+  rewardDays               Float?                 @map("reward_days") @db.Double
+  rewardBonus              Float?                 @map("reward_salary") @db.Double
+  overtimeHours            Float?                 @map("overtime_hours") @db.Double
+  overtimeRate             Float?                 @map("overtime_rate") @db.Double
+  overtimePay              Float?                 @map("overtime_salary") @db.Double
+  grossSalary              Float?                 @map("gross_salary") @db.Double
   deductions               Float?                 @db.Double
-  net_salary               Float?                 @db.Double
-  salary_breakdown         String?                @db.LongText
+  netSalary                Float?                 @map("net_salary") @db.Double
+  breakdown                String?                @map("salary_breakdown") @db.LongText
   status                   salary_reports_status  @default(DRAFT)
-  reviewed_by_id           String?                @db.VarChar(36)
-  reviewed_at              DateTime?              @db.DateTime(3)
-  approved_by_id           String?                @db.VarChar(36)
-  approved_at              DateTime?              @db.DateTime(3)
-  created_at               DateTime               @default(now()) @db.DateTime(3)
-  updated_at               DateTime               @default(now()) @db.DateTime(3)
-  User                     User                   @relation("salary_reports_user", fields: [user_id], references: [id], onDelete: Cascade)
-  Reviewer                 User?                  @relation("salary_reports_reviewer", fields: [reviewed_by_id], references: [id], onDelete: SetNull)
-  Approver                 User?                  @relation("salary_reports_approver", fields: [approved_by_id], references: [id], onDelete: SetNull)
+  reviewedById             String?                @map("reviewed_by_id") @db.VarChar(36)
+  reviewedAt               DateTime?              @map("reviewed_at") @db.DateTime(3)
+  approvedById             String?                @map("approved_by_id") @db.VarChar(36)
+  approvedAt               DateTime?              @map("approved_at") @db.DateTime(3)
+  createdAt                DateTime               @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt                DateTime               @default(now()) @updatedAt @map("updated_at") @db.DateTime(3)
+  user                     User                   @relation("salary_reports_user", fields: [userId], references: [id], onDelete: Cascade)
+  reviewer                 User?                  @relation("salary_reports_reviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  approver                 User?                  @relation("salary_reports_approver", fields: [approvedById], references: [id], onDelete: SetNull)
 
-  @@index([user_id])
-  @@index([month, year])
-  @@unique([user_id, month, year])
+  @@unique([userId, month, year], map: "salary_reports_user_id_month_year_key")
+  @@index([userId], map: "salary_reports_user_id_idx")
+  @@index([month, year], map: "salary_reports_month_year_idx")
+  @@map("salary_reports")
 }
 
 model documents {
@@ -782,6 +789,11 @@ enum attendance_sessions_status {
   LATE
   EARLY_DEPARTURE
   INCOMPLETE
+  FULL
+  PARTIAL
+  REWARD
+  LEAVE_FULL
+  LEAVE_HALF
 }
 
 enum reward_days_status {
@@ -791,7 +803,14 @@ enum reward_days_status {
 
 enum salary_reports_status {
   DRAFT
+  CALCULATED
   UNDER_REVIEW
   APPROVED
   PUBLISHED
+  PAID
+}
+
+enum User_accountType {
+  USER
+  EMPLOYEE
 }

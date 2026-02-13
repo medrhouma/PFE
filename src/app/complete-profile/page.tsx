@@ -18,11 +18,17 @@ export default async function CompleteProfilePage() {
 
   // Verifier le statut reel depuis la base de donnees
   const users: any = await query(
-    'SELECT status FROM User WHERE id = ?',
+    'SELECT status, accountType FROM User WHERE id = ?',
     [session.user.id]
   )
 
   const currentStatus = users && users.length > 0 ? users[0].status : session.user.status
+  const userAccountType = users && users.length > 0 ? users[0].accountType : null
+
+  // Si accountType = USER, pas de profil employé requis → rediriger vers home
+  if (userAccountType === 'USER') {
+    redirect("/home")
+  }
 
   // Si l utilisateur est deja ACTIVE, rediriger vers home
   if (currentStatus === "ACTIVE") {
