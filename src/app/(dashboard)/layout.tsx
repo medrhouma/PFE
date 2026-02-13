@@ -101,11 +101,11 @@ export default async function DashboardLayout({
         
         {showSidebar ? (
           <div className="flex">
-            {/* Fixed Sidebar */}
+            {/* Sidebar - opens on click only */}
             <SidebarNew userRole={session.user.role} />
             
-            {/* Main Content - with proper margin for sidebar */}
-            <main className="flex-1 lg:ml-64 pt-16 min-h-screen">
+            {/* Main Content - full width, sidebar overlays */}
+            <main className="flex-1 pt-16 min-h-screen">
               <div className="p-4 sm:p-6 lg:p-8">
                 {children}
               </div>

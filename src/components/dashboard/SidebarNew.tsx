@@ -18,7 +18,6 @@ import {
   UserCheck,
   Menu,
   X,
-  ChevronDown,
   Briefcase,
   HelpCircle
 } from "lucide-react"
@@ -43,8 +42,7 @@ interface MenuSection {
 export function SidebarNew({ userRole }: SidebarProps) {
   const pathname = usePathname()
   const { t, isRTL } = useLanguage()
-  const [isMobileOpen, setIsMobileOpen] = useState(false)
-  const [isCollapsed, setIsCollapsed] = useState(false)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [contractCount, setContractCount] = useState(0)
 
   // Fetch contract count
@@ -66,29 +64,18 @@ export function SidebarNew({ userRole }: SidebarProps) {
     return () => clearInterval(interval)
   }, [])
 
-  // Close sidebar on route change (mobile)
+  // Close sidebar on route change
   useEffect(() => {
-    setIsMobileOpen(false)
+    setIsSidebarOpen(false)
   }, [pathname])
 
   // Handle escape key
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setIsMobileOpen(false)
+      if (e.key === "Escape") setIsSidebarOpen(false)
     }
     window.addEventListener("keydown", handleEscape)
     return () => window.removeEventListener("keydown", handleEscape)
-  }, [])
-
-  // Handle resize
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth >= 1024) {
-        setIsMobileOpen(false)
-      }
-    }
-    window.addEventListener("resize", handleResize)
-    return () => window.removeEventListener("resize", handleResize)
   }, [])
 
   const isActive = (path: string) => {
@@ -153,22 +140,16 @@ export function SidebarNew({ userRole }: SidebarProps) {
             : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-200"
           }
           ${isRTL ? "flex-row-reverse text-right" : ""}
-          ${isCollapsed ? "justify-center px-2" : ""}
         `}
-        title={isCollapsed ? item.label : undefined}
       >
         <span className={`flex-shrink-0 ${active ? "text-blue-600 dark:text-blue-400" : ""}`}>
           {item.icon}
         </span>
-        {!isCollapsed && (
-          <>
-            <span className="truncate flex-1">{item.label}</span>
-            {showBadge && (
-              <span className="px-2 py-0.5 bg-red-500 text-white text-xs font-bold rounded-full">
-                {contractCount}
-              </span>
-            )}
-          </>
+        <span className="truncate flex-1">{item.label}</span>
+        {showBadge && (
+          <span className="px-2 py-0.5 bg-red-500 text-white text-xs font-bold rounded-full">
+            {contractCount}
+          </span>
         )}
       </Link>
     )
@@ -181,15 +162,12 @@ export function SidebarNew({ userRole }: SidebarProps) {
         {filteredSections.map((section, idx) => (
           <div key={idx}>
             {/* Section Title */}
-            {section.title && !isCollapsed && (
+            {section.title && (
               <div className={`px-3 mb-2 ${isRTL ? "text-right" : ""}`}>
                 <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
                   {section.title}
                 </span>
               </div>
-            )}
-            {section.title && isCollapsed && (
-              <div className="border-t border-gray-200 dark:border-gray-700 my-2" />
             )}
             {/* Menu Items */}
             <div className="space-y-1">
@@ -201,37 +179,36 @@ export function SidebarNew({ userRole }: SidebarProps) {
 
       {/* Footer */}
       <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-        {!isCollapsed && (
-          <p className="text-xs text-gray-400 dark:text-gray-500 text-center">
-            Santec RH v1.0.0
-          </p>
-        )}
+        <p className="text-xs text-gray-400 dark:text-gray-500 text-center">
+          Santec RH v1.0.0
+        </p>
       </div>
     </div>
   )
 
   return (
     <>
-      {/* Mobile Toggle Button */}
+      {/* Sidebar Toggle Button - visible on all screen sizes */}
       <button
-        onClick={() => setIsMobileOpen(!isMobileOpen)}
+        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
         className={`
-          lg:hidden fixed top-20 z-50 p-2.5 
+          fixed top-20 z-50 p-2.5 
           bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200
           rounded-lg shadow-lg border border-gray-200 dark:border-gray-700
-          hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors
+          hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-300
           ${isRTL ? "right-4" : "left-4"}
+          ${isSidebarOpen ? "opacity-0 pointer-events-none" : "opacity-100"}
         `}
         aria-label="Toggle menu"
       >
-        {isMobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+        <Menu className="w-5 h-5" />
       </button>
 
-      {/* Mobile Overlay */}
-      {isMobileOpen && (
+      {/* Overlay */}
+      {isSidebarOpen && (
         <div
-          className="lg:hidden fixed inset-0 bg-black/50 z-40 backdrop-blur-sm"
-          onClick={() => setIsMobileOpen(false)}
+          className="fixed inset-0 bg-black/30 z-40 backdrop-blur-sm transition-opacity duration-300"
+          onClick={() => setIsSidebarOpen(false)}
         />
       )}
 
@@ -242,39 +219,29 @@ export function SidebarNew({ userRole }: SidebarProps) {
           bg-white dark:bg-gray-900 
           border-r border-gray-200 dark:border-gray-800
           transition-all duration-300 ease-in-out
-          ${isCollapsed ? "w-16" : "w-64"}
+          w-64
           ${isRTL ? "right-0 border-l border-r-0" : "left-0"}
-          ${isMobileOpen 
+          ${isSidebarOpen 
             ? "translate-x-0" 
             : isRTL 
-              ? "translate-x-full lg:translate-x-0" 
-              : "-translate-x-full lg:translate-x-0"
+              ? "translate-x-full" 
+              : "-translate-x-full"
           }
         `}
       >
+        {/* Close button inside sidebar */}
+        <div className={`flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 ${isRTL ? "flex-row-reverse" : ""}`}>
+          <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">Navigation</span>
+          <button
+            onClick={() => setIsSidebarOpen(false)}
+            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 transition-colors"
+            aria-label="Close menu"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
         {sidebarContent}
       </aside>
-
-      {/* Desktop Collapse Toggle */}
-      <button
-        onClick={() => setIsCollapsed(!isCollapsed)}
-        className={`
-          hidden lg:flex fixed top-1/2 -translate-y-1/2 z-50
-          w-6 h-12 items-center justify-center
-          bg-white dark:bg-gray-800 
-          border border-gray-200 dark:border-gray-700
-          rounded-r-lg shadow-md
-          hover:bg-gray-50 dark:hover:bg-gray-700
-          transition-all duration-300
-          ${isCollapsed ? "left-16" : "left-64"}
-          ${isRTL ? "hidden" : ""}
-        `}
-        aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-      >
-        <ChevronDown 
-          className={`w-4 h-4 text-gray-500 transition-transform duration-300 ${isCollapsed ? "-rotate-90" : "rotate-90"}`} 
-        />
-      </button>
     </>
   )
 }
