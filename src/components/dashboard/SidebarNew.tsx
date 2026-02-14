@@ -188,58 +188,47 @@ export function SidebarNew({ userRole }: SidebarProps) {
 
   return (
     <>
-      {/* Sidebar Toggle Button - visible on all screen sizes */}
+      {/* Mobile Hamburger Button - only visible on small screens */}
       <button
         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
         className={`
-          fixed top-20 z-50 p-2.5 
+          lg:hidden fixed top-20 z-50 p-2.5 
           bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200
           rounded-lg shadow-lg border border-gray-200 dark:border-gray-700
           hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-300
           ${isRTL ? "right-4" : "left-4"}
-          ${isSidebarOpen ? "opacity-0 pointer-events-none" : "opacity-100"}
         `}
         aria-label="Toggle menu"
       >
-        <Menu className="w-5 h-5" />
+        {isSidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
       </button>
 
-      {/* Overlay */}
+      {/* Mobile Overlay */}
       {isSidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/30 z-40 backdrop-blur-sm transition-opacity duration-300"
+          className="lg:hidden fixed inset-0 bg-black/30 z-40 backdrop-blur-sm transition-opacity duration-300"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar - fixed on desktop, slide-in on mobile */}
       <aside
         className={`
           fixed top-16 bottom-0 z-40
           bg-white dark:bg-gray-900 
           border-r border-gray-200 dark:border-gray-800
+          shadow-lg lg:shadow-none
           transition-all duration-300 ease-in-out
           w-64
           ${isRTL ? "right-0 border-l border-r-0" : "left-0"}
           ${isSidebarOpen 
             ? "translate-x-0" 
             : isRTL 
-              ? "translate-x-full" 
-              : "-translate-x-full"
+              ? "translate-x-full lg:translate-x-0" 
+              : "-translate-x-full lg:translate-x-0"
           }
         `}
       >
-        {/* Close button inside sidebar */}
-        <div className={`flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 ${isRTL ? "flex-row-reverse" : ""}`}>
-          <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">Navigation</span>
-          <button
-            onClick={() => setIsSidebarOpen(false)}
-            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 transition-colors"
-            aria-label="Close menu"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
         {sidebarContent}
       </aside>
     </>

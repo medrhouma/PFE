@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { Navbar } from "@/components/dashboard/Navbar"
-import { SidebarNew } from "@/components/dashboard/SidebarNew"
+import { DashboardContent } from "@/components/dashboard/DashboardContent"
 import { SessionProvider } from "@/components/providers/SessionProvider"
 import { query } from "@/lib/mysql-direct"
 
@@ -99,25 +99,9 @@ export default async function DashboardLayout({
         {/* Fixed Navbar */}
         <Navbar />
         
-        {showSidebar ? (
-          <div className="flex">
-            {/* Sidebar - opens on click only */}
-            <SidebarNew userRole={session.user.role} />
-            
-            {/* Main Content - full width, sidebar overlays */}
-            <main className="flex-1 pt-16 min-h-screen">
-              <div className="p-4 sm:p-6 lg:p-8">
-                {children}
-              </div>
-            </main>
-          </div>
-        ) : (
-          <main className="pt-16 min-h-screen">
-            <div className="p-4 sm:p-6 lg:p-8">
-              {children}
-            </div>
-          </main>
-        )}
+        <DashboardContent userRole={session.user.role} showSidebar={showSidebar}>
+          {children}
+        </DashboardContent>
       </div>
     </SessionProvider>
   )
