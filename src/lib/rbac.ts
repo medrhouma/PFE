@@ -62,9 +62,15 @@ export function requireRole(allowedRoles: Array<"SUPER_ADMIN" | "RH" | "USER">) 
 
 /**
  * Verify user has active status
+ * SUPER_ADMIN and RH roles are exempt from this check
  */
 export async function requireActiveStatus(request?: NextRequest) {
   const user = await requireAuth(request);
+  
+  // SUPER_ADMIN and RH are never blocked by profile completion
+  if (user.role === "SUPER_ADMIN" || user.role === "RH") {
+    return user;
+  }
   
   if (user.status !== "ACTIVE") {
     throw new Error("INACTIVE_USER");

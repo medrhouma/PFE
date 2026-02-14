@@ -58,7 +58,26 @@ export default function AdminAnalytics() {
     try {
       const res = await fetch(`/api/payroll/analytics?type=admin-dashboard&year=${selectedYear}`);
       if (res.ok) {
-        setData(await res.json());
+        const raw = await res.json();
+        setData({
+          year: raw.year ?? selectedYear,
+          totalPayroll: raw.totalPayroll ?? 0,
+          avgMonthlyCost: raw.avgMonthlyCost ?? 0,
+          totalEmployees: raw.totalEmployees ?? 0,
+          avgAttendanceRate: raw.avgAttendanceRate ?? 0,
+          totalLeavesTaken: raw.totalLeavesTaken ?? 0,
+          totalRewardDays: raw.totalRewardDays ?? 0,
+          monthlyTrends: (raw.monthlyTrends ?? []).map((t: any) => ({
+            month: t.month ?? 0,
+            year: t.year ?? selectedYear,
+            totalPayroll: t.totalPayroll ?? 0,
+            averageSalary: t.averageSalary ?? 0,
+            employeeCount: t.employeeCount ?? 0,
+            attendanceRate: t.attendanceRate ?? 0,
+            leavesTaken: t.leavesTaken ?? 0,
+            rewardDays: t.rewardDays ?? 0,
+          })),
+        });
       }
     } catch {
       console.error("Failed to fetch admin analytics");

@@ -108,15 +108,15 @@ export const GET = withAuth(
       const dateParam = url.searchParams.get('date');
       
       if (dateParam) {
-        // Get specific date
-        const date = new Date(dateParam);
-        date.setHours(0, 0, 0, 0);
+        // Get specific date — use UTC midnight to match Prisma @db.Date
+        const [year, month, day] = dateParam.split('-').map(Number);
+        const date = new Date(Date.UTC(year, month - 1, day));
+        const nextDay = new Date(Date.UTC(year, month - 1, day + 1));
 
-        const { PrismaClient } = await import('@prisma/client');
         const prisma = (await import('@/lib/prisma')).default;
 
         const sessions = await prisma.attendanceSession.findMany({
-          where: { userId: user.id, date },
+          where: { userId: user.id, date: { gte: date, lt: nextDay } },
         });
 
         return NextResponse.json({

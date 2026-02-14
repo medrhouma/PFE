@@ -27,7 +27,18 @@ export async function GET(req: NextRequest) {
       // Calculate duration in days
       const start = new Date(req.date_debut);
       const end = new Date(req.date_fin);
-      const duration = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      const isHalfDay = !!req.is_half_day;
+      const halfDaySession = req.half_day_session || null;
+      const durationDays = req.duration_days;
+      
+      let duration: number;
+      if (durationDays != null) {
+        duration = durationDays;
+      } else if (isHalfDay) {
+        duration = 0.5;
+      } else {
+        duration = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      }
 
       return {
         id: req.id,
@@ -37,6 +48,8 @@ export async function GET(req: NextRequest) {
         duration: duration,
         reason: req.commentaire || "",
         status: req.status,
+        isHalfDay,
+        halfDaySession,
         createdAt: req.created_at || new Date().toISOString()
       };
     });
@@ -70,7 +83,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { type, startDate, endDate, reason } = await req.json();
+    const { type, startDate, endDate, reason, isHalfDay, halfDaySession } = await req.json();
 
     if (!type || !startDate || !endDate) {
       return NextResponse.json(
@@ -84,6 +97,14 @@ export async function POST(req: NextRequest) {
     if (!validTypes.includes(type)) {
       return NextResponse.json(
         { error: "Type de congé invalide" },
+        { status: 400 }
+      );
+    }
+
+    // Validate half-day session if applicable
+    if (isHalfDay && halfDaySession && !['MORNING', 'AFTERNOON'].includes(halfDaySession)) {
+      return NextResponse.json(
+        { error: "Session de demi-journée invalide" },
         { status: 400 }
       );
     }
@@ -112,7 +133,25 @@ export async function POST(req: NextRequest) {
 
     // Calculate duration
     const durationMs = end.getTime() - start.getTime();
-    const duration = Math.ceil(durationMs / (1000 * 60 * 60 * 24)) + 1;
+    let duration: number;
+    let durationDays: number;
+
+    if (isHalfDay) {
+      // Half-day leave: check if it's a split day (PM today + AM tomorrow)
+      const daysDiff = Math.ceil(durationMs / (1000 * 60 * 60 * 24));
+      if (daysDiff === 1 && halfDaySession === 'AFTERNOON') {
+        // Split: afternoon of day1 + morning of day2 = 1 full day
+        durationDays = 1;
+        duration = 1;
+      } else {
+        // Simple half-day on same day
+        durationDays = 0.5;
+        duration = 0.5;
+      }
+    } else {
+      duration = Math.ceil(durationMs / (1000 * 60 * 60 * 24)) + 1;
+      durationDays = duration;
+    }
 
     if (duration <= 0) {
       return NextResponse.json(
@@ -126,9 +165,9 @@ export async function POST(req: NextRequest) {
 
     // Créer la demande dans la base de données
     await query(
-      `INSERT INTO demande_conge (id, userId, type, date_debut, date_fin, status, commentaire) 
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [demandeId, session.user.id, type, start, end, 'EN_ATTENTE', reason || null]
+      `INSERT INTO demande_conge (id, userId, type, date_debut, date_fin, status, commentaire, is_half_day, half_day_session, duration_days) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [demandeId, session.user.id, type, start, end, 'EN_ATTENTE', reason || null, isHalfDay ? 1 : 0, isHalfDay ? (halfDaySession || null) : null, durationDays]
     );
 
     console.log("✅ Leave request created:", demandeId);
@@ -234,9 +273,11 @@ export async function POST(req: NextRequest) {
         type,
         startDate: start,
         endDate: end,
-        duration,
+        duration: durationDays,
         reason,
         status: 'EN_ATTENTE',
+        isHalfDay: !!isHalfDay,
+        halfDaySession: halfDaySession || null,
       }
     });
   } catch (error: any) {

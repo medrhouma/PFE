@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
     }
 
     const { searchParams } = new URL(req.url);
-    const limit = parseInt(searchParams.get('limit') || '20');
+    const safeLimit = Math.max(1, Math.min(100, parseInt(searchParams.get('limit') || '20') || 20));
     const type = searchParams.get('type'); // filter by type
 
     const activities: Activity[] = [];
@@ -52,10 +52,10 @@ export async function GET(req: NextRequest) {
           u.name as user_name,
           u.email as user_email
         FROM audit_logs al
-        LEFT JOIN User u ON al.user_id = u.id
+        LEFT JOIN User u ON al.user_id = u.id COLLATE utf8mb4_unicode_ci
         ORDER BY al.created_at DESC
-        LIMIT ?
-      `, [limit]);
+        LIMIT ${safeLimit}
+      `);
 
       auditLogs.forEach((log: any) => {
         let type: Activity['type'] = 'system';
@@ -87,23 +87,21 @@ export async function GET(req: NextRequest) {
       const loginHistory: any = await query(`
         SELECT 
           lh.id,
-          lh.login_at,
+          lh.created_at,
           lh.ip_address,
-          lh.device_type,
-          lh.browser,
-          lh.os,
+          lh.user_agent,
+          lh.device_fingerprint,
           lh.is_suspicious,
-          lh.suspicious_reason,
           lh.login_method,
           lh.success,
           lh.failure_reason,
           u.name as user_name,
           u.email as user_email
         FROM login_history lh
-        LEFT JOIN User u ON lh.user_id = u.id
-        ORDER BY lh.login_at DESC
-        LIMIT ?
-      `, [limit]);
+        LEFT JOIN User u ON lh.user_id = u.id COLLATE utf8mb4_unicode_ci
+        ORDER BY lh.created_at DESC
+        LIMIT ${safeLimit}
+      `);
 
       loginHistory.forEach((login: any) => {
         activities.push({
@@ -113,13 +111,11 @@ export async function GET(req: NextRequest) {
           userName: login.user_name || 'Inconnu',
           userEmail: login.user_email,
           ipAddress: login.ip_address,
-          timestamp: login.login_at,
+          timestamp: login.created_at,
           status: login.is_suspicious ? 'WARNING' : (login.success ? 'SUCCESS' : 'ERROR'),
-          details: login.failure_reason || login.suspicious_reason || `${login.browser || ''} / ${login.os || ''}`.trim(),
+          details: login.failure_reason || (login.user_agent ? login.user_agent.substring(0, 80) : ''),
           metadata: {
-            deviceType: login.device_type,
-            browser: login.browser,
-            os: login.os,
+            userAgent: login.user_agent,
             method: login.login_method,
           }
         });
@@ -141,11 +137,11 @@ export async function GET(req: NextRequest) {
           u.name as user_name,
           u.email as user_email
         FROM notifications n
-        LEFT JOIN User u ON n.user_id = u.id
+        LEFT JOIN User u ON n.user_id = u.id COLLATE utf8mb4_unicode_ci
         WHERE n.type IN ('RH_ACTION_REQUIRED', 'PROFILE_APPROVED', 'PROFILE_REJECTED', 'PROFILE_SUBMITTED', 'SYSTEM_ALERT')
         ORDER BY n.created_at DESC
-        LIMIT ?
-      `, [limit]);
+        LIMIT ${safeLimit}
+      `);
 
       notifications.forEach((notif: any) => {
         let type: Activity['type'] = 'system';
@@ -180,15 +176,15 @@ export async function GET(req: NextRequest) {
           a.description,
           a.status,
           a.created_at,
-          p.user_id,
+          s.user_id,
           u.name as user_name,
           u.email as user_email
         FROM anomalies a
-        LEFT JOIN pointages p ON a.pointage_id = p.id
-        LEFT JOIN User u ON p.user_id = u.id
+        LEFT JOIN attendance_sessions s ON a.pointage_id = s.id COLLATE utf8mb4_unicode_ci
+        LEFT JOIN User u ON s.user_id = u.id COLLATE utf8mb4_unicode_ci
         ORDER BY a.created_at DESC
-        LIMIT ?
-      `, [limit]);
+        LIMIT ${safeLimit}
+      `);
 
       anomalies.forEach((anomaly: any) => {
         activities.push({
@@ -224,10 +220,10 @@ export async function GET(req: NextRequest) {
           u.name as user_name,
           u.email as user_email
         FROM Employe e
-        INNER JOIN User u ON e.user_id = u.id
+        INNER JOIN User u ON e.user_id = u.id COLLATE utf8mb4_unicode_ci
         ORDER BY e.updated_at DESC
-        LIMIT ?
-      `, [limit]);
+        LIMIT ${safeLimit}
+      `);
 
       employees.forEach((emp: any) => {
         const empName = `${emp.prenom || ''} ${emp.nom || ''}`.trim() || emp.user_name;
@@ -258,7 +254,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Limit final results
-    const result = filteredActivities.slice(0, limit);
+    const result = filteredActivities.slice(0, safeLimit);
 
     return NextResponse.json({
       success: true,

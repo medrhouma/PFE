@@ -223,15 +223,17 @@ class LoginHistoryService {
    */
   async getUserLoginHistory(userId: string, limit: number = 20, offset: number = 0): Promise<any[]> {
     try {
+      const safeLimit = Math.max(1, Math.min(100, Number(limit) || 20));
+      const safeOffset = Math.max(0, Number(offset) || 0);
       const results = await query(
-        `SELECT id, user_id, login_at, ip_address, user_agent, device_type, 
-                browser, os, location, is_suspicious, suspicious_reason, 
+        `SELECT id, user_id, created_at, ip_address, user_agent, 
+                device_fingerprint, is_suspicious, 
                 login_method, success, failure_reason
          FROM login_history 
          WHERE user_id = ? 
-         ORDER BY login_at DESC 
-         LIMIT ? OFFSET ?`,
-        [userId, limit, offset]
+         ORDER BY created_at DESC 
+         LIMIT ${safeLimit} OFFSET ${safeOffset}`,
+        [userId]
       ) as any[];
       return results || [];
     } catch (error: any) {
@@ -249,15 +251,16 @@ class LoginHistoryService {
    */
   async getSuspiciousLogins(userId?: string, limit: number = 50): Promise<any[]> {
     try {
+      const safeLimit = Math.max(1, Math.min(100, Number(limit) || 50));
       if (userId) {
         return await query(
-          `SELECT id, user_id, login_at, ip_address, user_agent, device_type,
-                  browser, os, location, suspicious_reason, login_method
+          `SELECT id, user_id, created_at, ip_address, user_agent,
+                  device_fingerprint, login_method
            FROM login_history 
            WHERE user_id = ? AND is_suspicious = 1
-           ORDER BY login_at DESC
-           LIMIT ?`,
-          [userId, limit]
+           ORDER BY created_at DESC
+           LIMIT ${safeLimit}`,
+          [userId]
         ) as any[];
       }
       return await query(
@@ -265,9 +268,9 @@ class LoginHistoryService {
          FROM login_history lh
          LEFT JOIN User u ON lh.user_id = u.id
          WHERE lh.is_suspicious = 1
-         ORDER BY lh.login_at DESC
-         LIMIT ?`,
-        [limit]
+         ORDER BY lh.created_at DESC
+         LIMIT ${safeLimit}`,
+        []
       ) as any[];
     } catch (error: any) {
       console.error("Error fetching suspicious logins:", error);
@@ -283,14 +286,15 @@ class LoginHistoryService {
    */
   async getFailedAttempts(userId: string, limit: number = 10): Promise<any[]> {
     try {
+      const safeLimit = Math.max(1, Math.min(100, Number(limit) || 10));
       return await query(
-        `SELECT id, user_id, login_at, ip_address, user_agent, device_type,
-                browser, os, failure_reason, login_method
+        `SELECT id, user_id, created_at, ip_address, user_agent,
+                device_fingerprint, failure_reason, login_method
          FROM login_history 
          WHERE user_id = ? AND success = 0
-         ORDER BY login_at DESC
-         LIMIT ?`,
-        [userId, limit]
+         ORDER BY created_at DESC
+         LIMIT ${safeLimit}`,
+        [userId]
       ) as any[];
     } catch (error: any) {
       console.error("Error fetching failed login attempts:", error);

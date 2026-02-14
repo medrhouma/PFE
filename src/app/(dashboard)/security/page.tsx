@@ -134,6 +134,7 @@ export default function LoginHistoryPage() {
   }, [session, fetchLoginHistory]);
 
   const parseUserAgent = (ua: string) => {
+    if (!ua) return { device: "Unknown", browser: "Unknown" };
     if (ua.includes("Google OAuth")) return { device: "OAuth", browser: "Google" };
     
     const isMobile = /Mobile|Android|iPhone|iPad/i.test(ua);

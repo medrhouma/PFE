@@ -4,7 +4,8 @@ import { useState, useEffect } from "react"
 import { useSession } from "next-auth/react"
 import { useNotification } from "@/contexts/NotificationContext"
 import { Button } from "@/components/ui/Button"
-import { Calendar, Check, X, User, Clock, MessageSquare } from "lucide-react"
+import { Calendar, Check, X, User, Clock, MessageSquare, LayoutGrid, List } from "lucide-react"
+import { LeaveCalendar } from "@/components/conges/LeaveCalendar"
 
 interface LeaveRequest {
   id: string
@@ -30,6 +31,7 @@ export default function RHCongesPage() {
   const [actionType, setActionType] = useState<"APPROVED" | "REJECTED">("APPROVED")
   const [comments, setComments] = useState("")
   const [filter, setFilter] = useState<"all" | "pending" | "approved" | "rejected">("pending")
+  const [viewMode, setViewMode] = useState<"list" | "calendar">("list")
 
   useEffect(() => {
     fetchRequests()
@@ -212,6 +214,31 @@ export default function RHCongesPage() {
               </div>
             </div>
             <div className="flex gap-3">
+              {/* View Toggle */}
+              <div className="flex bg-gray-100 dark:bg-gray-700/50 rounded-xl p-1">
+                <button
+                  onClick={() => setViewMode("list")}
+                  className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    viewMode === "list"
+                      ? "bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm"
+                      : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                  }`}
+                >
+                  <List className="w-4 h-4" />
+                  <span className="hidden sm:inline">Liste</span>
+                </button>
+                <button
+                  onClick={() => setViewMode("calendar")}
+                  className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    viewMode === "calendar"
+                      ? "bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm"
+                      : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                  }`}
+                >
+                  <LayoutGrid className="w-4 h-4" />
+                  <span className="hidden sm:inline">Calendrier</span>
+                </button>
+              </div>
               <Button
                 onClick={fetchRequests}
                 className="bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all"
@@ -296,6 +323,23 @@ export default function RHCongesPage() {
           </div>
         </div>
 
+        {/* Calendar View */}
+        {viewMode === "calendar" && (
+          <div className="mb-8">
+            <LeaveCalendar
+              requests={requests}
+              onSelectRequest={(req) => {
+                if (req.status === "EN_ATTENTE") {
+                  openModal(req, "APPROVED")
+                }
+              }}
+            />
+          </div>
+        )}
+
+        {/* List View */}
+        {viewMode === "list" && (
+        <>
         {/* Modern Filter Tabs */}
         <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700/50 p-6 mb-6">
           <div className="flex items-center gap-3 mb-5">
@@ -495,6 +539,8 @@ export default function RHCongesPage() {
             </div>
           )}
         </div>
+        </>
+        )}
 
         {/* Modern Modal */}
         {showModal && selectedRequest && (

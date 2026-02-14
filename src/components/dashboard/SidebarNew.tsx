@@ -88,13 +88,13 @@ export function SidebarNew({ userRole }: SidebarProps) {
       items: [
         { href: "/home", label: t("home"), icon: <Home className="w-5 h-5" />, roles: ["USER", "RH", "SUPER_ADMIN"] },
         { href: "/dashboard", label: t("dashboard"), icon: <LayoutDashboard className="w-5 h-5" />, roles: ["USER", "RH", "SUPER_ADMIN"] },
-        { href: "/workspace", label: t("workspace"), icon: <Activity className="w-5 h-5" />, roles: ["USER", "RH", "SUPER_ADMIN"] },
+        { href: "/workspace", label: t("workspace"), icon: <Activity className="w-5 h-5" />, roles: ["USER", "RH"] },
         { href: "/pointage", label: t("attendance"), icon: <Clock className="w-5 h-5" />, roles: ["USER", "RH", "SUPER_ADMIN"] },
         { href: "/conges", label: t("leave_requests"), icon: <Calendar className="w-5 h-5" />, roles: ["USER"] },
-        { href: "/documents", label: t("my_documents"), icon: <FileText className="w-5 h-5" />, roles: ["USER", "RH", "SUPER_ADMIN"] },
-        { href: "/contracts", label: t("contracts"), icon: <FileText className="w-5 h-5" />, roles: ["USER", "RH", "SUPER_ADMIN"] },
+        { href: "/documents", label: t("my_documents"), icon: <FileText className="w-5 h-5" />, roles: ["USER"] },
+        { href: "/contracts", label: t("contracts"), icon: <FileText className="w-5 h-5" />, roles: ["USER", "RH"] },
         { href: "/security", label: t("login_history"), icon: <Shield className="w-5 h-5" />, roles: ["USER", "RH", "SUPER_ADMIN"] },
-        { href: "/chatbot", label: t("help") || "Assistance", icon: <HelpCircle className="w-5 h-5" />, roles: ["USER", "RH", "SUPER_ADMIN"] },
+        { href: "/chatbot", label: t("help") || "Assistance", icon: <HelpCircle className="w-5 h-5" />, roles: ["USER", "RH"] },
       ]
     },
     {

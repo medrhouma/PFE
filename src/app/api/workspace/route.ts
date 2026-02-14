@@ -35,15 +35,15 @@ export async function GET(request: NextRequest) {
       // Count users who checked in today
       const checkins = await query(`
         SELECT COUNT(DISTINCT user_id) as count
-        FROM Pointage
-        WHERE DATE(timestamp) = ? AND type = 'ENTREE'
+        FROM attendance_sessions
+        WHERE date = ? AND check_in_time IS NOT NULL
       `, [todayStr]) as any[];
       attendanceStats.present = checkins[0]?.count || 0;
 
       // Count users on leave
       const leaves = await query(`
-        SELECT COUNT(DISTINCT user_id) as count
-        FROM DemandeConge
+        SELECT COUNT(DISTINCT userId) as count
+        FROM demande_conge
         WHERE status = 'APPROUVE' 
         AND ? BETWEEN date_debut AND date_fin
       `, [todayStr]) as any[];
@@ -59,10 +59,11 @@ export async function GET(request: NextRequest) {
       // Count late arrivals (after 9:00 AM)
       const lateArrivals = await query(`
         SELECT COUNT(DISTINCT user_id) as count
-        FROM Pointage
-        WHERE DATE(timestamp) = ? 
-        AND type = 'ENTREE'
-        AND TIME(timestamp) > '09:00:00'
+        FROM attendance_sessions
+        WHERE date = ? 
+        AND session_type = 'MORNING'
+        AND check_in_time IS NOT NULL
+        AND TIME(check_in_time) > '09:00:00'
       `, [todayStr]) as any[];
       attendanceStats.late = lateArrivals[0]?.count || 0;
     } catch (e) {
@@ -77,11 +78,11 @@ export async function GET(request: NextRequest) {
           dc.id, dc.type, dc.date_debut, dc.date_fin, dc.status,
           u.name, u.email,
           e.nom, e.prenom
-        FROM DemandeConge dc
-        JOIN User u ON dc.user_id = u.id
-        LEFT JOIN Employe e ON u.id = e.user_id
+        FROM demande_conge dc
+        JOIN User u ON dc.userId COLLATE utf8mb4_unicode_ci = u.id
+        LEFT JOIN Employe e ON u.id COLLATE utf8mb4_unicode_ci = e.user_id
         WHERE dc.status = 'EN_ATTENTE'
-        ORDER BY dc.created_at DESC
+        ORDER BY dc.id DESC
         LIMIT 5
       `, []) as any[];
 
@@ -102,13 +103,13 @@ export async function GET(request: NextRequest) {
     try {
       const activities = await query(`
         SELECT 
-          al.id, al.action, al.entityType, al.createdAt,
+          al.id, al.action, al.entity_type as entityType, al.created_at as createdAt,
           u.name,
           e.prenom
-        FROM AuditLog al
-        LEFT JOIN User u ON al.userId = u.id
-        LEFT JOIN Employe e ON u.id = e.user_id
-        ORDER BY al.createdAt DESC
+        FROM audit_logs al
+        LEFT JOIN User u ON al.user_id COLLATE utf8mb4_unicode_ci = u.id
+        LEFT JOIN Employe e ON u.id COLLATE utf8mb4_unicode_ci = e.user_id
+        ORDER BY al.created_at DESC
         LIMIT 10
       `, []) as any[];
 
@@ -130,9 +131,9 @@ export async function GET(request: NextRequest) {
         SELECT 
           u.id, u.name, u.email, u.role, u.status,
           e.nom, e.prenom, e.photo,
-          (SELECT COUNT(*) FROM Pointage p WHERE p.user_id = u.id AND DATE(p.timestamp) = ? AND p.type = 'ENTREE') as checkedIn
+          (SELECT COUNT(*) FROM attendance_sessions a WHERE a.user_id COLLATE utf8mb4_unicode_ci = u.id AND a.date = ? AND a.check_in_time IS NOT NULL) as checkedIn
         FROM User u
-        LEFT JOIN Employe e ON u.id = e.user_id
+        LEFT JOIN Employe e ON u.id COLLATE utf8mb4_unicode_ci = e.user_id
         WHERE u.status = 'ACTIVE'
         ORDER BY u.name
         LIMIT 10
@@ -162,11 +163,11 @@ export async function GET(request: NextRequest) {
       
       const userStats = await query(`
         SELECT 
-          COUNT(DISTINCT DATE(timestamp)) as days,
-          AVG(CASE WHEN type = 'ENTREE' THEN TIME_TO_SEC(TIME(timestamp)) END) as avgEntry,
-          AVG(CASE WHEN type = 'SORTIE' THEN TIME_TO_SEC(TIME(timestamp)) END) as avgExit
-        FROM Pointage
-        WHERE user_id = ? AND DATE(timestamp) >= ?
+          COUNT(DISTINCT date) as days,
+          AVG(CASE WHEN session_type = 'MORNING' AND check_in_time IS NOT NULL THEN TIME_TO_SEC(TIME(check_in_time)) END) as avgEntry,
+          AVG(CASE WHEN session_type = 'AFTERNOON' AND check_out_time IS NOT NULL THEN TIME_TO_SEC(TIME(check_out_time)) END) as avgExit
+        FROM attendance_sessions
+        WHERE user_id = ? AND date >= ?
       `, [session.user.id, firstDayOfMonth]) as any[];
 
       if (userStats[0]) {

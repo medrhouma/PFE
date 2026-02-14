@@ -43,12 +43,26 @@ export async function GET(req: NextRequest) {
       10
     );
 
+    // Map snake_case DB columns to camelCase for frontend
+    const mapEntry = (row: any) => ({
+      id: row.id,
+      userId: row.user_id,
+      ipAddress: row.ip_address,
+      userAgent: row.user_agent || "",
+      deviceFingerprint: row.device_fingerprint,
+      isSuspicious: !!row.is_suspicious,
+      loginMethod: row.login_method,
+      success: !!row.success,
+      failureReason: row.failure_reason,
+      createdAt: row.created_at ? new Date(row.created_at).toISOString() : null,
+    });
+
     return NextResponse.json({
       success: true,
       data: {
-        loginHistory,
-        suspiciousLogins,
-        failedLogins,
+        loginHistory: (loginHistory || []).map(mapEntry),
+        suspiciousLogins: (suspiciousLogins || []).map(mapEntry),
+        failedLogins: (failedLogins || []).map(mapEntry),
         pagination: {
           page,
           limit,

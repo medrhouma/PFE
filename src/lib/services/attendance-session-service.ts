@@ -40,7 +40,8 @@ class AttendanceSessionService {
    */
   async checkIn(params: SessionCheckRequest): Promise<SessionCheckResponse> {
     const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    // Use UTC midnight of the LOCAL date to avoid Prisma @db.Date timezone issues
+    const today = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
     const { userId, sessionType } = params;
 
     // Validation 1: Check working hours
@@ -54,13 +55,13 @@ class AttendanceSessionService {
     }
 
     // Validation 2: Check for existing session (no duplicate check-in)
-    const existing = await prisma.attendanceSession.findUnique({
+    const tomorrow = new Date(today);
+    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+    const existing = await prisma.attendanceSession.findFirst({
       where: {
-        userId_date_sessionType: {
-          userId,
-          date: today,
-          sessionType,
-        },
+        userId,
+        sessionType,
+        date: { gte: today, lt: tomorrow },
       },
     });
 
@@ -100,37 +101,74 @@ class AttendanceSessionService {
       anomalyReason = 'Pointage effectué un jour non ouvrable';
     }
 
-    // Create or update session
-    const session = await prisma.attendanceSession.upsert({
-      where: {
-        userId_date_sessionType: {
-          userId,
-          date: today,
-          sessionType,
-        },
-      },
-      create: {
-        userId,
-        date: today,
-        sessionType,
-        checkIn: now,
-        status: 'PARTIAL',
-        checkInPhoto: params.photo || null,
-        checkInIp: params.ipAddress || null,
-        deviceFingerprint: params.deviceFingerprint || null,
-        anomalyDetected,
-        anomalyReason,
-      },
-      update: {
-        checkIn: now,
-        status: 'PARTIAL',
-        checkInPhoto: params.photo || null,
-        checkInIp: params.ipAddress || null,
-        deviceFingerprint: params.deviceFingerprint || null,
-        anomalyDetected,
-        anomalyReason,
-      },
-    });
+    // Create or update session (use explicit create/update to avoid upsert race condition)
+    const sessionData = {
+      checkIn: now,
+      status: 'PARTIAL' as const,
+      checkInPhoto: params.photo || null,
+      checkInIp: params.ipAddress || null,
+      deviceFingerprint: params.deviceFingerprint || null,
+      anomalyDetected,
+      anomalyReason,
+    };
+
+    let session;
+    if (existing) {
+      // Record exists but checkIn is null — update it
+      session = await prisma.attendanceSession.update({
+        where: { id: existing.id },
+        data: sessionData,
+      });
+    } else {
+      // No record yet — create, with fallback on race condition
+      try {
+        session = await prisma.attendanceSession.create({
+          data: {
+            userId,
+            date: today,
+            sessionType,
+            ...sessionData,
+          },
+        });
+      } catch (err: unknown) {
+        // P2002 = unique constraint violation (race condition / double-click)
+        if (err && typeof err === 'object' && 'code' in err && (err as { code: string }).code === 'P2002') {
+          // Use findFirst with date range to avoid timezone mismatch on @db.Date
+          const startOfDay = new Date(today);
+          const endOfDay = new Date(today);
+          endOfDay.setUTCDate(endOfDay.getUTCDate() + 1);
+
+          const found = await prisma.attendanceSession.findFirst({
+            where: {
+              userId,
+              sessionType,
+              date: { gte: startOfDay, lt: endOfDay },
+            },
+          });
+          if (!found) {
+            // Record exists in DB but we can't find it — return error
+            return {
+              success: false,
+              session: null as unknown as AttendanceSessionRecord,
+              message: `Erreur de synchronisation, veuillez réessayer`,
+            };
+          }
+          if (found.checkIn) {
+            return {
+              success: false,
+              session: this.toRecord(found),
+              message: `Vous avez déjà pointé pour cette session`,
+            };
+          }
+          session = await prisma.attendanceSession.update({
+            where: { id: found.id },
+            data: sessionData,
+          });
+        } else {
+          throw err;
+        }
+      }
+    }
 
     return {
       success: true,
@@ -147,17 +185,18 @@ class AttendanceSessionService {
    */
   async checkOut(params: SessionCheckRequest): Promise<SessionCheckResponse> {
     const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    // Use UTC midnight of the LOCAL date to avoid Prisma @db.Date timezone issues
+    const today = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
     const { userId, sessionType } = params;
 
     // Validation 1: Must have checked in first
-    const existing = await prisma.attendanceSession.findUnique({
+    const tomorrow = new Date(today);
+    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+    const existing = await prisma.attendanceSession.findFirst({
       where: {
-        userId_date_sessionType: {
-          userId,
-          date: today,
-          sessionType,
-        },
+        userId,
+        sessionType,
+        date: { gte: today, lt: tomorrow },
       },
     });
 
@@ -241,11 +280,14 @@ class AttendanceSessionService {
     afternoon: AttendanceSessionRecord | null;
     dayStatus: DayStatus;
   }> {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const now = new Date();
+    // Use UTC midnight of the LOCAL date to avoid Prisma @db.Date timezone issues
+    const today = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
 
+    const tomorrow = new Date(today);
+    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
     const sessions = await prisma.attendanceSession.findMany({
-      where: { userId, date: today },
+      where: { userId, date: { gte: today, lt: tomorrow } },
     });
 
     const morning = sessions.find(s => s.sessionType === 'MORNING') || null;
