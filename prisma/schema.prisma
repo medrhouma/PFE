@@ -435,7 +435,29 @@ model password_reset_tokens {
   @@unique([email, token])
 }
 
+model JourFerie {
+  id          String              @id @default(dbgenerated("(uuid())")) @db.VarChar(191)
+  nom         String              @db.VarChar(255)
+  date        DateTime            @db.Date
+  type        JourFerie_type      @default(NATIONAL)
+  recurrent   Boolean             @default(true)
+  paye        Boolean             @default(true)
+  description String?             @db.Text
+  annee       Int
+  createdBy   String?             @map("created_by") @db.VarChar(36)
+  createdAt   DateTime            @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt   DateTime            @default(now()) @updatedAt @map("updated_at") @db.DateTime(3)
 
+  @@index([date], map: "jour_ferie_date_idx")
+  @@index([annee], map: "jour_ferie_annee_idx")
+  @@index([type], map: "jour_ferie_type_idx")
+  @@map("jour_ferie")
+}
+
+enum JourFerie_type {
+  NATIONAL
+  RELIGIEUX
+}
 
 enum anomalies_type {
   UNUSUAL_HOURS

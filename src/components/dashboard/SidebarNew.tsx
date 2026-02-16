@@ -19,7 +19,8 @@ import {
   Menu,
   X,
   Briefcase,
-  HelpCircle
+  HelpCircle,
+  Star
 } from "lucide-react"
 
 interface SidebarProps {
@@ -78,6 +79,7 @@ export function SidebarNew({ userRole }: SidebarProps) {
       title: t("hr"),
       items: [
         { href: "/rh/conges", label: t("leave_management"), icon: <Calendar className="w-5 h-5" />, roles: ["RH"] },
+        { href: "/rh/jours-feries", label: t("public_holidays"), icon: <Star className="w-5 h-5" />, roles: ["RH", "SUPER_ADMIN"] },
         { href: "/rh/profiles", label: t("profile_validation"), icon: <UserCheck className="w-5 h-5" />, roles: ["RH", "SUPER_ADMIN"] },
         { href: "/rh/notifications", label: t("notification_center"), icon: <Bell className="w-5 h-5" />, roles: ["RH", "SUPER_ADMIN"] },
       ]

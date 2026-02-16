@@ -105,7 +105,7 @@ export function Sidebar({ userRole }: SidebarProps) {
       href: "/parametres/users", 
       labelKey: "user_management", 
       icon: <Users className="w-5 h-5" />,
-      roles: ["SUPER_ADMIN"] // RH ne peut pas gérer les utilisateurs
+      roles: ["SUPER_ADMIN"]
     },
     { 
       href: "/parametres/roles", 
@@ -117,7 +117,7 @@ export function Sidebar({ userRole }: SidebarProps) {
       href: "/parametres/logs", 
       labelKey: "audit_logs", 
       icon: <Activity className="w-5 h-5" />,
-      roles: ["SUPER_ADMIN"] // RH ne peut pas voir les logs
+      roles: ["SUPER_ADMIN"]
     },
     { 
       href: "/parametres/cookies", 

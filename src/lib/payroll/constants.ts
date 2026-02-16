@@ -7,17 +7,17 @@
 
 // ─── Work Schedule ──────────────────────────────────────────
 
-/** Standard work hours per day (8h) */
-export const STANDARD_HOURS_PER_DAY = 8;
+/** Standard work hours per day (7h: 09:00-12:00 + 13:00-17:00) */
+export const STANDARD_HOURS_PER_DAY = 7;
 
-/** Morning session duration in hours (4h: 08:00 - 12:00) */
-export const MORNING_SESSION_HOURS = 4;
+/** Morning session duration in hours (3h: 09:00 - 12:00) */
+export const MORNING_SESSION_HOURS = 3;
 
 /** Afternoon session duration in hours (4h: 13:00 - 17:00) */
 export const AFTERNOON_SESSION_HOURS = 4;
 
 /** Morning session start hour */
-export const MORNING_START_HOUR = 8;
+export const MORNING_START_HOUR = 9;
 
 /** Morning session end hour */
 export const MORNING_END_HOUR = 12;
@@ -48,8 +48,8 @@ export const MIN_CLICK_DELAY_MS = 30_000;
 /** Minimum session duration to count as PARTIAL (15 minutes) */
 export const MIN_SESSION_MINUTES = 15;
 
-/** Minimum session duration to count as FULL (3 hours for a 4h session) */
-export const FULL_SESSION_THRESHOLD_MINUTES = 180;
+/** Minimum session duration to count as FULL (2h15 = 75% of a 3h morning session) */
+export const FULL_SESSION_THRESHOLD_MINUTES = 135;
 
 /** Maximum allowed overtime hours per month */
 export const MAX_OVERTIME_HOURS_PER_MONTH = 40;

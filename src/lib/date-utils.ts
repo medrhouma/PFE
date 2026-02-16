@@ -189,7 +189,7 @@ export function parseTimeString(timeStr: string, baseDate: Date = new Date()): D
  * Check if it's currently working hours
  */
 export function isWorkingHours(
-  startHour: number = 8,
+  startHour: number = 9,
   endHour: number = 18
 ): boolean {
   const now = new Date();

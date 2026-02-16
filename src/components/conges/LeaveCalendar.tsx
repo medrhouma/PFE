@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect, useCallback } from "react"
 import {
   ChevronLeft,
   ChevronRight,
@@ -59,7 +59,7 @@ const STATUS_CONFIG: Record<string, { label: string; icon: React.ReactNode; colo
 }
 
 // ========================================
-// JOURS FÉRIÉS TUNISIENS
+// JOURS FÉRIÉS - Chargés depuis la base de données
 // ========================================
 interface Holiday {
   name: string
@@ -67,62 +67,15 @@ interface Holiday {
   icon: "flag" | "star" | "sun" | "moon" | "sparkles"
 }
 
-// Jours fériés fixes (présidentiels/nationaux)
-const FIXED_HOLIDAYS: Record<string, Holiday> = {
-  "01-01": { name: "Nouvel An",                          type: "national",  icon: "sparkles" },
-  "01-14": { name: "Anniversaire de la Révolution",      type: "national",  icon: "flag" },
-  "03-20": { name: "Fête de l'Indépendance",             type: "national",  icon: "flag" },
-  "04-09": { name: "Journée des Martyrs",                type: "national",  icon: "flag" },
-  "05-01": { name: "Fête du Travail",                    type: "national",  icon: "sun" },
-  "07-25": { name: "Fête de la République",              type: "national",  icon: "flag" },
-  "08-13": { name: "Journée de la Femme",                type: "national",  icon: "sparkles" },
-  "10-15": { name: "Fête de l'Évacuation",               type: "national",  icon: "flag" },
-}
-
-// Jours fériés religieux (dates approximatives, basées sur le calendrier hégirien)
-// Les dates changent chaque année (~10-11 jours plus tôt par an grégorien)
-const RELIGIOUS_HOLIDAYS: Record<number, Record<string, Holiday>> = {
-  2025: {
-    "03-30": { name: "Aïd el-Fitr (1er jour)",           type: "religious", icon: "moon" },
-    "03-31": { name: "Aïd el-Fitr (2ème jour)",          type: "religious", icon: "moon" },
-    "06-06": { name: "Aïd el-Adha (1er jour)",           type: "religious", icon: "star" },
-    "06-07": { name: "Aïd el-Adha (2ème jour)",          type: "religious", icon: "star" },
-    "06-27": { name: "Ras el-Am el-Hijri",               type: "religious", icon: "moon" },
-    "09-05": { name: "Mouled (Mawlid Ennabi)",           type: "religious", icon: "star" },
-  },
-  2026: {
-    "03-20": { name: "Aïd el-Fitr (1er jour)",           type: "religious", icon: "moon" },
-    "03-21": { name: "Aïd el-Fitr (2ème jour)",          type: "religious", icon: "moon" },
-    "05-27": { name: "Aïd el-Adha (1er jour)",           type: "religious", icon: "star" },
-    "05-28": { name: "Aïd el-Adha (2ème jour)",          type: "religious", icon: "star" },
-    "06-17": { name: "Ras el-Am el-Hijri",               type: "religious", icon: "moon" },
-    "08-26": { name: "Mouled (Mawlid Ennabi)",           type: "religious", icon: "star" },
-  },
-  2027: {
-    "03-10": { name: "Aïd el-Fitr (1er jour)",           type: "religious", icon: "moon" },
-    "03-11": { name: "Aïd el-Fitr (2ème jour)",          type: "religious", icon: "moon" },
-    "05-16": { name: "Aïd el-Adha (1er jour)",           type: "religious", icon: "star" },
-    "05-17": { name: "Aïd el-Adha (2ème jour)",          type: "religious", icon: "star" },
-    "06-07": { name: "Ras el-Am el-Hijri",               type: "religious", icon: "moon" },
-    "08-16": { name: "Mouled (Mawlid Ennabi)",           type: "religious", icon: "star" },
-  },
-}
-
-function getHoliday(date: Date): Holiday | null {
-  const mm = String(date.getMonth() + 1).padStart(2, "0")
-  const dd = String(date.getDate()).padStart(2, "0")
-  const key = `${mm}-${dd}`
-  const year = date.getFullYear()
-
-  // Check fixed holidays first
-  if (FIXED_HOLIDAYS[key]) return FIXED_HOLIDAYS[key]
-
-  // Check religious holidays for this year
-  if (RELIGIOUS_HOLIDAYS[year] && RELIGIOUS_HOLIDAYS[year][key]) {
-    return RELIGIOUS_HOLIDAYS[year][key]
-  }
-
-  return null
+interface DBHoliday {
+  id: string
+  nom: string
+  date: string
+  type: "NATIONAL" | "RELIGIEUX"
+  recurrent: boolean
+  paye: boolean
+  description: string | null
+  annee: number
 }
 
 // ========================================
@@ -157,6 +110,43 @@ export function LeaveCalendar({ requests, onSelectRequest }: LeaveCalendarProps)
   const [currentMonth, setCurrentMonth] = useState(today.getMonth())
   const [selectedDay, setSelectedDay] = useState<Date | null>(null)
   const [hoveredRequest, setHoveredRequest] = useState<string | null>(null)
+  const [holidaysMap, setHolidaysMap] = useState<Record<string, Holiday>>({})
+
+  // Fetch holidays from database
+  const fetchHolidays = useCallback(async (year: number) => {
+    try {
+      const response = await fetch(`/api/holidays?annee=${year}`)
+      if (response.ok) {
+        const data: DBHoliday[] = await response.json()
+        const map: Record<string, Holiday> = {}
+        data.forEach((h) => {
+          const d = new Date(h.date)
+          const mm = String(d.getMonth() + 1).padStart(2, "0")
+          const dd = String(d.getDate()).padStart(2, "0")
+          const key = `${year}-${mm}-${dd}`
+          map[key] = {
+            name: h.nom,
+            type: h.type === "NATIONAL" ? "national" : "religious",
+            icon: h.type === "NATIONAL" ? "flag" : "moon",
+          }
+        })
+        setHolidaysMap((prev) => ({ ...prev, ...map }))
+      }
+    } catch (error) {
+      console.error("Error fetching holidays for calendar:", error)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchHolidays(currentYear)
+  }, [currentYear, fetchHolidays])
+
+  const getHoliday = useCallback((date: Date): Holiday | null => {
+    const mm = String(date.getMonth() + 1).padStart(2, "0")
+    const dd = String(date.getDate()).padStart(2, "0")
+    const key = `${date.getFullYear()}-${mm}-${dd}`
+    return holidaysMap[key] || null
+  }, [holidaysMap])
 
   // Navigate months
   const goToPrevMonth = () => {

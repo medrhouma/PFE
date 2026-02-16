@@ -39,14 +39,11 @@ export const GET = withAuth(
         nextDay = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate() + 1));
       }
 
-      // Get all active users, exclude SUPER_ADMIN from the list
+      // Get all active employees only (exclude SUPER_ADMIN and RH)
       const employees = await prisma.user.findMany({
         where: {
-          role: { not: "SUPER_ADMIN" },
-          OR: [
-            { status: "ACTIVE" },
-            { role: "RH" },
-          ],
+          role: { notIn: ["SUPER_ADMIN", "RH"] },
+          status: "ACTIVE",
         },
         select: {
           id: true,
@@ -54,6 +51,14 @@ export const GET = withAuth(
           email: true,
           role: true,
           image: true,
+          employee: {
+            select: {
+              typeContrat: true,
+              dateEmbauche: true,
+              telephone: true,
+              sexe: true,
+            },
+          },
         },
         orderBy: { name: "asc" },
       });
@@ -94,6 +99,10 @@ export const GET = withAuth(
           email: emp.email,
           role: emp.role,
           image: emp.image,
+          typeContrat: emp.employee?.typeContrat || null,
+          dateEmbauche: emp.employee?.dateEmbauche || null,
+          telephone: emp.employee?.telephone || null,
+          sexe: emp.employee?.sexe || null,
           morning: morning
             ? {
                 checkIn: morning.checkIn,

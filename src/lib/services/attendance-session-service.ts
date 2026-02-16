@@ -373,7 +373,7 @@ class AttendanceSessionService {
 
       let dayStatus: DayStatus;
       let workedMinutes = 0;
-      const expectedMinutes = isWork ? 480 : 0; // 8h = 480min
+      const expectedMinutes = isWork ? 420 : 0; // 7h = 420min
 
       if (!isWork) {
         dayStatus = isWeekendDay(dayDate) ? 'WEEKEND' : 'HOLIDAY';
@@ -390,11 +390,11 @@ class AttendanceSessionService {
             dayStatus = 'LEAVE_HALF_PM';
             workedMinutes = (morning?.durationMinutes || 0);
           }
-          // Add 240 min (4h) credit for the leave half
-          workedMinutes += 240;
+          // Add credit for the leave half (morning=180min/3h, afternoon=240min/4h)
+          workedMinutes += leavedSession === 'MORNING' ? 180 : 240;
         } else {
           dayStatus = 'LEAVE_FULL';
-          workedMinutes = 480; // Full day credit for paid leave
+          workedMinutes = 420; // Full day credit for paid leave
         }
       } else {
         dayStatus = this.computeDayStatus(morning, afternoon, dayDate);

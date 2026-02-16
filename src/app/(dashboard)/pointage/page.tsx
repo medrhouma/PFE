@@ -18,13 +18,23 @@ import {
   BarChart3,
   Coffee,
   Users,
-  UserCheck,
-  UserX,
   Search,
   ChevronLeft,
   ChevronRight,
   Zap,
   Sparkles,
+  Star,
+  Trophy,
+  Flame,
+  Target,
+  Award,
+  TrendingDown,
+  Minus,
+  Download,
+  Phone,
+  Briefcase,
+  CalendarDays,
+  ArrowUpRight,
 } from "lucide-react";
 
 // ========================================
@@ -53,6 +63,10 @@ interface TeamEmployee {
   email: string;
   role: string;
   image: string | null;
+  typeContrat: string | null;
+  dateEmbauche: string | null;
+  telephone: string | null;
+  sexe: string | null;
   morning: {
     checkIn: string | null;
     checkOut: string | null;
@@ -76,6 +90,35 @@ interface TeamData {
   absent: number;
   complete: number;
   employees: TeamEmployee[];
+}
+
+interface PointsData {
+  totalPoints: number;
+  maxPossible: number;
+  scorePercent: number;
+  level: string;
+  levelColor: string;
+  breakdown: {
+    presencePoints: number;
+    absencePoints: number;
+    latePoints: number;
+    streakBonusPoints: number;
+  };
+  stats: {
+    totalWorkDays: number;
+    daysPresent: number;
+    daysAbsent: number;
+    daysLate: number;
+    currentStreak: number;
+    bestStreak: number;
+  };
+  rules: {
+    fullDay: number;
+    halfDay: number;
+    absent: number;
+    late: number;
+    streakBonus: number;
+  };
 }
 
 // ========================================
@@ -115,6 +158,8 @@ export default function PointagePage() {
   const [refreshing, setRefreshing] = useState(false);
   const isAdmin = session?.user?.role === "SUPER_ADMIN";
   const isRH = session?.user?.role === "RH" || isAdmin;
+  // RH ne pointe pas personnellement — seuls les employés USER pointent
+  const isPointeur = !isAdmin && !isRH;
   const [teamData, setTeamData] = useState<TeamData | null>(null);
   const [teamLoading, setTeamLoading] = useState(false);
   const [teamDate, setTeamDate] = useState<string>(() => {
@@ -122,6 +167,9 @@ export default function PointagePage() {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   });
   const [teamSearch, setTeamSearch] = useState("");
+  const [pointsData, setPointsData] = useState<PointsData | null>(null);
+  const [teamPoints, setTeamPoints] = useState<Record<string, PointsData>>({});
+  const [exportingTeam, setExportingTeam] = useState(false);
 
   // Live clock
   useEffect(() => {
@@ -131,7 +179,7 @@ export default function PointagePage() {
 
   // Fetch today status
   const fetchStatus = useCallback(async () => {
-    if (isAdmin) {
+    if (!isPointeur) {
       setLoading(false);
       return;
     }
@@ -146,7 +194,21 @@ export default function PointagePage() {
     } finally {
       setLoading(false);
     }
-  }, [isAdmin]);
+  }, [isPointeur]);
+
+  // Fetch attendance points
+  const fetchPoints = useCallback(async () => {
+    if (!isPointeur) return;
+    try {
+      const res = await fetch("/api/attendance/points");
+      if (res.ok) {
+        const data = await res.json();
+        setPointsData(data);
+      }
+    } catch {
+      console.error("Failed to fetch points");
+    }
+  }, [isPointeur]);
 
   // Fetch team attendance (RH only)
   const fetchTeamData = useCallback(async (date: string) => {
@@ -157,6 +219,22 @@ export default function PointagePage() {
       if (res.ok) {
         const data = await res.json();
         setTeamData(data);
+
+        // Fetch points for each team member
+        if (data?.employees?.length) {
+          const pointsMap: Record<string, PointsData> = {};
+          await Promise.all(
+            data.employees.map(async (emp: { id: string }) => {
+              try {
+                const pRes = await fetch(`/api/attendance/points?userId=${emp.id}`);
+                if (pRes.ok) {
+                  pointsMap[emp.id] = await pRes.json();
+                }
+              } catch { /* ignore individual failures */ }
+            })
+          );
+          setTeamPoints(pointsMap);
+        }
       }
     } catch {
       console.error("Failed to fetch team data");
@@ -166,15 +244,58 @@ export default function PointagePage() {
   }, [isRH]);
 
   useEffect(() => {
-    if (!isAdmin) fetchStatus();
+    if (isPointeur) { fetchStatus(); fetchPoints(); } else { setLoading(false); }
     if (isRH) fetchTeamData(teamDate);
-    const interval = isAdmin ? null : setInterval(fetchStatus, 60000);
+    const interval = isPointeur ? setInterval(fetchStatus, 60000) : null;
     return () => { if (interval) clearInterval(interval); };
-  }, [fetchStatus, fetchTeamData, isRH, isAdmin, teamDate]);
+  }, [fetchStatus, fetchPoints, fetchTeamData, isRH, isPointeur, teamDate]);
+
+  // Export team attendance + points (RH only)
+  const handleExportTeam = useCallback(async () => {
+    if (!teamData || !isRH) return;
+    setExportingTeam(true);
+    try {
+      const now = new Date();
+      const monthName = now.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+      const rows = teamData.employees.map((emp) => {
+        const pts = teamPoints[emp.id];
+        return [
+          emp.name,
+          emp.email,
+          emp.morning?.checkIn ? formatTime(emp.morning.checkIn) : '-',
+          emp.morning?.checkOut ? formatTime(emp.morning.checkOut) : '-',
+          emp.afternoon?.checkIn ? formatTime(emp.afternoon.checkIn) : '-',
+          emp.afternoon?.checkOut ? formatTime(emp.afternoon.checkOut) : '-',
+          emp.totalMinutes > 0 ? formatDuration(emp.totalMinutes) : '0',
+          emp.dayStatus === 'complete' ? 'Complet' : emp.dayStatus === 'present' ? 'Pr\u00e9sent' : emp.dayStatus === 'partial' ? 'Partiel' : 'Absent',
+          pts ? String(pts.totalPoints) : '-',
+          pts ? `${pts.scorePercent}%` : '-',
+          pts ? pts.level : '-',
+          pts ? String(pts.stats.daysPresent) : '-',
+          pts ? String(pts.stats.daysAbsent) : '-',
+          pts ? String(pts.stats.daysLate) : '-',
+          pts ? String(pts.stats.currentStreak) : '-',
+        ].join(';');
+      });
+      const header = 'Nom;Email;Entr\u00e9e Matin;Sortie Matin;Entr\u00e9e PM;Sortie PM;Total;Statut Jour;Points;Score%;Niveau;Jours Pr\u00e9sent;Jours Absent;Retards;Streak';
+      const csv = '\uFEFF' + header + '\n' + rows.join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `pointage-equipe-${teamDate}-${monthName.replace(' ', '-')}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      console.error('Export failed');
+    } finally {
+      setExportingTeam(false);
+    }
+  }, [teamData, teamPoints, isRH, teamDate]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    if (!isAdmin) await fetchStatus();
+    if (isPointeur) { await fetchStatus(); await fetchPoints(); }
     if (isRH) await fetchTeamData(teamDate);
     setTimeout(() => setRefreshing(false), 600);
   };
@@ -222,7 +343,7 @@ export default function PointagePage() {
   const totalMinutes = (status?.morning?.durationMinutes || 0) + (status?.afternoon?.durationMinutes || 0);
   const dayComplete = morningComplete && afternoonComplete;
   const userName = session?.user?.name?.split(" ")[0] || "Collaborateur";
-  const progressPercent = Math.min(100, Math.round((totalMinutes / 480) * 100));
+  const progressPercent = Math.min(100, Math.round((totalMinutes / 420) * 100));
 
   if (loading || sessionStatus === "loading") {
     return (
@@ -266,7 +387,7 @@ export default function PointagePage() {
                 <p className="text-white/70 text-sm font-medium tracking-wide">{getGreeting()}, {userName}</p>
               </div>
               <h1 className="text-3xl lg:text-4xl font-black tracking-tight leading-tight">
-                {isAdmin ? "Suivi du pointage" : "Pointage du jour"}
+                {isRH ? "Suivi du pointage" : "Pointage du jour"}
               </h1>
               <p className="text-white/50 text-sm font-medium">
                 {now.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
@@ -279,10 +400,10 @@ export default function PointagePage() {
                   {now.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
                 </div>
                 <div className="flex items-center gap-2 justify-end">
-                  {isAdmin ? (
+                  {isRH ? (
                     <span className="inline-flex items-center gap-1.5 text-xs font-bold bg-white/10 text-white/60 px-4 py-1.5 rounded-full border border-white/10 backdrop-blur-sm">
                       <Users className="w-3.5 h-3.5" />
-                      Vue administrateur
+                      {isAdmin ? "Vue administrateur" : "Vue RH"}
                     </span>
                   ) : dayComplete ? (
                     <span className="inline-flex items-center gap-1.5 text-xs font-bold bg-emerald-500/20 text-emerald-200 px-4 py-1.5 rounded-full border border-emerald-400/20 backdrop-blur-sm">
@@ -314,7 +435,7 @@ export default function PointagePage() {
         </div>
 
         {/* ============ ALERTS ============ */}
-        {!isAdmin && error && (
+        {isPointeur && error && (
           <div className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-950/30 border border-red-200/80 dark:border-red-800/50 rounded-2xl text-red-700 dark:text-red-400 text-sm shadow-sm animate-in slide-in-from-top-2">
             <div className="w-9 h-9 flex-shrink-0 rounded-xl bg-red-100 dark:bg-red-900/40 flex items-center justify-center">
               <AlertTriangle className="w-4.5 h-4.5" />
@@ -325,7 +446,7 @@ export default function PointagePage() {
             </button>
           </div>
         )}
-        {!isAdmin && success && (
+        {isPointeur && success && (
           <div className="flex items-center gap-3 p-4 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-800/50 rounded-2xl text-emerald-700 dark:text-emerald-400 text-sm shadow-sm animate-in slide-in-from-top-2">
             <div className="w-9 h-9 flex-shrink-0 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center">
               <CheckCircle className="w-4.5 h-4.5" />
@@ -335,10 +456,10 @@ export default function PointagePage() {
         )}
 
         {/* ============ STATS GRID (employees only) ============ */}
-        {!isAdmin && (<>
+        {isPointeur && (<>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard icon={<Timer className="w-5 h-5" />} label="Aujourd'hui" value={totalMinutes > 0 ? formatDuration(totalMinutes) : "0h00"} color="indigo" />
-          <StatCard icon={<TrendingUp className="w-5 h-5" />} label="Objectif" value="8h00" color="violet" />
+          <StatCard icon={<TrendingUp className="w-5 h-5" />} label="Objectif" value="7h00" color="violet" />
           <StatCard
             icon={<BarChart3 className="w-5 h-5" />}
             label="Progression"
@@ -354,11 +475,130 @@ export default function PointagePage() {
           />
         </div>
 
+        {/* ============ POINTS CARD ============ */}
+        {pointsData && (
+          <div className="bg-white/80 dark:bg-gray-900/60 backdrop-blur-2xl rounded-3xl shadow-xl shadow-gray-200/40 dark:shadow-black/20 border border-gray-100 dark:border-gray-800/60 overflow-hidden">
+            <div className="px-7 py-5 border-b border-gray-100 dark:border-gray-800/60 flex items-center justify-between">
+              <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white shadow-lg shadow-amber-200/50 dark:shadow-amber-900/30">
+                  <Trophy className="w-4 h-4" />
+                </div>
+                Score du mois
+              </h3>
+              <span className={`px-3 py-1 rounded-full text-xs font-bold border ${
+                pointsData.levelColor === 'emerald' ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800' :
+                pointsData.levelColor === 'blue' ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800' :
+                pointsData.levelColor === 'amber' ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800' :
+                pointsData.levelColor === 'orange' ? 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800' :
+                'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800'
+              }`}>
+                {pointsData.level}
+              </span>
+            </div>
+
+            <div className="p-7">
+              <div className="flex flex-col md:flex-row items-center gap-8">
+                {/* Circular Score */}
+                <div className="relative flex-shrink-0">
+                  <svg className="w-32 h-32 -rotate-90" viewBox="0 0 120 120">
+                    <circle cx="60" cy="60" r="52" fill="none" stroke="currentColor" strokeWidth="8" className="text-gray-100 dark:text-gray-800" />
+                    <circle
+                      cx="60" cy="60" r="52" fill="none" strokeWidth="8" strokeLinecap="round"
+                      strokeDasharray={`${Math.max(0, pointsData.scorePercent) * 3.267} 326.7`}
+                      className={
+                        pointsData.levelColor === 'emerald' ? 'text-emerald-500' :
+                        pointsData.levelColor === 'blue' ? 'text-blue-500' :
+                        pointsData.levelColor === 'amber' ? 'text-amber-500' :
+                        pointsData.levelColor === 'orange' ? 'text-orange-500' : 'text-red-500'
+                      }
+                      stroke="currentColor"
+                      style={{ transition: 'stroke-dasharray 1s ease-in-out' }}
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-2xl font-black text-gray-900 dark:text-white">{pointsData.totalPoints}</span>
+                    <span className="text-[10px] font-medium text-gray-400 dark:text-gray-500">/ {pointsData.maxPossible} pts</span>
+                  </div>
+                </div>
+
+                {/* Breakdown */}
+                <div className="flex-1 grid grid-cols-2 gap-3 w-full">
+                  <div className="flex items-center gap-3 bg-emerald-50/80 dark:bg-emerald-900/20 rounded-2xl px-4 py-3">
+                    <div className="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center">
+                      <Star className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Présence</p>
+                      <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">+{pointsData.breakdown.presencePoints} pts</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 bg-red-50/80 dark:bg-red-900/20 rounded-2xl px-4 py-3">
+                    <div className="w-8 h-8 rounded-xl bg-red-100 dark:bg-red-900/40 flex items-center justify-center">
+                      <Minus className="w-4 h-4 text-red-600 dark:text-red-400" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Absences</p>
+                      <p className="text-sm font-bold text-red-600 dark:text-red-400">{pointsData.breakdown.absencePoints} pts</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 bg-orange-50/80 dark:bg-orange-900/20 rounded-2xl px-4 py-3">
+                    <div className="w-8 h-8 rounded-xl bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center">
+                      <TrendingDown className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Retards</p>
+                      <p className="text-sm font-bold text-orange-600 dark:text-orange-400">{pointsData.breakdown.latePoints} pts</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 bg-violet-50/80 dark:bg-violet-900/20 rounded-2xl px-4 py-3">
+                    <div className="w-8 h-8 rounded-xl bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center">
+                      <Flame className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Streak bonus</p>
+                      <p className="text-sm font-bold text-violet-600 dark:text-violet-400">+{pointsData.breakdown.streakBonusPoints} pts</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Stats row */}
+              <div className="mt-6 flex items-center justify-around py-3 px-4 bg-gray-50/80 dark:bg-gray-800/40 rounded-2xl">
+                <div className="text-center">
+                  <p className="text-lg font-black text-gray-900 dark:text-white">{pointsData.stats.daysPresent}</p>
+                  <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">Présent</p>
+                </div>
+                <div className="w-px h-8 bg-gray-200 dark:bg-gray-700" />
+                <div className="text-center">
+                  <p className="text-lg font-black text-red-500">{pointsData.stats.daysAbsent}</p>
+                  <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">Absent</p>
+                </div>
+                <div className="w-px h-8 bg-gray-200 dark:bg-gray-700" />
+                <div className="text-center">
+                  <p className="text-lg font-black text-orange-500">{pointsData.stats.daysLate}</p>
+                  <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">Retards</p>
+                </div>
+                <div className="w-px h-8 bg-gray-200 dark:bg-gray-700" />
+                <div className="text-center flex flex-col items-center">
+                  <div className="flex items-center gap-1">
+                    <Flame className="w-4 h-4 text-orange-500" />
+                    <p className="text-lg font-black text-gray-900 dark:text-white">{pointsData.stats.currentStreak}</p>
+                  </div>
+                  <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">Streak</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ============ SESSION CARDS ============ */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <SessionCard
             label="Matin"
-            subtitle="08:00 – 13:00"
+            subtitle="09:00 – 12:00"
             icon={<Sun className="w-6 h-6" />}
             gradient="from-amber-400 via-orange-400 to-orange-500"
             session={status?.morning || null}
@@ -413,159 +653,422 @@ export default function PointagePage() {
 
         {/* ============ TEAM ATTENDANCE (RH ONLY) ============ */}
         {isRH && (
-          <div className="bg-white/80 dark:bg-gray-900/60 backdrop-blur-2xl rounded-3xl shadow-xl shadow-gray-200/40 dark:shadow-black/20 border border-gray-100 dark:border-gray-800/60 overflow-hidden">
-            {/* Header */}
-            <div className="px-7 py-5 border-b border-gray-100 dark:border-gray-800/60">
-              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-violet-200/50 dark:shadow-violet-900/30">
-                    <Users className="w-4 h-4" />
-                  </div>
-                  Pointage de l&apos;équipe
-                </h3>
-                <div className="flex items-center gap-3 flex-wrap">
-                  {/* Date Navigation */}
-                  <div className="flex items-center gap-0.5 bg-gray-100/80 dark:bg-gray-800/80 rounded-xl p-1 border border-gray-200/60 dark:border-gray-700/60">
-                    <button
-                      onClick={() => {
-                        const d = new Date(teamDate);
-                        d.setDate(d.getDate() - 1);
-                        setTeamDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`);
-                      }}
-                      className="p-2 rounded-lg hover:bg-white dark:hover:bg-gray-700 active:scale-95 transition-all"
-                    >
-                      <ChevronLeft className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                    </button>
-                    <div className="flex items-center gap-1.5 px-2">
-                      <Calendar className="w-3.5 h-3.5 text-violet-500" />
-                      <input
-                        type="date"
-                        value={teamDate}
-                        onChange={(e) => setTeamDate(e.target.value)}
-                        className="bg-transparent text-sm font-bold text-gray-700 dark:text-gray-200 border-0 focus:outline-none focus:ring-0 w-[130px]"
-                      />
-                    </div>
-                    <button
-                      onClick={() => {
-                        const d = new Date(teamDate);
-                        d.setDate(d.getDate() + 1);
-                        setTeamDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`);
-                      }}
-                      className="p-2 rounded-lg hover:bg-white dark:hover:bg-gray-700 active:scale-95 transition-all"
-                    >
-                      <ChevronRight className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                    </button>
-                  </div>
-                  {/* Search */}
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <div className="space-y-6">
+            {/* Controls Bar */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-violet-300/40 dark:shadow-violet-900/40">
+                  <Users className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-gray-900 dark:text-white tracking-tight">Suivi des employés</h3>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 font-medium">Pointage & performance</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2.5 flex-wrap">
+                {/* Date nav */}
+                <div className="flex items-center bg-white dark:bg-gray-900 rounded-2xl p-1 border border-gray-200/80 dark:border-gray-700/60 shadow-sm">
+                  <button
+                    onClick={() => {
+                      const d = new Date(teamDate);
+                      d.setDate(d.getDate() - 1);
+                      setTeamDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`);
+                    }}
+                    className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 active:scale-90 transition-all"
+                  >
+                    <ChevronLeft className="w-4 h-4 text-gray-500" />
+                  </button>
+                  <div className="flex items-center gap-1.5 px-2">
+                    <Calendar className="w-3.5 h-3.5 text-violet-500" />
                     <input
-                      type="text"
-                      placeholder="Rechercher un employé..."
-                      value={teamSearch}
-                      onChange={(e) => setTeamSearch(e.target.value)}
-                      className="pl-10 pr-4 py-2.5 text-sm bg-gray-100/80 dark:bg-gray-800/80 border border-gray-200/60 dark:border-gray-700/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/40 focus:border-violet-400 text-gray-700 dark:text-gray-200 w-56 placeholder:text-gray-400 transition-all"
+                      type="date"
+                      value={teamDate}
+                      onChange={(e) => setTeamDate(e.target.value)}
+                      className="bg-transparent text-sm font-bold text-gray-700 dark:text-gray-200 border-0 focus:outline-none w-[130px]"
                     />
                   </div>
+                  <button
+                    onClick={() => {
+                      const d = new Date(teamDate);
+                      d.setDate(d.getDate() + 1);
+                      setTeamDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`);
+                    }}
+                    className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 active:scale-90 transition-all"
+                  >
+                    <ChevronRight className="w-4 h-4 text-gray-500" />
+                  </button>
                 </div>
+                {/* Search */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Rechercher..."
+                    value={teamSearch}
+                    onChange={(e) => setTeamSearch(e.target.value)}
+                    className="pl-10 pr-4 py-2.5 text-sm bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-700/60 rounded-2xl focus:outline-none focus:ring-2 focus:ring-violet-500/30 text-gray-700 dark:text-gray-200 w-48 placeholder:text-gray-400 shadow-sm transition-all"
+                  />
+                </div>
+                {/* Export */}
+                <button
+                  onClick={handleExportTeam}
+                  disabled={exportingTeam || !teamData}
+                  className="flex items-center gap-2 px-5 py-2.5 text-sm font-bold bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-2xl hover:bg-gray-800 dark:hover:bg-gray-100 active:scale-95 transition-all disabled:opacity-40 shadow-lg shadow-gray-300/30 dark:shadow-black/20"
+                >
+                  <Download className="w-4 h-4" />
+                  {exportingTeam ? "Export..." : "Exporter CSV"}
+                </button>
               </div>
-
-              {/* Team Stats */}
-              {teamData && (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-5">
-                  <TeamStatCard icon={<Users className="w-4.5 h-4.5" />} label="Total" value={teamData.totalEmployees} gradient="from-indigo-500 to-blue-600" bgClass="bg-indigo-50 dark:bg-indigo-900/20" textClass="text-indigo-600 dark:text-indigo-400" />
-                  <TeamStatCard icon={<UserCheck className="w-4.5 h-4.5" />} label="Présents" value={teamData.present} gradient="from-emerald-500 to-teal-600" bgClass="bg-emerald-50 dark:bg-emerald-900/20" textClass="text-emerald-600 dark:text-emerald-400" />
-                  <TeamStatCard icon={<UserX className="w-4.5 h-4.5" />} label="Absents" value={teamData.absent} gradient="from-red-500 to-rose-600" bgClass="bg-red-50 dark:bg-red-900/20" textClass="text-red-600 dark:text-red-400" />
-                  <TeamStatCard icon={<CheckCircle className="w-4.5 h-4.5" />} label="Complets" value={teamData.complete} gradient="from-violet-500 to-purple-600" bgClass="bg-violet-50 dark:bg-violet-900/20" textClass="text-violet-600 dark:text-violet-400" />
-                </div>
-              )}
             </div>
 
-            {/* Team Table */}
+            {/* Summary Pills */}
+            {teamData && (
+              <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200/80 dark:border-gray-700/60 shadow-sm">
+                  <Users className="w-4 h-4 text-indigo-500" />
+                  <span className="text-sm font-black text-gray-900 dark:text-white">{teamData.totalEmployees}</span>
+                  <span className="text-xs text-gray-400 font-medium">employés</span>
+                </div>
+                <div className="flex items-center gap-2 px-4 py-2 bg-emerald-50 dark:bg-emerald-950/30 rounded-2xl border border-emerald-200/60 dark:border-emerald-800/40">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-sm font-black text-emerald-700 dark:text-emerald-400">{teamData.present}</span>
+                  <span className="text-xs text-emerald-600/70 dark:text-emerald-400/60 font-medium">présents</span>
+                </div>
+                <div className="flex items-center gap-2 px-4 py-2 bg-red-50 dark:bg-red-950/30 rounded-2xl border border-red-200/60 dark:border-red-800/40">
+                  <div className="w-2 h-2 rounded-full bg-red-500" />
+                  <span className="text-sm font-black text-red-700 dark:text-red-400">{teamData.absent}</span>
+                  <span className="text-xs text-red-600/70 dark:text-red-400/60 font-medium">absents</span>
+                </div>
+                <div className="flex items-center gap-2 px-4 py-2 bg-violet-50 dark:bg-violet-950/30 rounded-2xl border border-violet-200/60 dark:border-violet-800/40">
+                  <CheckCircle className="w-3.5 h-3.5 text-violet-500" />
+                  <span className="text-sm font-black text-violet-700 dark:text-violet-400">{teamData.complete}</span>
+                  <span className="text-xs text-violet-600/70 dark:text-violet-400/60 font-medium">complets</span>
+                </div>
+              </div>
+            )}
+
+            {/* Employee Cards Grid */}
             {teamLoading ? (
-              <div className="p-12 flex flex-col items-center justify-center gap-3">
-                <div className="animate-spin w-8 h-8 border-[3px] border-violet-500 border-t-transparent rounded-full" />
-                <span className="text-sm text-gray-400 dark:text-gray-500 font-medium">Chargement de l&apos;équipe...</span>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="animate-pulse bg-white dark:bg-gray-900/80 rounded-[28px] border border-gray-100 dark:border-gray-800 p-6 space-y-5">
+                    <div className="flex items-center gap-4">
+                      <div className="w-14 h-14 rounded-2xl bg-gray-200 dark:bg-gray-700" />
+                      <div className="space-y-2 flex-1">
+                        <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded-lg w-2/3" />
+                        <div className="h-3 bg-gray-100 dark:bg-gray-800 rounded-lg w-1/2" />
+                      </div>
+                      <div className="h-7 w-20 bg-gray-200 dark:bg-gray-700 rounded-xl" />
+                    </div>
+                    <div className="grid grid-cols-4 gap-2">
+                      {[...Array(4)].map((_, j) => <div key={j} className="h-20 bg-gray-50 dark:bg-gray-800/50 rounded-2xl" />)}
+                    </div>
+                    <div className="h-3 bg-gray-100 dark:bg-gray-800 rounded-full" />
+                  </div>
+                ))}
               </div>
             ) : teamData && teamData.employees.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="bg-gray-50/60 dark:bg-gray-800/40">
-                      <th className="text-left text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest px-7 py-4">Employé</th>
-                      <th className="text-center text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest px-3 py-4">Matin Entrée</th>
-                      <th className="text-center text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest px-3 py-4">Matin Sortie</th>
-                      <th className="text-center text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest px-3 py-4">PM Entrée</th>
-                      <th className="text-center text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest px-3 py-4">PM Sortie</th>
-                      <th className="text-center text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest px-3 py-4">Total</th>
-                      <th className="text-center text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest px-3 py-4">Statut</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100/80 dark:divide-gray-800/50">
-                    {teamData.employees
-                      .filter((emp) => {
-                        if (!teamSearch) return true;
-                        const q = teamSearch.toLowerCase();
-                        return emp.name.toLowerCase().includes(q) || emp.email.toLowerCase().includes(q);
-                      })
-                      .map((emp, idx) => {
-                        const statusConfig = {
-                          absent:   { label: "Absent",   cls: "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400", dot: "bg-red-500" },
-                          partial:  { label: "En cours",  cls: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400", dot: "bg-amber-500" },
-                          present:  { label: "Présent",   cls: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400", dot: "bg-emerald-500" },
-                          complete: { label: "Complet",   cls: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400", dot: "bg-indigo-500" },
-                        };
-                        const st = statusConfig[emp.dayStatus];
-                        const avatarColors = [
-                          "from-indigo-400 to-violet-500",
-                          "from-emerald-400 to-teal-500",
-                          "from-amber-400 to-orange-500",
-                          "from-rose-400 to-pink-500",
-                          "from-cyan-400 to-blue-500",
-                          "from-fuchsia-400 to-purple-500",
-                        ];
-                        const avatarGrad = avatarColors[idx % avatarColors.length];
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                {teamData.employees
+                  .filter((emp) => {
+                    if (!teamSearch) return true;
+                    const q = teamSearch.toLowerCase();
+                    return emp.name.toLowerCase().includes(q) || emp.email.toLowerCase().includes(q);
+                  })
+                  .map((emp, idx) => {
+                    const statusConfig = {
+                      absent:   { label: "Absent",   icon: <Minus className="w-3 h-3" />,       bg: "bg-red-500",     glow: "shadow-red-500/20",     ringBg: "bg-red-50 dark:bg-red-950/40",     ringBorder: "border-red-200 dark:border-red-800/50",     text: "text-red-700 dark:text-red-400" },
+                      partial:  { label: "En cours",  icon: <Clock className="w-3 h-3" />,       bg: "bg-amber-500",   glow: "shadow-amber-500/20",   ringBg: "bg-amber-50 dark:bg-amber-950/40", ringBorder: "border-amber-200 dark:border-amber-800/50", text: "text-amber-700 dark:text-amber-400" },
+                      present:  { label: "Présent",   icon: <ArrowUpRight className="w-3 h-3" />,bg: "bg-emerald-500", glow: "shadow-emerald-500/20", ringBg: "bg-emerald-50 dark:bg-emerald-950/40", ringBorder: "border-emerald-200 dark:border-emerald-800/50", text: "text-emerald-700 dark:text-emerald-400" },
+                      complete: { label: "Complet",   icon: <CheckCircle className="w-3 h-3" />, bg: "bg-indigo-500",  glow: "shadow-indigo-500/20",  ringBg: "bg-indigo-50 dark:bg-indigo-950/40", ringBorder: "border-indigo-200 dark:border-indigo-800/50", text: "text-indigo-700 dark:text-indigo-400" },
+                    };
+                    const st = statusConfig[emp.dayStatus];
+                    const gradients = [
+                      "from-violet-600 to-indigo-600",
+                      "from-emerald-600 to-teal-600",
+                      "from-orange-600 to-rose-600",
+                      "from-cyan-600 to-blue-600",
+                      "from-pink-600 to-fuchsia-600",
+                      "from-amber-600 to-yellow-600",
+                    ];
+                    const grad = gradients[idx % gradients.length];
+                    const pts = teamPoints[emp.id];
+                    const progressPct = emp.totalMinutes > 0 ? Math.min(100, Math.round((emp.totalMinutes / 420) * 100)) : 0;
+                    const morningDur = emp.morning?.durationMinutes || 0;
+                    const afternoonDur = emp.afternoon?.durationMinutes || 0;
+                    const contratLabel = emp.typeContrat === "CDI" ? "CDI" : emp.typeContrat === "CDD" ? "CDD" : emp.typeContrat === "STAGE" ? "Stage" : emp.typeContrat || null;
+                    const dateFormatted = new Date(teamDate + "T00:00:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 
-                        return (
-                          <tr key={emp.id} className="hover:bg-gray-50/60 dark:hover:bg-gray-800/30 transition-colors group">
-                            <td className="px-7 py-4">
-                              <div className="flex items-center gap-3.5">
-                                <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${avatarGrad} flex items-center justify-center text-white text-xs font-bold flex-shrink-0 shadow-md group-hover:shadow-lg transition-shadow`}>
-                                  {emp.name?.charAt(0)?.toUpperCase() || "?"}
+                    return (
+                      <div key={emp.id} className="group relative bg-white dark:bg-gray-900/80 backdrop-blur-xl rounded-[28px] border border-gray-200/70 dark:border-gray-800/70 shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:shadow-2xl hover:shadow-gray-300/30 dark:hover:shadow-black/40 hover:border-gray-300/80 dark:hover:border-gray-700/80 transition-all duration-500 overflow-hidden">
+                        {/* Top gradient accent */}
+                        <div className={`absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r ${grad} opacity-90`} />
+                        {/* Subtle background pattern */}
+                        <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-gray-50/50 dark:from-gray-800/20 to-transparent rounded-bl-full pointer-events-none" />
+
+                        <div className="relative p-6 space-y-5">
+                          {/* ── Header row: avatar + info + status ── */}
+                          <div className="flex items-start gap-4">
+                            <div className="relative flex-shrink-0">
+                              <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${grad} flex items-center justify-center text-white text-lg font-black shadow-xl ${st.glow} group-hover:scale-110 group-hover:rotate-3 transition-all duration-500`}>
+                                {emp.name?.charAt(0)?.toUpperCase() || "?"}
+                              </div>
+                              {/* Online indicator */}
+                              <div className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-[2.5px] border-white dark:border-gray-900 ${
+                                emp.dayStatus === "absent" ? "bg-gray-300 dark:bg-gray-600" : "bg-emerald-500"
+                              }`} />
+                            </div>
+
+                            <div className="flex-1 min-w-0">
+                              <h4 className="text-base font-black text-gray-900 dark:text-white truncate leading-tight tracking-tight">{emp.name}</h4>
+                              <p className="text-xs text-gray-400 dark:text-gray-500 truncate mt-0.5 font-medium">{emp.email}</p>
+                              {/* Meta chips */}
+                              <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                                {contratLabel && (
+                                  <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-lg bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 border border-violet-200/60 dark:border-violet-800/40">
+                                    <Briefcase className="w-2.5 h-2.5" />
+                                    {contratLabel}
+                                  </span>
+                                )}
+                                {emp.telephone && (
+                                  <span className="inline-flex items-center gap-1 text-[9px] font-bold text-gray-400 dark:text-gray-500 px-2 py-0.5 rounded-lg bg-gray-100 dark:bg-gray-800/60">
+                                    <Phone className="w-2.5 h-2.5" />
+                                    {emp.telephone}
+                                  </span>
+                                )}
+                                {emp.dateEmbauche && (
+                                  <span className="inline-flex items-center gap-1 text-[9px] font-bold text-gray-400 dark:text-gray-500 px-2 py-0.5 rounded-lg bg-gray-100 dark:bg-gray-800/60">
+                                    <CalendarDays className="w-2.5 h-2.5" />
+                                    {new Date(emp.dateEmbauche).toLocaleDateString("fr-FR", { month: "short", year: "numeric" })}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Status badge */}
+                            <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-2xl text-[10px] font-bold border ${st.ringBg} ${st.ringBorder} ${st.text} shadow-sm`}>
+                              {st.icon}
+                              {st.label}
+                            </div>
+                          </div>
+
+                          {/* ── Date row ── */}
+                          <div className="flex items-center gap-2 px-3.5 py-2 bg-gray-50/80 dark:bg-gray-800/40 rounded-2xl">
+                            <Calendar className="w-3.5 h-3.5 text-violet-500 flex-shrink-0" />
+                            <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 capitalize">{dateFormatted}</span>
+                          </div>
+
+                          {/* ── Attendance sessions ── */}
+                          <div className="grid grid-cols-2 gap-3">
+                            {/* Morning */}
+                            <div className={`relative rounded-2xl p-4 space-y-2.5 border transition-colors ${
+                              emp.morning?.checkIn
+                                ? "bg-amber-50/60 dark:bg-amber-950/20 border-amber-200/60 dark:border-amber-800/40"
+                                : "bg-gray-50/80 dark:bg-gray-800/30 border-gray-200/40 dark:border-gray-700/30 border-dashed"
+                            }`}>
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-1.5">
+                                  <div className={`w-6 h-6 rounded-lg flex items-center justify-center ${
+                                    emp.morning?.checkIn ? "bg-amber-500 text-white" : "bg-gray-200 dark:bg-gray-700 text-gray-400"
+                                  }`}>
+                                    <Sun className="w-3.5 h-3.5" />
+                                  </div>
+                                  <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Matin</span>
                                 </div>
-                                <div className="min-w-0">
-                                  <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{emp.name}</p>
-                                  <p className="text-[11px] text-gray-400 dark:text-gray-500 truncate font-medium">{emp.email}</p>
+                                {morningDur > 0 && (
+                                  <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 px-1.5 py-0.5 rounded-md">
+                                    {formatDuration(morningDur)}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2">
+                                  <LogIn className={`w-3 h-3 ${emp.morning?.checkIn ? "text-emerald-500" : "text-gray-300 dark:text-gray-600"}`} />
+                                  <span className={`text-sm font-mono font-black tabular-nums ${emp.morning?.checkIn? "text-gray-900 dark:text-white" : "text-gray-300 dark:text-gray-600"}`}>
+                                    {emp.morning?.checkIn ? formatTime(emp.morning.checkIn) : "--:--"}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <LogOut className={`w-3 h-3 ${emp.morning?.checkOut ? "text-blue-500" : "text-gray-300 dark:text-gray-600"}`} />
+                                  <span className={`text-sm font-mono font-black tabular-nums ${emp.morning?.checkOut ? "text-gray-900 dark:text-white" : "text-gray-300 dark:text-gray-600"}`}>
+                                    {emp.morning?.checkOut ? formatTime(emp.morning.checkOut) : "--:--"}
+                                  </span>
                                 </div>
                               </div>
-                            </td>
-                            <td className="text-center px-3 py-4"><TimeDisplay time={emp.morning?.checkIn} /></td>
-                            <td className="text-center px-3 py-4"><TimeDisplay time={emp.morning?.checkOut} /></td>
-                            <td className="text-center px-3 py-4"><TimeDisplay time={emp.afternoon?.checkIn} /></td>
-                            <td className="text-center px-3 py-4"><TimeDisplay time={emp.afternoon?.checkOut} /></td>
-                            <td className="text-center px-3 py-4">
-                              <span className={`text-sm font-bold tabular-nums ${emp.totalMinutes > 0 ? "text-gray-900 dark:text-white" : "text-gray-300 dark:text-gray-600"}`}>
-                                {emp.totalMinutes > 0 ? formatDuration(emp.totalMinutes) : "-"}
-                              </span>
-                            </td>
-                            <td className="text-center px-3 py-4">
-                              <span className={`inline-flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-lg ${st.cls}`}>
-                                <span className={`w-1.5 h-1.5 rounded-full ${st.dot}`} />
-                                {st.label}
-                              </span>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                  </tbody>
-                </table>
+                            </div>
+
+                            {/* Afternoon */}
+                            <div className={`relative rounded-2xl p-4 space-y-2.5 border transition-colors ${
+                              emp.afternoon?.checkIn
+                                ? "bg-orange-50/60 dark:bg-orange-950/20 border-orange-200/60 dark:border-orange-800/40"
+                                : "bg-gray-50/80 dark:bg-gray-800/30 border-gray-200/40 dark:border-gray-700/30 border-dashed"
+                            }`}>
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-1.5">
+                                  <div className={`w-6 h-6 rounded-lg flex items-center justify-center ${
+                                    emp.afternoon?.checkIn ? "bg-orange-500 text-white" : "bg-gray-200 dark:bg-gray-700 text-gray-400"
+                                  }`}>
+                                    <Sunset className="w-3.5 h-3.5" />
+                                  </div>
+                                  <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Après-midi</span>
+                                </div>
+                                {afternoonDur > 0 && (
+                                  <span className="text-[10px] font-bold text-orange-600 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/30 px-1.5 py-0.5 rounded-md">
+                                    {formatDuration(afternoonDur)}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2">
+                                  <LogIn className={`w-3 h-3 ${emp.afternoon?.checkIn ? "text-emerald-500" : "text-gray-300 dark:text-gray-600"}`} />
+                                  <span className={`text-sm font-mono font-black tabular-nums ${emp.afternoon?.checkIn ? "text-gray-900 dark:text-white" : "text-gray-300 dark:text-gray-600"}`}>
+                                    {emp.afternoon?.checkIn ? formatTime(emp.afternoon.checkIn) : "--:--"}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <LogOut className={`w-3 h-3 ${emp.afternoon?.checkOut ? "text-blue-500" : "text-gray-300 dark:text-gray-600"}`} />
+                                  <span className={`text-sm font-mono font-black tabular-nums ${emp.afternoon?.checkOut ? "text-gray-900 dark:text-white" : "text-gray-300 dark:text-gray-600"}`}>
+                                    {emp.afternoon?.checkOut ? formatTime(emp.afternoon.checkOut) : "--:--"}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* ── Total progress ── */}
+                          <div className="space-y-2 bg-gray-50/80 dark:bg-gray-800/30 rounded-2xl p-3.5">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <Timer className="w-3.5 h-3.5 text-violet-500" />
+                                <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Temps total</span>
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                <span className={`text-sm font-black tabular-nums ${emp.totalMinutes > 0 ? "text-gray-900 dark:text-white" : "text-gray-300 dark:text-gray-600"}`}>
+                                  {emp.totalMinutes > 0 ? formatDuration(emp.totalMinutes) : "0h00"}
+                                </span>
+                                <span className="text-[10px] text-gray-400 font-semibold">/ 7h00</span>
+                                <span className={`ml-1 text-[10px] font-black px-1.5 py-0.5 rounded-md ${
+                                  progressPct >= 100 ? "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400" :
+                                  progressPct >= 50 ? "bg-violet-100 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400" :
+                                  progressPct > 0 ? "bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400" :
+                                  "bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500"
+                                }`}>{progressPct}%</span>
+                              </div>
+                            </div>
+                            <div className="h-2.5 bg-gray-200/80 dark:bg-gray-700/50 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full rounded-full transition-all duration-1000 ease-out ${
+                                  progressPct >= 100 ? "bg-gradient-to-r from-emerald-500 via-emerald-400 to-teal-500" :
+                                  progressPct >= 50 ? "bg-gradient-to-r from-violet-500 via-indigo-500 to-blue-500" :
+                                  progressPct > 0 ? "bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500" :
+                                  "bg-gray-300 dark:bg-gray-600"
+                                }`}
+                                style={{ width: `${progressPct}%` }}
+                              />
+                            </div>
+                          </div>
+
+                          {/* ── Stats row (points, streak, attendance) ── */}
+                          <div className="grid grid-cols-3 gap-2">
+                            {/* Points */}
+                            <div className="text-center p-2.5 rounded-2xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/40 dark:border-amber-800/30">
+                              <Zap className="w-4 h-4 text-amber-500 mx-auto mb-1" />
+                              {pts ? (
+                                <>
+                                  <p className="text-base font-black text-gray-900 dark:text-white tabular-nums leading-none">{pts.totalPoints}</p>
+                                  <p className="text-[9px] text-gray-400 dark:text-gray-500 font-semibold mt-0.5">/ {pts.maxPossible} pts</p>
+                                </>
+                              ) : (
+                                <>
+                                  <p className="text-base font-black text-gray-300 dark:text-gray-600 leading-none">—</p>
+                                  <p className="text-[9px] text-gray-300 dark:text-gray-600 font-semibold mt-0.5">points</p>
+                                </>
+                              )}
+                            </div>
+                            {/* Streak */}
+                            <div className="text-center p-2.5 rounded-2xl bg-orange-50/70 dark:bg-orange-950/20 border border-orange-200/40 dark:border-orange-800/30">
+                              <Flame className="w-4 h-4 text-orange-500 mx-auto mb-1" />
+                              {pts ? (
+                                <>
+                                  <p className="text-base font-black text-gray-900 dark:text-white tabular-nums leading-none">{pts.stats.currentStreak}</p>
+                                  <p className="text-[9px] text-gray-400 dark:text-gray-500 font-semibold mt-0.5">streak jours</p>
+                                </>
+                              ) : (
+                                <>
+                                  <p className="text-base font-black text-gray-300 dark:text-gray-600 leading-none">—</p>
+                                  <p className="text-[9px] text-gray-300 dark:text-gray-600 font-semibold mt-0.5">streak</p>
+                                </>
+                              )}
+                            </div>
+                            {/* Attendance rate */}
+                            <div className="text-center p-2.5 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-200/40 dark:border-emerald-800/30">
+                              <Target className="w-4 h-4 text-emerald-500 mx-auto mb-1" />
+                              {pts ? (
+                                <>
+                                  <p className="text-base font-black text-gray-900 dark:text-white tabular-nums leading-none">{pts.stats.daysPresent}</p>
+                                  <p className="text-[9px] text-gray-400 dark:text-gray-500 font-semibold mt-0.5">/ {pts.stats.totalWorkDays} jours</p>
+                                </>
+                              ) : (
+                                <>
+                                  <p className="text-base font-black text-gray-300 dark:text-gray-600 leading-none">—</p>
+                                  <p className="text-[9px] text-gray-300 dark:text-gray-600 font-semibold mt-0.5">présence</p>
+                                </>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* ── Footer: Level + extra stats ── */}
+                          <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-800/50">
+                            <div className="flex items-center gap-3">
+                              {pts ? (
+                                <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold ${
+                                  pts.levelColor === 'emerald' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/40' :
+                                  pts.levelColor === 'blue' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border border-blue-200/60 dark:border-blue-800/40' :
+                                  pts.levelColor === 'amber' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-200/60 dark:border-amber-800/40' :
+                                  pts.levelColor === 'orange' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 border border-orange-200/60 dark:border-orange-800/40' :
+                                  'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border border-red-200/60 dark:border-red-800/40'
+                                }`}>
+                                  <Trophy className="w-3.5 h-3.5" />
+                                  {pts.level}
+                                </div>
+                              ) : (
+                                <span className="text-[10px] text-gray-300 dark:text-gray-600 font-medium">—</span>
+                              )}
+                              {pts && (
+                                <span className={`text-xs font-black tabular-nums ${
+                                  pts.scorePercent >= 80 ? "text-emerald-600 dark:text-emerald-400" :
+                                  pts.scorePercent >= 50 ? "text-violet-600 dark:text-violet-400" :
+                                  "text-gray-400 dark:text-gray-500"
+                                }`}>{pts.scorePercent}%</span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {pts && pts.stats.daysLate > 0 && (
+                                <span className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded-lg border border-amber-200/40 dark:border-amber-800/30">
+                                  <AlertTriangle className="w-2.5 h-2.5" />
+                                  {pts.stats.daysLate} retard{pts.stats.daysLate > 1 ? "s" : ""}
+                                </span>
+                              )}
+                              {pts && pts.stats.daysAbsent > 0 && (
+                                <span className="inline-flex items-center gap-1 text-[9px] font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded-lg border border-red-200/40 dark:border-red-800/30">
+                                  <Minus className="w-2.5 h-2.5" />
+                                  {pts.stats.daysAbsent} abs.
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
               </div>
             ) : (
-              <div className="p-12 text-center">
-                <div className="w-12 h-12 mx-auto mb-3 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                  <Users className="w-6 h-6 text-gray-300 dark:text-gray-600" />
+              <div className="flex flex-col items-center justify-center py-16 bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800 border-dashed">
+                <div className="w-14 h-14 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4">
+                  <Users className="w-7 h-7 text-gray-300 dark:text-gray-600" />
                 </div>
-                <p className="text-sm text-gray-400 dark:text-gray-500 font-medium">Aucune donnée disponible pour cette date</p>
+                <p className="text-sm font-bold text-gray-400 dark:text-gray-500">Aucune donnée pour cette date</p>
+                <p className="text-xs text-gray-300 dark:text-gray-600 mt-1">Sélectionnez une autre date</p>
               </div>
             )}
           </div>
@@ -615,26 +1118,7 @@ function StatCard({ icon, label, value, color, progress }: {
   );
 }
 
-function TeamStatCard({ icon, label, value, gradient, bgClass, textClass }: {
-  icon: React.ReactNode;
-  label: string;
-  value: number;
-  gradient: string;
-  bgClass: string;
-  textClass: string;
-}) {
-  return (
-    <div className={`flex items-center gap-3 px-4 py-3 ${bgClass} rounded-xl border border-gray-100/50 dark:border-gray-700/30`}>
-      <div className={`w-8 h-8 bg-gradient-to-br ${gradient} rounded-lg flex items-center justify-center text-white shadow-md`}>
-        {icon}
-      </div>
-      <div>
-        <p className="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-widest">{label}</p>
-        <p className={`text-xl font-black ${textClass}`}>{value}</p>
-      </div>
-    </div>
-  );
-}
+
 
 function SessionCard({ label, subtitle, icon, gradient, session, sessionType, isActive, actionLoading, onAction }: {
   label: string;
@@ -847,8 +1331,5 @@ function TimelineItem({ time, label, icon, done, color, duration, isPause }: {
   );
 }
 
-function TimeDisplay({ time }: { time: string | null | undefined }) {
-  if (!time) return <span className="text-sm text-gray-200 dark:text-gray-700 font-mono font-bold">--:--</span>;
-  return <span className="text-sm font-mono font-bold text-gray-700 dark:text-gray-300 tabular-nums">{formatTime(time)}</span>;
-}
+
 
