@@ -28,7 +28,7 @@ export interface AttendanceSessionRecord {
   checkOut: Date | null;
   durationMinutes: number | null;
   status: AttendanceStatus;
-  anomalyDetected: boolean;
+  anomalyDetected: boolean | null;
   anomalyReason: string | null;
 }
 
