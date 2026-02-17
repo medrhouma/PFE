@@ -3,7 +3,7 @@ import { authOptions } from "@/lib/auth"
 import { redirect } from "next/navigation"
 
 import AdminDashboard from "@/components/dashboard/AdminDashboard"
-import RhDashboard from "@/components/dashboard/RhDashboard"
+import RHAttendanceDashboard from "@/components/dashboard/RHAttendanceDashboard"
 import UserDashboard from "@/components/dashboard/UserDashboard"
 
 export default async function DashboardPage() {
@@ -45,7 +45,7 @@ export default async function DashboardPage() {
   return (
     <div className="max-w-7xl mx-auto px-6 py-8">
       {role === "SUPER_ADMIN" && <AdminDashboard />}
-      {role === "RH" && <RhDashboard />}
+      {role === "RH" && <RHAttendanceDashboard />}
       {role === "USER" && <UserDashboard />}
     </div>
   )
