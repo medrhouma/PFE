@@ -4,6 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useState, useEffect } from "react"
 import { useLanguage } from "@/contexts/LanguageContext"
+import { usePermissions } from "@/contexts/PermissionsContext"
 import {
   Home,
   LayoutDashboard,
@@ -14,13 +15,16 @@ import {
   Settings,
   Bell,
   Activity,
+  Bot,
   Shield,
   UserCheck,
   Menu,
+  BarChart3,
   X,
   Briefcase,
   HelpCircle,
-  Star
+  Star,
+  User
 } from "lucide-react"
 
 interface SidebarProps {
@@ -32,6 +36,7 @@ interface MenuItem {
   label: string
   icon: React.ReactNode
   roles: string[]
+  permissionModule?: string // maps to DB Permission.module (lowercase)
 }
 
 interface MenuSection {
@@ -43,6 +48,7 @@ interface MenuSection {
 export function SidebarNew({ userRole }: SidebarProps) {
   const pathname = usePathname()
   const { t, isRTL } = useLanguage()
+  const { hasPermission } = usePermissions()
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
   // Close sidebar on route change
@@ -68,38 +74,55 @@ export function SidebarNew({ userRole }: SidebarProps) {
     {
       items: [
         { href: "/home", label: t("home"), icon: <Home className="w-5 h-5" />, roles: ["USER", "RH", "SUPER_ADMIN"] },
-        { href: "/dashboard", label: t("dashboard"), icon: <LayoutDashboard className="w-5 h-5" />, roles: ["USER", "RH", "SUPER_ADMIN"] },
-        { href: "/workspace", label: t("workspace"), icon: <Activity className="w-5 h-5" />, roles: ["USER", "RH"] },
-        { href: "/pointage", label: t("attendance"), icon: <Clock className="w-5 h-5" />, roles: ["USER", "RH", "SUPER_ADMIN"] },
-        { href: "/conges", label: t("leave_requests"), icon: <Calendar className="w-5 h-5" />, roles: ["USER"] },
-        { href: "/security", label: t("login_history"), icon: <Shield className="w-5 h-5" />, roles: ["USER", "RH", "SUPER_ADMIN"] },
+        { href: "/dashboard", label: t("dashboard"), icon: <LayoutDashboard className="w-5 h-5" />, roles: ["USER", "RH", "SUPER_ADMIN"], permissionModule: "dashboard" },
+        { href: "/workspace", label: t("workspace"), icon: <Bot className="w-5 h-5" />, roles: ["USER", "RH", "SUPER_ADMIN"], permissionModule: "chatbot" },
+        { href: "/pointage", label: t("attendance"), icon: <Clock className="w-5 h-5" />, roles: ["USER", "RH", "SUPER_ADMIN"], permissionModule: "dashboard" },
+        { href: "/pointage/resume", label: t("attendance_summary") || "Résumé pointage", icon: <BarChart3 className="w-5 h-5" />, roles: ["USER", "RH", "SUPER_ADMIN"], permissionModule: "dashboard" },
+        { href: "/conges", label: t("leave_requests"), icon: <Calendar className="w-5 h-5" />, roles: ["USER"], permissionModule: "dashboard" },
+        { href: "/security", label: t("login_history"), icon: <Shield className="w-5 h-5" />, roles: ["USER", "RH", "SUPER_ADMIN"], permissionModule: "dashboard" },
       ]
     },
     {
       title: t("hr"),
       items: [
-        { href: "/rh/conges", label: t("leave_management"), icon: <Calendar className="w-5 h-5" />, roles: ["RH"] },
-        { href: "/rh/jours-feries", label: t("public_holidays"), icon: <Star className="w-5 h-5" />, roles: ["RH", "SUPER_ADMIN"] },
-        { href: "/rh/profiles", label: t("profile_validation"), icon: <UserCheck className="w-5 h-5" />, roles: ["RH", "SUPER_ADMIN"] },
-        { href: "/rh/notifications", label: t("notification_center"), icon: <Bell className="w-5 h-5" />, roles: ["RH", "SUPER_ADMIN"] },
+        { href: "/rh/conges", label: t("leave_management"), icon: <Calendar className="w-5 h-5" />, roles: ["RH"], permissionModule: "dashboard" },
+        { href: "/rh/jours-feries", label: t("public_holidays"), icon: <Star className="w-5 h-5" />, roles: ["RH", "SUPER_ADMIN"], permissionModule: "dashboard" },
+        { href: "/rh/profiles", label: t("profile_validation"), icon: <UserCheck className="w-5 h-5" />, roles: ["RH", "SUPER_ADMIN"], permissionModule: "dashboard" },
+        { href: "/rh/notifications", label: t("notification_center"), icon: <Bell className="w-5 h-5" />, roles: ["RH", "SUPER_ADMIN"], permissionModule: "dashboard" },
+      ]
+    },
+    {
+      title: t("personal") || "Personnel",
+      items: [
+        { href: "/profile", label: t("my_profile") || "Mon Profil", icon: <User className="w-5 h-5" />, roles: ["USER", "RH", "SUPER_ADMIN"] },
+        { href: "/settings", label: t("settings") || "Paramètres", icon: <Settings className="w-5 h-5" />, roles: ["USER"], permissionModule: "parametres" },
+        { href: "/parametres/users", label: t("settings") || "Paramètres", icon: <Settings className="w-5 h-5" />, roles: ["RH", "SUPER_ADMIN"], permissionModule: "parametres" },
+        { href: "/help", label: t("help") || "Aide", icon: <HelpCircle className="w-5 h-5" />, roles: ["USER", "RH", "SUPER_ADMIN"] },
       ]
     },
     {
       title: t("administration"),
       items: [
-        { href: "/parametres/users", label: t("user_management"), icon: <Users className="w-5 h-5" />, roles: ["SUPER_ADMIN"] },
-        { href: "/parametres/roles", label: t("role_management"), icon: <Settings className="w-5 h-5" />, roles: ["SUPER_ADMIN"] },
-        { href: "/parametres/logs", label: t("audit_logs"), icon: <Activity className="w-5 h-5" />, roles: ["SUPER_ADMIN"] },
-        { href: "/parametres/cookies", label: t("cookie_settings"), icon: <Shield className="w-5 h-5" />, roles: ["SUPER_ADMIN"] },
+        { href: "/parametres/users", label: t("user_management"), icon: <Users className="w-5 h-5" />, roles: ["SUPER_ADMIN"], permissionModule: "parametres" },
+        { href: "/parametres/roles", label: t("role_management"), icon: <Settings className="w-5 h-5" />, roles: ["SUPER_ADMIN"], permissionModule: "parametres" },
+        { href: "/parametres/logs", label: t("audit_logs"), icon: <Activity className="w-5 h-5" />, roles: ["SUPER_ADMIN"], permissionModule: "parametres" },
+        { href: "/parametres/cookies", label: t("cookie_settings"), icon: <Shield className="w-5 h-5" />, roles: ["SUPER_ADMIN"], permissionModule: "parametres" },
       ]
     }
   ]
 
-  // Filter sections based on user role
+  // Filter sections based on user role AND DB permissions
   const filteredSections = menuSections
     .map(section => ({
       ...section,
-      items: section.items.filter(item => item.roles.includes(userRole))
+      items: section.items.filter(item => {
+        // Must match role
+        if (!item.roles.includes(userRole)) return false
+        // If no permissionModule, always visible (home, profile, help)
+        if (!item.permissionModule) return true
+        // Check DB permission (SUPER_ADMIN bypassed inside hasPermission)
+        return hasPermission(item.permissionModule, 'VIEW')
+      })
     }))
     .filter(section => section.items.length > 0)
 
