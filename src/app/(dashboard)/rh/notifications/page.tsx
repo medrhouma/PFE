@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { 
   Bell, Filter, CheckCircle, XCircle, AlertCircle, Clock, 
   User, Calendar, RefreshCw, Eye, Trash2, AlertTriangle,
@@ -28,22 +29,24 @@ type FilterType = "ALL" | "UNREAD" | "READ";
 type TypeFilter = "ALL" | "LEAVE" | "POINTAGE" | "PROFILE" | "SYSTEM";
 type PriorityFilter = "ALL" | "URGENT" | "HIGH" | "NORMAL" | "LOW";
 
-// Format relative time in French
-function getRelativeTime(dateString: string): string {
+// Format relative time
+function getRelativeTime(dateString: string, t: (key: string) => string, locale: string): string {
   const date = new Date(dateString);
   const now = new Date();
   const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
-  if (diffInSeconds < 60) return "À l'instant";
-  if (diffInSeconds < 3600) return `Il y a ${Math.floor(diffInSeconds / 60)} min`;
-  if (diffInSeconds < 86400) return `Il y a ${Math.floor(diffInSeconds / 3600)} h`;
-  if (diffInSeconds < 604800) return `Il y a ${Math.floor(diffInSeconds / 86400)} j`;
+  if (diffInSeconds < 60) return t('just_now');
+  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} min`;
+  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} h`;
+  if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} ${t('day_s_ago')}`;
   
-  return date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+  return date.toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 export default function NotificationCenterPage() {
   const { data: session } = useSession();
+  const { t, language } = useLanguage();
+  const locale = language === 'ar' ? 'ar-SA' : language === 'en' ? 'en-US' : 'fr-FR';
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -129,7 +132,7 @@ export default function NotificationCenterPage() {
   };
 
   const handleLeaveDecision = async (requestId: string, status: "APPROVED" | "REJECTED") => {
-    const comments = status === "REJECTED" ? prompt("Raison du rejet (optionnel):") || "" : "";
+    const comments = status === "REJECTED" ? prompt(t('rejection_reason_optional')) || "" : "";
     try {
       const response = await fetch(`/api/conges/${requestId}`, {
         method: "PATCH",
@@ -141,7 +144,7 @@ export default function NotificationCenterPage() {
         await fetchAllNotifications();
       } else {
         const data = await response.json();
-        alert(data.error || "Erreur lors de la mise à jour");
+        alert(data.error || t('update_error'));
       }
     } catch (error) {
       console.error("Error updating leave request:", error);
@@ -205,18 +208,18 @@ export default function NotificationCenterPage() {
 
   const getTypeLabel = (type: string) => {
     const labels: Record<string, string> = {
-      LEAVE_REQUEST: "Demande de congé",
-      LEAVE_APPROVED: "Congé approuvé",
-      LEAVE_REJECTED: "Congé rejeté",
-      POINTAGE_ANOMALY: "Anomalie pointage",
-      POINTAGE_SUCCESS: "Pointage validé",
-      PROFILE_SUBMITTED: "Profil soumis",
-      PROFILE_APPROVED: "Profil approuvé",
-      PROFILE_REJECTED: "Profil rejeté",
-      DOCUMENT_REQUIRED: "Document requis",
-      SYSTEM_ALERT: "Alerte système",
-      RH_ACTION_REQUIRED: "Action RH requise",
-      GENERAL: "Général"
+      LEAVE_REQUEST: t('leave_request_notif'),
+      LEAVE_APPROVED: t('leave_approved_notif'),
+      LEAVE_REJECTED: t('leave_rejected_notif'),
+      POINTAGE_ANOMALY: t('attendance_anomaly'),
+      POINTAGE_SUCCESS: t('attendance_validated'),
+      PROFILE_SUBMITTED: t('profile_submitted'),
+      PROFILE_APPROVED: t('profile_approved_notif'),
+      PROFILE_REJECTED: t('profile_rejected_notif'),
+      DOCUMENT_REQUIRED: t('document_required'),
+      SYSTEM_ALERT: t('system_alert'),
+      RH_ACTION_REQUIRED: t('rh_action_required'),
+      GENERAL: t('general')
     };
     return labels[type] || type;
   };
@@ -271,8 +274,8 @@ export default function NotificationCenterPage() {
           <div className="flex items-center gap-3">
             <AlertCircle className="w-6 h-6 text-red-600" />
             <div>
-              <p className="text-red-700 dark:text-red-400 font-medium">Accès non autorisé</p>
-              <p className="text-red-600 dark:text-red-500 text-sm">Cette page est réservée au personnel RH.</p>
+              <p className="text-red-700 dark:text-red-400 font-medium">{t('access_denied')}</p>
+              <p className="text-red-600 dark:text-red-500 text-sm">{t('rh_only_page')}</p>
             </div>
           </div>
         </div>
@@ -281,19 +284,19 @@ export default function NotificationCenterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-      <div className="max-w-7xl mx-auto p-4 lg:p-6">
+    <div className="h-[calc(100vh-5rem)]">
+      <div className="max-w-7xl mx-auto p-4 lg:p-6 h-full flex flex-col">
         {/* Header */}
         <div className="mb-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                Centre de Notifications
+                {t('notification_center')}
               </h1>
               <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
                 {stats.unread > 0 
-                  ? `${stats.unread} notification${stats.unread > 1 ? 's' : ''} non lue${stats.unread > 1 ? 's' : ''}`
-                  : "Toutes les notifications sont lues"
+                  ? `${stats.unread} ${t('unread_notifications')}`
+                  : t('all_notifications_read')
                 }
               </p>
             </div>
@@ -305,7 +308,7 @@ export default function NotificationCenterPage() {
                   className="text-sm"
                 >
                   <CheckCheck className="w-4 h-4 mr-2" />
-                  Tout marquer comme lu
+                  {t('mark_all_read')}
                 </Button>
               )}
               <Button
@@ -315,19 +318,19 @@ export default function NotificationCenterPage() {
                 className="text-sm"
               >
                 <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-                Actualiser
+                {t('refresh')}
               </Button>
             </div>
           </div>
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-6">
+        <div className="flex flex-col lg:flex-row gap-6 flex-1 min-h-0">
           {/* Left Sidebar - Filters */}
-          <div className="lg:w-64 flex-shrink-0">
-            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sticky top-20">
+          <div className="lg:w-64 flex-shrink-0 lg:overflow-y-auto">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
               <div className="flex items-center gap-2 mb-4">
                 <Filter className="w-4 h-4 text-gray-500" />
-                <span className="font-medium text-gray-900 dark:text-white text-sm">Filtres</span>
+                <span className="font-medium text-gray-900 dark:text-white text-sm">{t('filters')}</span>
               </div>
 
               {/* Search */}
@@ -335,7 +338,7 @@ export default function NotificationCenterPage() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Rechercher..."
+                  placeholder={t('search')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-9 pr-8 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -352,12 +355,12 @@ export default function NotificationCenterPage() {
 
               {/* Status Filter */}
               <div className="mb-4">
-                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-2">Statut</p>
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-2">{t('status')}</p>
                 <div className="space-y-1">
                   {[
-                    { value: "ALL", label: "Toutes", count: stats.total },
-                    { value: "UNREAD", label: "Non lues", count: stats.unread },
-                    { value: "READ", label: "Lues", count: stats.total - stats.unread }
+                    { value: "ALL", label: t('all'), count: stats.total },
+                    { value: "UNREAD", label: t('unread'), count: stats.unread },
+                    { value: "READ", label: t('read_status'), count: stats.total - stats.unread }
                   ].map((item) => (
                     <button
                       key={item.value}
@@ -383,14 +386,14 @@ export default function NotificationCenterPage() {
 
               {/* Type Filter */}
               <div className="mb-4">
-                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-2">Type</p>
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-2">{t('type')}</p>
                 <div className="space-y-1">
                   {[
-                    { value: "ALL", label: "Tous les types" },
-                    { value: "LEAVE", label: "Congés" },
-                    { value: "POINTAGE", label: "Pointage" },
-                    { value: "PROFILE", label: "Profils" },
-                    { value: "SYSTEM", label: "Système" }
+                    { value: "ALL", label: t('all_types') },
+                    { value: "LEAVE", label: t('leave') },
+                    { value: "POINTAGE", label: t('attendance') },
+                    { value: "PROFILE", label: t('profiles') },
+                    { value: "SYSTEM", label: t('system') }
                   ].map((item) => (
                     <button
                       key={item.value}
@@ -409,14 +412,14 @@ export default function NotificationCenterPage() {
 
               {/* Priority Filter */}
               <div>
-                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-2">Priorité</p>
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-2">{t('priority')}</p>
                 <div className="space-y-1">
                   {[
-                    { value: "ALL", label: "Toutes", color: "bg-gray-400" },
-                    { value: "URGENT", label: "Urgente", color: "bg-red-500" },
-                    { value: "HIGH", label: "Haute", color: "bg-orange-500" },
-                    { value: "NORMAL", label: "Normale", color: "bg-blue-500" },
-                    { value: "LOW", label: "Basse", color: "bg-gray-400" }
+                    { value: "ALL", label: t('all'), color: "bg-gray-400" },
+                    { value: "URGENT", label: t('urgent'), color: "bg-red-500" },
+                    { value: "HIGH", label: t('high'), color: "bg-orange-500" },
+                    { value: "NORMAL", label: t('normal'), color: "bg-blue-500" },
+                    { value: "LOW", label: t('low'), color: "bg-gray-400" }
                   ].map((item) => (
                     <button
                       key={item.value}
@@ -447,23 +450,23 @@ export default function NotificationCenterPage() {
                   }}
                   className="w-full mt-4 px-3 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                 >
-                  Réinitialiser les filtres
+                  {t('reset_filters')}
                 </button>
               )}
             </div>
           </div>
 
           {/* Right - Notification List */}
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 overflow-y-auto">
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
               {/* List Header */}
               <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
                 <span className="text-sm text-gray-600 dark:text-gray-400">
-                  {filteredNotifications.length} notification{filteredNotifications.length !== 1 ? 's' : ''}
+                  {filteredNotifications.length} {t('notifications_count')}
                 </span>
                 {stats.urgent > 0 && (
                   <span className="text-xs px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-full font-medium">
-                    {stats.urgent} urgente{stats.urgent > 1 ? 's' : ''}
+                    {stats.urgent} {t('urgent_count')}
                   </span>
                 )}
               </div>
@@ -478,11 +481,11 @@ export default function NotificationCenterPage() {
                   <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
                     <Bell className="w-8 h-8 text-gray-400" />
                   </div>
-                  <p className="text-gray-900 dark:text-white font-medium mb-1">Aucune notification</p>
+                  <p className="text-gray-900 dark:text-white font-medium mb-1">{t('no_notifications')}</p>
                   <p className="text-gray-500 dark:text-gray-400 text-sm text-center">
                     {searchQuery || readFilter !== "ALL" || typeFilter !== "ALL" || priorityFilter !== "ALL"
-                      ? "Essayez de modifier vos filtres"
-                      : "Vous n'avez pas encore de notifications"
+                      ? t('try_modifying_filters')
+                      : t('no_notifications_yet')
                     }
                   </p>
                 </div>
@@ -531,7 +534,7 @@ export default function NotificationCenterPage() {
                                 className="text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap"
                                 title={new Date(notif.created_at).toLocaleString('fr-FR')}
                               >
-                                {getRelativeTime(notif.created_at)}
+                                {getRelativeTime(notif.created_at, t, locale)}
                               </span>
                             </div>
 
@@ -581,7 +584,7 @@ export default function NotificationCenterPage() {
                                   className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
                                 >
                                   <Eye className="w-3.5 h-3.5" />
-                                  Marquer comme lue
+                                  {t('mark_as_read')}
                                 </button>
                               )}
 
@@ -591,7 +594,7 @@ export default function NotificationCenterPage() {
                                 className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
-                                Supprimer
+                                {t('delete')}
                               </button>
 
                               {/* View related entity */}
@@ -600,7 +603,7 @@ export default function NotificationCenterPage() {
                                   href={getEntityLink(metadata.entityType, metadata.entityId)}
                                   className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
                                 >
-                                  Voir détails
+                                  {t('view_details')}
                                   <ChevronRight className="w-3.5 h-3.5" />
                                 </Link>
                               )}

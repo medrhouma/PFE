@@ -16,6 +16,7 @@ import {
   Sun,
   Moon,
 } from "lucide-react"
+import { useLanguage } from "@/contexts/LanguageContext"
 
 interface LeaveRequest {
   id: string
@@ -39,23 +40,33 @@ interface LeaveCalendarProps {
 // CONSTANTS
 // ========================================
 const DAYS_FR = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"]
+const DAYS_EN = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+const DAYS_AR = ["اثن", "ثلا", "أرب", "خمي", "جمع", "سبت", "أحد"]
 const MONTHS_FR = [
   "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
   "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"
 ]
+const MONTHS_EN = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December"
+]
+const MONTHS_AR = [
+  "يناير", "فبراير", "مارس", "أبريل", "ماي", "يونيو",
+  "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"
+]
 
-const TYPE_CONFIG: Record<string, { label: string; color: string; dot: string; bg: string; border: string }> = {
-  PAID:      { label: "Congé payé",       color: "text-blue-700 dark:text-blue-300",    dot: "bg-blue-500",    bg: "bg-blue-50 dark:bg-blue-900/20",      border: "border-blue-200 dark:border-blue-800" },
-  UNPAID:    { label: "Sans solde",        color: "text-gray-700 dark:text-gray-300",    dot: "bg-gray-500",    bg: "bg-gray-50 dark:bg-gray-800/50",      border: "border-gray-200 dark:border-gray-700" },
-  MALADIE:   { label: "Maladie",           color: "text-red-700 dark:text-red-300",      dot: "bg-red-500",     bg: "bg-red-50 dark:bg-red-900/20",        border: "border-red-200 dark:border-red-800" },
-  MATERNITE: { label: "Maternité",         color: "text-pink-700 dark:text-pink-300",    dot: "bg-pink-500",    bg: "bg-pink-50 dark:bg-pink-900/20",      border: "border-pink-200 dark:border-pink-800" },
-  PREAVIS:   { label: "Préavis",           color: "text-purple-700 dark:text-purple-300", dot: "bg-purple-500",  bg: "bg-purple-50 dark:bg-purple-900/20",  border: "border-purple-200 dark:border-purple-800" },
+const TYPE_CONFIG: Record<string, { labelKey: string; color: string; dot: string; bg: string; border: string }> = {
+  PAID:      { labelKey: "lc_paid_leave",    color: "text-blue-700 dark:text-blue-300",    dot: "bg-blue-500",    bg: "bg-blue-50 dark:bg-blue-900/20",      border: "border-blue-200 dark:border-blue-800" },
+  UNPAID:    { labelKey: "lc_unpaid",        color: "text-gray-700 dark:text-gray-300",    dot: "bg-gray-500",    bg: "bg-gray-50 dark:bg-gray-800/50",      border: "border-gray-200 dark:border-gray-700" },
+  MALADIE:   { labelKey: "lc_sick",          color: "text-red-700 dark:text-red-300",      dot: "bg-red-500",     bg: "bg-red-50 dark:bg-red-900/20",        border: "border-red-200 dark:border-red-800" },
+  MATERNITE: { labelKey: "lc_maternity",     color: "text-pink-700 dark:text-pink-300",    dot: "bg-pink-500",    bg: "bg-pink-50 dark:bg-pink-900/20",      border: "border-pink-200 dark:border-pink-800" },
+  PREAVIS:   { labelKey: "lc_notice",        color: "text-purple-700 dark:text-purple-300", dot: "bg-purple-500",  bg: "bg-purple-50 dark:bg-purple-900/20",  border: "border-purple-200 dark:border-purple-800" },
 }
 
-const STATUS_CONFIG: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
-  EN_ATTENTE: { label: "En attente", icon: <Clock className="w-3 h-3" />, color: "text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400" },
-  VALIDE:     { label: "Approuvé",   icon: <Check className="w-3 h-3" />, color: "text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400" },
-  REFUSE:     { label: "Refusé",     icon: <X className="w-3 h-3" />,     color: "text-rose-600 bg-rose-100 dark:bg-rose-900/30 dark:text-rose-400" },
+const STATUS_CONFIG: Record<string, { labelKey: string; icon: React.ReactNode; color: string }> = {
+  EN_ATTENTE: { labelKey: "pending",   icon: <Clock className="w-3 h-3" />, color: "text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400" },
+  VALIDE:     { labelKey: "approved",  icon: <Check className="w-3 h-3" />, color: "text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400" },
+  REFUSE:     { labelKey: "rejected",  icon: <X className="w-3 h-3" />,     color: "text-rose-600 bg-rose-100 dark:bg-rose-900/30 dark:text-rose-400" },
 }
 
 // ========================================
@@ -105,6 +116,10 @@ function isDateInRange(date: Date, start: Date, end: Date): boolean {
 // COMPONENT
 // ========================================
 export function LeaveCalendar({ requests, onSelectRequest }: LeaveCalendarProps) {
+  const { t, language } = useLanguage()
+  const locale = language === 'ar' ? 'ar-SA' : language === 'en' ? 'en-US' : 'fr-FR'
+  const DAYS = language === 'ar' ? DAYS_AR : language === 'en' ? DAYS_EN : DAYS_FR
+  const MONTHS = language === 'ar' ? MONTHS_AR : language === 'en' ? MONTHS_EN : MONTHS_FR
   const today = new Date()
   const [currentYear, setCurrentYear] = useState(today.getFullYear())
   const [currentMonth, setCurrentMonth] = useState(today.getMonth())
@@ -289,15 +304,15 @@ export function LeaveCalendar({ requests, onSelectRequest }: LeaveCalendarProps)
               <CalendarIcon className="w-6 h-6 text-white drop-shadow-sm" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-white">Calendrier des Congés</h3>
-              <p className="text-white/70 text-xs">Vue mensuelle des absences</p>
+              <h3 className="text-lg font-bold text-white">{t('lc_leave_calendar')}</h3>
+              <p className="text-white/70 text-xs">{t('lc_monthly_view')}</p>
             </div>
           </div>
           <button
             onClick={goToToday}
             className="relative px-4 py-2 bg-white/20 hover:bg-white/30 text-white text-xs font-semibold rounded-xl transition-all duration-200 shadow-lg shadow-black/10 backdrop-blur-sm border border-white/20 hover:scale-105 active:scale-95"
           >
-            Aujourd&apos;hui
+            {t('today')}
           </button>
         </div>
 
@@ -310,7 +325,7 @@ export function LeaveCalendar({ requests, onSelectRequest }: LeaveCalendarProps)
             <ChevronLeft className="w-5 h-5" />
           </button>
           <h2 className="text-xl font-extrabold text-white tracking-wide drop-shadow-sm">
-            {MONTHS_FR[currentMonth]} {currentYear}
+            {MONTHS[currentMonth]} {currentYear}
           </h2>
           <button
             onClick={goToNextMonth}
@@ -328,15 +343,15 @@ export function LeaveCalendar({ requests, onSelectRequest }: LeaveCalendarProps)
           </div>
           <div className="bg-white/15 rounded-xl px-3 py-2.5 text-center backdrop-blur-sm border border-white/10">
             <p className="text-xl font-extrabold text-amber-300">{monthlyStats.pending}</p>
-            <p className="text-[10px] text-white/70 uppercase tracking-wider font-medium">En attente</p>
+            <p className="text-[10px] text-white/70 uppercase tracking-wider font-medium">{t('pending')}</p>
           </div>
           <div className="bg-white/15 rounded-xl px-3 py-2.5 text-center backdrop-blur-sm border border-white/10">
             <p className="text-xl font-extrabold text-emerald-300">{monthlyStats.approved}</p>
-            <p className="text-[10px] text-white/70 uppercase tracking-wider font-medium">Approuvés</p>
+            <p className="text-[10px] text-white/70 uppercase tracking-wider font-medium">{t('approved')}</p>
           </div>
           <div className="bg-white/15 rounded-xl px-3 py-2.5 text-center backdrop-blur-sm border border-white/10">
             <p className="text-xl font-extrabold text-white/90">{monthlyStats.uniqueEmployees}</p>
-            <p className="text-[10px] text-white/70 uppercase tracking-wider font-medium">Employés</p>
+            <p className="text-[10px] text-white/70 uppercase tracking-wider font-medium">{t('lc_employees')}</p>
           </div>
         </div>
       </div>
@@ -345,7 +360,7 @@ export function LeaveCalendar({ requests, onSelectRequest }: LeaveCalendarProps)
       <div className="p-4">
         {/* Day Headers */}
         <div className="grid grid-cols-7 gap-1 mb-2">
-          {DAYS_FR.map((day, i) => (
+          {DAYS.map((day, i) => (
             <div
               key={day}
               className={`text-center text-[11px] font-bold uppercase tracking-widest py-2.5 ${
@@ -451,7 +466,7 @@ export function LeaveCalendar({ requests, onSelectRequest }: LeaveCalendarProps)
                     })}
                     {leaves.length > 2 && (
                       <span className="text-[9px] text-gray-400 dark:text-gray-500 font-medium pl-1">
-                        +{leaves.length - 2} autre{leaves.length - 2 > 1 ? "s" : ""}
+                        +{leaves.length - 2} {t('lc_other')}{leaves.length - 2 > 1 ? "s" : ""}
                       </span>
                     )}
                   </div>
@@ -464,12 +479,12 @@ export function LeaveCalendar({ requests, onSelectRequest }: LeaveCalendarProps)
 
       {/* Legend */}
       <div className="px-5 py-4 border-t border-gray-100 dark:border-gray-700/50 bg-gray-50/50 dark:bg-gray-800/30">
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-2.5">Légende</p>
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-2.5">{t('lc_legend')}</p>
         <div className="flex flex-wrap gap-x-5 gap-y-2.5">
           {Object.entries(TYPE_CONFIG).map(([key, conf]) => (
             <div key={key} className="flex items-center gap-2">
               <span className={`w-3 h-3 rounded-full ${conf.dot} ring-2 ring-white dark:ring-gray-800 shadow-sm`} />
-              <span className="text-xs text-gray-600 dark:text-gray-400 font-medium">{conf.label}</span>
+              <span className="text-xs text-gray-600 dark:text-gray-400 font-medium">{t(conf.labelKey)}</span>
             </div>
           ))}
           <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 self-center mx-1" />
@@ -477,13 +492,13 @@ export function LeaveCalendar({ requests, onSelectRequest }: LeaveCalendarProps)
             <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-emerald-400 to-teal-600 shadow-sm flex items-center justify-center">
               <Flag className="w-3.5 h-3.5 text-white" />
             </div>
-            <span className="text-xs text-gray-600 dark:text-gray-400 font-medium">Fête nationale</span>
+            <span className="text-xs text-gray-600 dark:text-gray-400 font-medium">{t('lc_national_holiday')}</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 shadow-sm flex items-center justify-center">
               <Star className="w-3.5 h-3.5 text-white" fill="white" fillOpacity={0.3} />
             </div>
-            <span className="text-xs text-gray-600 dark:text-gray-400 font-medium">Fête religieuse</span>
+            <span className="text-xs text-gray-600 dark:text-gray-400 font-medium">{t('lc_religious_holiday')}</span>
           </div>
         </div>
       </div>
@@ -498,10 +513,10 @@ export function LeaveCalendar({ requests, onSelectRequest }: LeaveCalendarProps)
               </div>
               <div>
                 <h4 className="font-bold text-gray-900 dark:text-white">
-                  {selectedDay.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+                  {selectedDay.toLocaleDateString(locale, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
                 </h4>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {selectedDayLeaves.length} congé{selectedDayLeaves.length !== 1 ? "s" : ""} ce jour
+                  {selectedDayLeaves.length} {t('lc_leaves_this_day')}
                 </p>
                 {(() => {
                   const selHoliday = getHoliday(selectedDay)
@@ -522,7 +537,7 @@ export function LeaveCalendar({ requests, onSelectRequest }: LeaveCalendarProps)
             {selectedDayLeaves.length === 0 ? (
               <div className="flex items-center gap-3 py-6 justify-center text-gray-400 dark:text-gray-500">
                 <Info className="w-5 h-5" />
-                <span className="text-sm">Aucun congé prévu ce jour</span>
+                <span className="text-sm">{t('lc_no_leave_today')}</span>
               </div>
             ) : (
               <div className="space-y-3">
@@ -545,7 +560,7 @@ export function LeaveCalendar({ requests, onSelectRequest }: LeaveCalendarProps)
                           </div>
                           <div className="min-w-0">
                             <p className="font-semibold text-gray-900 dark:text-white text-sm truncate">
-                              {leave.userName || "Inconnu"}
+                              {leave.userName || t('lc_unknown')}
                             </p>
                             <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
                               {leave.userEmail}
@@ -554,19 +569,19 @@ export function LeaveCalendar({ requests, onSelectRequest }: LeaveCalendarProps)
                         </div>
                         <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-semibold whitespace-nowrap ${statusConf.color}`}>
                           {statusConf.icon}
-                          {statusConf.label}
+                          {t(statusConf.labelKey)}
                         </span>
                       </div>
 
                       <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[11px]">
                         <span className={`inline-flex items-center gap-1 ${typeConf.color} font-medium`}>
                           <span className={`w-1.5 h-1.5 rounded-full ${typeConf.dot}`} />
-                          {typeConf.label}
+                          {t(typeConf.labelKey)}
                         </span>
                         <span className="text-gray-500 dark:text-gray-400">
-                          {new Date(leave.startDate).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })}
+                          {new Date(leave.startDate).toLocaleDateString(locale, { day: "2-digit", month: "short" })}
                           {" → "}
-                          {new Date(leave.endDate).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })}
+                          {new Date(leave.endDate).toLocaleDateString(locale, { day: "2-digit", month: "short" })}
                         </span>
                         <span className="font-semibold text-gray-700 dark:text-gray-300">
                           {leave.duration} jour{leave.duration > 1 ? "s" : ""}

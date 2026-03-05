@@ -10,11 +10,13 @@ import { GoogleButton } from "./GoogleButton"
 import { OTPInput } from "./OTPInput"
 import { Mail, ArrowLeft, RefreshCw, Shield, Clock, Eye, EyeOff, Loader2 } from "lucide-react"
 import Link from "next/link"
+import { useLanguage } from "@/contexts/LanguageContext"
 
 type LoginStep = "credentials" | "otp"
 
 export function LoginForm() {
   const router = useRouter()
+  const { t } = useLanguage()
   const [step, setStep] = useState<LoginStep>("credentials")
   const [isLoading, setIsLoading] = useState(false)
   const [isResending, setIsResending] = useState(false)
@@ -46,7 +48,7 @@ export function LoginForm() {
     const interval = setInterval(() => {
       const now = new Date()
       if (now >= expiresAt) {
-        setError("Code OTP expiré. Veuillez en demander un nouveau.")
+        setError(t('otp_expired'))
         setExpiresAt(null)
         clearInterval(interval)
       }
@@ -70,6 +72,37 @@ export function LoginForm() {
     setErrorShake(false)
 
     try {
+      // Check if 2FA is enabled for this user
+      const check2fa = await fetch("/api/auth/check-2fa", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: formData.email }),
+      })
+      const check2faData = await check2fa.json()
+
+      if (!check2faData.twoFactorEnabled) {
+        // 2FA disabled - direct login without OTP
+        const result = await signIn("credentials", {
+          email: formData.email,
+          password: formData.password,
+          redirect: false,
+        })
+
+        if (result?.error) {
+          const errorMsg = result.error === "CredentialsSignin" 
+            ? t('invalid_credentials_msg') 
+            : result.error
+          setError(errorMsg)
+          setErrorShake(true)
+          setTimeout(() => setErrorShake(false), 500)
+        } else {
+          router.push("/")
+          router.refresh()
+        }
+        return
+      }
+
+      // 2FA enabled - send OTP
       const res = await fetch("/api/auth/send-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -82,7 +115,7 @@ export function LoginForm() {
       const data = await res.json()
 
       if (!res.ok) {
-        setError(data.error || "Erreur lors de l'envoi du code OTP")
+        setError(data.error || t('otp_send_error'))
         setErrorShake(true)
         setTimeout(() => setErrorShake(false), 500)
         return
@@ -91,9 +124,9 @@ export function LoginForm() {
       setStep("otp")
       setCountdown(60) // 60 seconds before allowing resend
       setExpiresAt(new Date(Date.now() + (data.expiresIn || 300) * 1000))
-      setSuccess("Code envoyé à " + formData.email)
+      setSuccess(t('code_sent_to_email') + " " + formData.email)
     } catch (err) {
-      setError("Erreur de connexion au serveur")
+      setError(t('server_connection_error'))
       setErrorShake(true)
       setTimeout(() => setErrorShake(false), 500)
     } finally {
@@ -121,15 +154,15 @@ export function LoginForm() {
       const data = await res.json()
 
       if (!res.ok) {
-        setError(data.error || "Erreur lors du renvoi du code")
+        setError(data.error || t('resend_error'))
         return
       }
 
       setCountdown(60)
       setExpiresAt(new Date(Date.now() + (data.expiresIn || 300) * 1000))
-      setSuccess("Nouveau code envoyé")
+      setSuccess(t('new_code_sent'))
     } catch (err) {
-      setError("Erreur de connexion au serveur")
+      setError(t('server_connection_error'))
     } finally {
       setIsResending(false)
     }
@@ -154,7 +187,7 @@ export function LoginForm() {
       const data = await res.json()
 
       if (!res.ok) {
-        setError(data.error || "Code OTP invalide")
+        setError(data.error || t('invalid_otp'))
         if (data.remainingAttempts !== undefined) {
           setOtpCode("")
         }
@@ -169,13 +202,13 @@ export function LoginForm() {
       })
 
       if (result?.error) {
-        setError("Erreur lors de la connexion")
+        setError(t('login_error'))
       } else {
         router.push("/")
         router.refresh()
       }
     } catch (err) {
-      setError("Erreur de connexion au serveur")
+      setError(t('server_connection_error'))
     } finally {
       setIsLoading(false)
     }
@@ -207,10 +240,10 @@ export function LoginForm() {
             <Shield className="w-8 h-8 text-violet-600" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900">
-            Vérification en deux étapes
+            {t('two_step_verification')}
           </h1>
           <p className="mt-2 text-gray-600">
-            Entrez le code à 6 chiffres envoyé à
+            {t('enter_6_digit_code')}
           </p>
           <p className="font-medium text-violet-600 flex items-center justify-center gap-2 mt-1">
             <Mail className="w-4 h-4" />
@@ -243,7 +276,7 @@ export function LoginForm() {
           {expiresAt && (
             <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
               <Clock className="w-4 h-4" />
-              <span>Code expire dans {getTimeRemaining()}</span>
+              <span>{t('code_expires_in')} {getTimeRemaining()}</span>
             </div>
           )}
         </div>
@@ -254,13 +287,13 @@ export function LoginForm() {
           isLoading={isLoading}
           disabled={otpCode.length !== 6}
         >
-          Vérifier et se connecter
+          {t('verify_and_login')}
         </Button>
 
         {/* Resend Section */}
         <div className="text-center space-y-3">
           <p className="text-sm text-gray-500">
-            Vous n'avez pas reçu le code ?
+            {t('not_received_code')}
           </p>
           <button
             type="button"
@@ -276,10 +309,10 @@ export function LoginForm() {
           >
             <RefreshCw className={`w-4 h-4 ${isResending ? "animate-spin" : ""}`} />
             {countdown > 0
-              ? `Renvoyer dans ${countdown}s`
+              ? `${t('resend_in')} ${countdown}s`
               : isResending
-                ? "Envoi en cours..."
-                : "Renvoyer le code"
+                ? t('sending_in_progress')
+                : t('resend_code')
             }
           </button>
         </div>
@@ -291,7 +324,7 @@ export function LoginForm() {
           className="w-full flex items-center justify-center gap-2 text-sm text-gray-600 hover:text-gray-900 py-2"
         >
           <ArrowLeft className="w-4 h-4" />
-          Retour à la connexion
+          {t('back_to_login')}
         </button>
       </div>
     )
@@ -305,13 +338,13 @@ export function LoginForm() {
         {/* Logo */}
         
         <h1 className="text-3xl font-bold text-gray-900">
-          Connexion
+          {t('login')}
         </h1>
         <p className="mt-2 text-gray-600">
-          Connectez-vous à votre compte
+          {t('login_to_account')}
         </p>
         <p className="mt-1 text-sm text-violet-600 font-medium">
-          Bienvenue sur Santec AI
+          {t('welcome_santec')}
         </p>
       </div>
 
@@ -325,7 +358,7 @@ export function LoginForm() {
         </div>
         <div className="relative flex justify-center text-sm">
           <span className="px-4 bg-white text-gray-500">
-            ou continuer avec email
+            {t('or_continue_with_email')}
           </span>
         </div>
       </div>
@@ -344,7 +377,7 @@ export function LoginForm() {
         )}
 
         <div className="space-y-1">
-          <label className="block text-sm font-medium text-gray-700">Email</label>
+          <label className="block text-sm font-medium text-gray-700">{t('email')}</label>
           <input
             type="email"
             placeholder="votre@email.com"
@@ -357,7 +390,7 @@ export function LoginForm() {
         </div>
 
         <div className="space-y-1">
-          <label className="block text-sm font-medium text-gray-700">Mot de passe</label>
+          <label className="block text-sm font-medium text-gray-700">{t('password')}</label>
           <div className="relative">
             <input
               type={showPassword ? "text" : "password"}
@@ -381,7 +414,7 @@ export function LoginForm() {
 
         <div className="flex items-center justify-between">
           <Checkbox
-            label="Rester connecté"
+            label={t('stay_logged_in')}
             checked={formData.rememberMe}
             onChange={(e) => setFormData({ ...formData, rememberMe: e.target.checked })}
           />
@@ -389,7 +422,7 @@ export function LoginForm() {
             href="/forgot-password"
             className="text-sm font-medium text-violet-600 hover:text-violet-500 transition-colors"
           >
-            Mot de passe oublié ?
+            {t('forgot_password')}
           </Link>
         </div>
 
@@ -401,10 +434,10 @@ export function LoginForm() {
           {isLoading ? (
             <>
               <Loader2 className="w-5 h-5 animate-spin" />
-              <span>Vérification...</span>
+              <span>{t('verifying')}...</span>
             </>
           ) : (
-            "Continuer"
+            t('continue_btn')
           )}
         </button>
 
@@ -412,14 +445,14 @@ export function LoginForm() {
         <div className="flex items-start gap-3 p-3 bg-gradient-to-r from-violet-50 to-indigo-50 rounded-lg border border-violet-100">
           <Shield className="w-5 h-5 text-violet-600 flex-shrink-0 mt-0.5" />
           <p className="text-xs text-violet-700">
-            Pour votre sécurité, un code de vérification sera envoyé à votre email après validation de vos identifiants.
+            {t('security_notice')}
           </p>
         </div>
       </form>
 
       {/* Footer version */}
       <p className="text-center text-xs text-gray-400 pt-4">
-        Santec RH v2.0.0 • Plateforme sécurisée
+        Santec RH v2.0.0 • {t('secure_platform')}
       </p>
     </div>
   )

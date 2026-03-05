@@ -8,6 +8,7 @@
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface DashboardStats {
   attendance: {
@@ -37,6 +38,8 @@ interface DashboardStats {
 export default function EmployeeDashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { t, language } = useLanguage();
+  const locale = language === 'ar' ? 'ar-SA' : language === 'en' ? 'en-US' : 'fr-FR';
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [todayStatus, setTodayStatus] = useState<{
@@ -103,10 +106,10 @@ export default function EmployeeDashboard() {
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                Tableau de bord Employé
+                {t('ed_employee_dashboard')}
               </h1>
               <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                Bienvenue, {session?.user?.name || session?.user?.email}
+                {t('welcome')}, {session?.user?.name || session?.user?.email}
               </p>
             </div>
             <div className="flex gap-3">
@@ -115,7 +118,7 @@ export default function EmployeeDashboard() {
                   onClick={handleCheckIn}
                   className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium shadow-lg"
                 >
-                  Pointer l'entrée
+                  {t('ed_clock_in')}
                 </button>
               )}
               {todayStatus && todayStatus.hasCheckedIn && !todayStatus.hasCheckedOut && (
@@ -123,7 +126,7 @@ export default function EmployeeDashboard() {
                   onClick={handleCheckOut}
                   className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium shadow-lg"
                 >
-                  Pointer la sortie
+                  {t('ed_clock_out')}
                 </button>
               )}
             </div>
@@ -135,23 +138,23 @@ export default function EmployeeDashboard() {
         {/* Today Status Card */}
         {todayStatus && (
           <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-xl shadow-lg p-6 mb-8 text-white">
-            <h2 className="text-2xl font-bold mb-4">Statut d'aujourd'hui</h2>
+            <h2 className="text-2xl font-bold mb-4">{t('ed_today_status')}</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-white/10 backdrop-blur rounded-lg p-4">
-                <p className="text-sm opacity-90">État</p>
+                <p className="text-sm opacity-90">{t('status')}</p>
                 <p className="text-2xl font-bold mt-1">
                   {todayStatus.hasCheckedOut
-                    ? "✅ Journée terminée"
+                    ? `✅ ${t('ed_day_completed')}`
                     : todayStatus.hasCheckedIn
-                    ? "🟢 En service"
-                    : "⭕ Non commencé"}
+                    ? `🟢 ${t('ed_on_duty')}`
+                    : `⭕ ${t('ed_not_started')}`}
                 </p>
               </div>
               {todayStatus.checkInTime && (
                 <div className="bg-white/10 backdrop-blur rounded-lg p-4">
-                  <p className="text-sm opacity-90">Entrée</p>
+                  <p className="text-sm opacity-90">{t('ed_entry')}</p>
                   <p className="text-2xl font-bold mt-1">
-                    {new Date(todayStatus.checkInTime).toLocaleTimeString("fr-FR", {
+                    {new Date(todayStatus.checkInTime).toLocaleTimeString(locale, {
                       hour: "2-digit",
                       minute: "2-digit",
                     })}
@@ -160,9 +163,9 @@ export default function EmployeeDashboard() {
               )}
               {todayStatus.checkOutTime && (
                 <div className="bg-white/10 backdrop-blur rounded-lg p-4">
-                  <p className="text-sm opacity-90">Sortie</p>
+                  <p className="text-sm opacity-90">{t('ed_exit')}</p>
                   <p className="text-2xl font-bold mt-1">
-                    {new Date(todayStatus.checkOutTime).toLocaleTimeString("fr-FR", {
+                    {new Date(todayStatus.checkOutTime).toLocaleTimeString(locale, {
                       hour: "2-digit",
                       minute: "2-digit",
                     })}
@@ -179,7 +182,7 @@ export default function EmployeeDashboard() {
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Présence ce mois
+                {t('ed_attendance_this_month')}
               </h3>
               <span className="text-3xl">📅</span>
             </div>
@@ -187,7 +190,7 @@ export default function EmployeeDashboard() {
               {stats?.attendance.thisMonth || 0}
             </p>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-              jours de présence
+              {t('ed_days_present')}
             </p>
           </div>
 
@@ -195,7 +198,7 @@ export default function EmployeeDashboard() {
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Congés en attente
+                {t('ed_pending_leaves')}
               </h3>
               <span className="text-3xl">⏳</span>
             </div>
@@ -203,7 +206,7 @@ export default function EmployeeDashboard() {
               {stats?.leaves.pending || 0}
             </p>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-              demandes en attente
+              {t('ed_pending_requests')}
             </p>
           </div>
 
@@ -211,7 +214,7 @@ export default function EmployeeDashboard() {
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Congés approuvés
+                {t('ed_approved_leaves')}
               </h3>
               <span className="text-3xl">✅</span>
             </div>
@@ -219,7 +222,7 @@ export default function EmployeeDashboard() {
               {stats?.leaves.approved || 0}
             </p>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-              demandes approuvées
+              {t('ed_approved_requests')}
             </p>
           </div>
 
@@ -235,7 +238,7 @@ export default function EmployeeDashboard() {
               {stats?.anomalies.count || 0}
             </p>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-              anomalies détectées
+              {t('ed_anomalies_detected')}
             </p>
           </div>
         </div>
@@ -248,10 +251,10 @@ export default function EmployeeDashboard() {
           >
             <div className="text-4xl mb-3">🏖️</div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-              Demander un congé
+              {t('ed_request_leave')}
             </h3>
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              Soumettre une nouvelle demande de congé
+              {t('ed_submit_leave_request')}
             </p>
           </button>
 
@@ -261,10 +264,10 @@ export default function EmployeeDashboard() {
           >
             <div className="text-4xl mb-3">⏰</div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-              Mon pointage
+              {t('ed_my_attendance')}
             </h3>
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              Voir l'historique de mes pointages
+              {t('ed_view_attendance_history')}
             </p>
           </button>
 
@@ -274,10 +277,10 @@ export default function EmployeeDashboard() {
           >
             <div className="text-4xl mb-3">👤</div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-              Mon profil
+              {t('ed_my_profile')}
             </h3>
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              Gérer mes informations personnelles
+              {t('ed_manage_personal_info')}
             </p>
           </button>
         </div>
@@ -286,7 +289,7 @@ export default function EmployeeDashboard() {
         {stats?.anomalies.recent && stats.anomalies.recent.length > 0 && (
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-              Anomalies récentes
+              {t('ed_recent_anomalies')}
             </h2>
             <div className="space-y-3">
               {stats.anomalies.recent.map((anomaly) => (
@@ -303,7 +306,7 @@ export default function EmployeeDashboard() {
                       {anomaly.description}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-500 mt-2">
-                      {new Date(anomaly.date).toLocaleString("fr-FR")}
+                      {new Date(anomaly.date).toLocaleString(locale)}
                     </p>
                   </div>
                 </div>

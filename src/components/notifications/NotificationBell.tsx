@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Bell, Check, X, AlertCircle, Clock, CheckCircle, XCircle, Info, Gift, Calendar, User, ExternalLink } from "lucide-react"
 import { useSession } from "next-auth/react"
+import { useLanguage } from "@/contexts/LanguageContext"
 
 interface Notification {
   id: string
@@ -26,6 +27,8 @@ interface Toast {
 export function NotificationBell() {
   const { data: session } = useSession()
   const router = useRouter()
+  const { t, language } = useLanguage()
+  const locale = language === 'ar' ? 'ar-SA' : language === 'en' ? 'en-US' : 'fr-FR'
   const [isOpen, setIsOpen] = useState(false)
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
@@ -276,11 +279,11 @@ export function NotificationBell() {
     const diffHours = Math.floor(diffMs / 3600000)
     const diffDays = Math.floor(diffMs / 86400000)
 
-    if (diffMins < 1) return "À l'instant"
-    if (diffMins < 60) return `Il y a ${diffMins} min`
-    if (diffHours < 24) return `Il y a ${diffHours}h`
-    if (diffDays < 7) return `Il y a ${diffDays}j`
-    return date.toLocaleDateString('fr-FR')
+    if (diffMins < 1) return t('just_now')
+    if (diffMins < 60) return `${diffMins} min`
+    if (diffHours < 24) return `${diffHours}h`
+    if (diffDays < 7) return `${diffDays}${t('days_short')}`
+    return date.toLocaleDateString(locale)
   }
 
   const getToastIcon = (type: string) => {
@@ -393,7 +396,7 @@ export function NotificationBell() {
                   Notifications
                 </h3>
                 <p className="text-violet-100 text-sm mt-1">
-                  {unreadCount > 0 ? `${unreadCount} non lue${unreadCount > 1 ? 's' : ''}` : 'Tout est à jour'}
+                  {unreadCount > 0 ? `${unreadCount} ${t('unread')}` : t('all_caught_up')}
                 </p>
               </div>
               {unreadCount > 0 && (
@@ -403,7 +406,7 @@ export function NotificationBell() {
                   className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-xl text-sm font-medium transition-all duration-200 disabled:opacity-50 backdrop-blur-sm flex items-center gap-2 hover:scale-105 active:scale-95"
                 >
                   <Check className="w-4 h-4" />
-                  {loading ? "..." : "Tout lire"}
+                  {loading ? "..." : t('mark_all_read')}
                 </button>
               )}
             </div>
@@ -416,8 +419,8 @@ export function NotificationBell() {
                 <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 rounded-2xl flex items-center justify-center mb-5 rotate-12 animate-float">
                   <Bell className="w-10 h-10 text-gray-400 -rotate-12" />
                 </div>
-                <p className="text-gray-600 dark:text-gray-300 font-semibold text-lg">Aucune notification</p>
-                <p className="text-gray-400 dark:text-gray-500 text-sm mt-2">Vous êtes à jour</p>
+                <p className="text-gray-600 dark:text-gray-300 font-semibold text-lg">{t('no_notifications')}</p>
+                <p className="text-gray-400 dark:text-gray-500 text-sm mt-2">{t('all_caught_up')}</p>
               </div>
             ) : (
               <div className="divide-y divide-gray-100 dark:divide-gray-700/50">
@@ -489,7 +492,7 @@ export function NotificationBell() {
                                 <button
                                   onClick={() => markAsRead(notif.id)}
                                   className="p-2 hover:bg-green-100 dark:hover:bg-green-900/30 rounded-xl transition-all duration-200 hover:scale-110 active:scale-95"
-                                  title="Marquer comme lu"
+                                  title={t('mark_as_read')}
                                 >
                                   <Check className="w-4 h-4 text-green-600 dark:text-green-400" />
                                 </button>
@@ -497,7 +500,7 @@ export function NotificationBell() {
                               <button
                                 onClick={() => deleteNotification(notif.id)}
                                 className="p-2 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-xl transition-all duration-200 hover:scale-110 active:scale-95"
-                                title="Supprimer"
+                                title={t('delete')}
                               >
                                 <X className="w-4 h-4 text-red-600 dark:text-red-400" />
                               </button>
@@ -522,8 +525,8 @@ export function NotificationBell() {
               >
                 <span>
                   {session?.user?.role === "RH" || session?.user?.role === "SUPER_ADMIN" 
-                    ? "Voir le centre de notifications" 
-                    : "Voir toutes les notifications"}
+                    ? t('view_notification_center') 
+                    : t('view_all_notifications')}
                 </span>
                 <span className="transition-transform duration-200 group-hover:translate-x-1">→</span>
               </a>

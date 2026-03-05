@@ -54,6 +54,26 @@ export const FULL_SESSION_THRESHOLD_MINUTES = 135;
 /** Maximum allowed overtime hours per month */
 export const MAX_OVERTIME_HOURS_PER_MONTH = 40;
 
+// ─── Tolerance / Late Tracking ──────────────────────────────
+
+/** Grace period in minutes before marking as late (e.g., arrive at 9:10 is OK) */
+export const LATE_TOLERANCE_MINUTES = 10;
+
+/** Grace period in minutes for early departure */
+export const EARLY_DEPARTURE_TOLERANCE_MINUTES = 10;
+
+/** Morning session official start time (HH:MM) */
+export const MORNING_START_TIME = { hour: 9, minute: 0 };
+
+/** Morning session official end time (HH:MM) */
+export const MORNING_END_TIME = { hour: 12, minute: 0 };
+
+/** Afternoon session official start time (HH:MM) */
+export const AFTERNOON_START_TIME = { hour: 13, minute: 0 };
+
+/** Afternoon session official end time (HH:MM) */
+export const AFTERNOON_END_TIME = { hour: 17, minute: 0 };
+
 /** Earliest allowed check-in hour */
 export const EARLIEST_CHECKIN_HOUR = 6;
 
@@ -207,4 +227,38 @@ export function getSessionExpectedMinutes(sessionType: 'MORNING' | 'AFTERNOON'):
   return sessionType === 'MORNING'
     ? MORNING_SESSION_HOURS * 60
     : AFTERNOON_SESSION_HOURS * 60;
+}
+
+/**
+ * Calculate late minutes for a session check-in
+ * Returns 0 if within tolerance, or the number of late minutes
+ */
+export function calculateLateMinutes(checkInTime: Date, sessionType: 'MORNING' | 'AFTERNOON'): number {
+  const startTime = sessionType === 'MORNING' ? MORNING_START_TIME : AFTERNOON_START_TIME;
+  const expectedStart = new Date(checkInTime);
+  expectedStart.setHours(startTime.hour, startTime.minute, 0, 0);
+  
+  const diffMinutes = Math.round((checkInTime.getTime() - expectedStart.getTime()) / (1000 * 60));
+  
+  // If arrived before or within tolerance, no late
+  if (diffMinutes <= LATE_TOLERANCE_MINUTES) return 0;
+  
+  return diffMinutes;
+}
+
+/**
+ * Calculate early departure minutes for a session check-out
+ * Returns 0 if left at or after expected time (with tolerance)
+ */
+export function calculateEarlyDepartureMinutes(checkOutTime: Date, sessionType: 'MORNING' | 'AFTERNOON'): number {
+  const endTime = sessionType === 'MORNING' ? MORNING_END_TIME : AFTERNOON_END_TIME;
+  const expectedEnd = new Date(checkOutTime);
+  expectedEnd.setHours(endTime.hour, endTime.minute, 0, 0);
+  
+  const diffMinutes = Math.round((expectedEnd.getTime() - checkOutTime.getTime()) / (1000 * 60));
+  
+  // If left after or within tolerance, no early departure
+  if (diffMinutes <= EARLY_DEPARTURE_TOLERANCE_MINUTES) return 0;
+  
+  return diffMinutes;
 }

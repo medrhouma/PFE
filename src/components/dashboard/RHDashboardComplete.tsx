@@ -8,6 +8,7 @@
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface RHDashboardStats {
   employees: {
@@ -45,6 +46,8 @@ interface PendingItem {
 export default function RHDashboardComplete() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { t, language } = useLanguage();
+  const locale = language === 'ar' ? 'ar-SA' : language === 'en' ? 'en-US' : 'fr-FR';
   const [stats, setStats] = useState<RHDashboardStats | null>(null);
   const [pendingItems, setPendingItems] = useState<PendingItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -127,10 +130,10 @@ export default function RHDashboardComplete() {
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-4xl font-bold text-white">
-                Tableau de bord RH
+                {t('rh_dashboard')}
               </h1>
               <p className="mt-2 text-blue-100">
-                Gestion complète des ressources humaines
+                {t('rh_dashboard_overview')}
               </p>
             </div>
             <div className="flex gap-3">
@@ -138,13 +141,13 @@ export default function RHDashboardComplete() {
                 onClick={() => router.push("/rh/employees/pending")}
                 className="px-4 py-2 bg-white/20 backdrop-blur text-white rounded-lg hover:bg-white/30 transition-colors"
               >
-                Employés en attente ({stats?.employees.pending || 0})
+                {t('pending_employees')} ({stats?.employees.pending || 0})
               </button>
               <button
                 onClick={() => router.push("/rh/notifications")}
                 className="px-4 py-2 bg-white/20 backdrop-blur text-white rounded-lg hover:bg-white/30 transition-colors"
               >
-                Notifications
+                {t('notifications')}
               </button>
             </div>
           </div>
@@ -156,10 +159,10 @@ export default function RHDashboardComplete() {
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-2 mb-8">
           <div className="flex gap-2">
             {[
-              { id: "overview", label: "Vue d'ensemble", icon: "📊" },
-              { id: "employees", label: "Employés", icon: "👥" },
-              { id: "leaves", label: "Congés", icon: "🏖️" },
-              { id: "anomalies", label: "Anomalies", icon: "⚠️" },
+              { id: "overview", label: t('overview'), icon: "📊" },
+              { id: "employees", label: t('employees'), icon: "👥" },
+              { id: "leaves", label: t('leave'), icon: "🏖️" },
+              { id: "anomalies", label: t('anomalies'), icon: "⚠️" },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -186,7 +189,7 @@ export default function RHDashboardComplete() {
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    Employés actifs
+                    {t('active_employees')}
                   </h3>
                   <span className="text-3xl">👥</span>
                 </div>
@@ -194,7 +197,7 @@ export default function RHDashboardComplete() {
                   {stats?.employees.active || 0}
                 </p>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                  sur {stats?.employees.total || 0} total
+                  {t('out_of')} {stats?.employees.total || 0} {t('total')}
                 </p>
               </div>
 
@@ -202,7 +205,7 @@ export default function RHDashboardComplete() {
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    Présence aujourd'hui
+                    {t('today_attendance')}
                   </h3>
                   <span className="text-3xl">📅</span>
                 </div>
@@ -210,7 +213,7 @@ export default function RHDashboardComplete() {
                   {stats?.attendance.today.present || 0}
                 </p>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                  sur {stats?.attendance.today.total || 0} employés
+                  {t('out_of')} {stats?.attendance.today.total || 0} {t('employees')}
                 </p>
               </div>
 
@@ -218,7 +221,7 @@ export default function RHDashboardComplete() {
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    Congés en attente
+                    {t('pending_leave')}
                   </h3>
                   <span className="text-3xl">⏳</span>
                 </div>
@@ -226,7 +229,7 @@ export default function RHDashboardComplete() {
                   {stats?.leaves.pending || 0}
                 </p>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                  demandes à traiter
+                  {t('requests_to_process')}
                 </p>
               </div>
 
@@ -234,7 +237,7 @@ export default function RHDashboardComplete() {
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    Anomalies actives
+                    {t('active_anomalies')}
                   </h3>
                   <span className="text-3xl">⚠️</span>
                 </div>
@@ -242,7 +245,7 @@ export default function RHDashboardComplete() {
                   {stats?.system.anomalies || 0}
                 </p>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                  à examiner
+                  {t('to_review')}
                 </p>
               </div>
             </div>
@@ -250,12 +253,12 @@ export default function RHDashboardComplete() {
             {/* Pending Actions */}
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-                Actions en attente
+                {t('pending_actions')}
               </h2>
               <div className="space-y-3">
                 {pendingItems.length === 0 ? (
                   <p className="text-gray-600 dark:text-gray-400 text-center py-8">
-                    Aucune action en attente
+                    {t('no_pending_actions')}
                   </p>
                 ) : (
                   pendingItems.map((item) => (
@@ -275,7 +278,7 @@ export default function RHDashboardComplete() {
                         </div>
                         <p className="text-sm mt-1">{item.description}</p>
                         <p className="text-xs mt-2 opacity-75">
-                          {new Date(item.date).toLocaleString("fr-FR")}
+                          {new Date(item.date).toLocaleString(locale)}
                         </p>
                       </div>
                       <button
@@ -289,7 +292,7 @@ export default function RHDashboardComplete() {
                         }}
                         className="px-4 py-2 bg-white hover:bg-gray-50 rounded-lg text-sm font-medium transition-colors"
                       >
-                        Traiter
+                        {t('process')}
                       </button>
                     </div>
                   ))
@@ -305,10 +308,10 @@ export default function RHDashboardComplete() {
               >
                 <div className="text-4xl mb-3">👥</div>
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                  Gérer les employés
+                  {t('manage_employees')}
                 </h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Voir tous les employés et gérer les validations
+                  {t('view_employees_manage_validations')}
                 </p>
               </button>
 
@@ -318,10 +321,10 @@ export default function RHDashboardComplete() {
               >
                 <div className="text-4xl mb-3">🏖️</div>
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                  Demandes de congés
+                  {t('leave_requests_label')}
                 </h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Approuver ou rejeter les demandes de congés
+                  {t('approve_or_reject_requests')}
                 </p>
               </button>
 
@@ -331,10 +334,10 @@ export default function RHDashboardComplete() {
               >
                 <div className="text-4xl mb-3">⚠️</div>
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                  Anomalies
+                  {t('anomalies')}
                 </h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Examiner et résoudre les anomalies détectées
+                  {t('review_resolve_anomalies')}
                 </p>
               </button>
             </div>
@@ -344,27 +347,27 @@ export default function RHDashboardComplete() {
         {/* Other tabs would have their specific content */}
         {activeTab === "employees" && (
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-            <h2 className="text-2xl font-bold mb-4">Gestion des employés</h2>
+            <h2 className="text-2xl font-bold mb-4">{t('manage_employees')}</h2>
             <p className="text-gray-600 dark:text-gray-400">
-              Contenu de la gestion des employés...
+              {t('employee_management_content')}
             </p>
           </div>
         )}
 
         {activeTab === "leaves" && (
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-            <h2 className="text-2xl font-bold mb-4">Gestion des congés</h2>
+            <h2 className="text-2xl font-bold mb-4">{t('leave_management')}</h2>
             <p className="text-gray-600 dark:text-gray-400">
-              Contenu de la gestion des congés...
+              {t('leave_management_content')}
             </p>
           </div>
         )}
 
         {activeTab === "anomalies" && (
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-            <h2 className="text-2xl font-bold mb-4">Gestion des anomalies</h2>
+            <h2 className="text-2xl font-bold mb-4">{t('anomaly_management')}</h2>
             <p className="text-gray-600 dark:text-gray-400">
-              Contenu de la gestion des anomalies...
+              {t('anomaly_management_content')}
             </p>
           </div>
         )}

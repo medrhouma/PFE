@@ -4,6 +4,7 @@ import { redirect } from "next/navigation"
 import { Navbar } from "@/components/dashboard/Navbar"
 import { DashboardContent } from "@/components/dashboard/DashboardContent"
 import { SessionProvider } from "@/components/providers/SessionProvider"
+import { PermissionsProvider } from "@/contexts/PermissionsContext"
 import { query } from "@/lib/mysql-direct"
 
 export default async function DashboardLayout({
@@ -36,14 +37,21 @@ export default async function DashboardLayout({
 
     // Si accountType = USER → accès direct au dashboard (pas de profil employé requis)
     if (userAccountType === 'USER') {
-      // S'assurer que le statut est ACTIVE
-      if (currentUserStatus !== 'ACTIVE') {
+      // Only activate if user is INACTIVE (first time) — do NOT override SUSPENDED or REJECTED
+      if (currentUserStatus === 'INACTIVE') {
         await query(
           'UPDATE User SET status = ? WHERE id = ?',
           ['ACTIVE', session.user.id]
         )
       }
-      showSidebar = true
+      // Block suspended/rejected users
+      if (currentUserStatus === 'SUSPENDED') {
+        redirect('/login')
+      }
+      if (currentUserStatus === 'REJECTED') {
+        redirect('/complete-profile')
+      }
+      showSidebar = currentUserStatus === 'ACTIVE' || currentUserStatus === 'INACTIVE'
     } else {
       // accountType = EMPLOYEE → logique existante : doit compléter le profil employé
 
@@ -95,14 +103,16 @@ export default async function DashboardLayout({
 
   return (
     <SessionProvider session={session}>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors">
-        {/* Fixed Navbar */}
-        <Navbar />
-        
-        <DashboardContent userRole={session.user.role} showSidebar={showSidebar}>
-          {children}
-        </DashboardContent>
-      </div>
+      <PermissionsProvider>
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors">
+          {/* Fixed Navbar */}
+          <Navbar />
+          
+          <DashboardContent userRole={session.user.role} showSidebar={showSidebar}>
+            {children}
+          </DashboardContent>
+        </div>
+      </PermissionsProvider>
     </SessionProvider>
   )
 }

@@ -3,9 +3,11 @@
 import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { Database, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function MigratePage() {
   const { data: session } = useSession();
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
@@ -55,25 +57,25 @@ export default function MigratePage() {
                 Database Migration
               </h1>
               <p className="text-gray-600 dark:text-gray-400">
-                Créer les nouvelles tables pour les fonctionnalités ajoutées
+                {t('migrate_desc')}
               </p>
             </div>
           </div>
 
           <div className="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
             <h3 className="font-semibold text-yellow-800 dark:text-yellow-200 mb-2">
-              Tables à créer:
+              {t('tables_to_create')}
             </h3>
             <ul className="text-sm text-yellow-700 dark:text-yellow-300 space-y-1">
-              <li>• <code>login_history</code> - Historique des connexions</li>
-              <li>• <code>user_preferences</code> - Préférences utilisateur</li>
+              <li>• <code>login_history</code> - {t('login_history_table')}</li>
+              <li>• <code>user_preferences</code> - {t('user_preferences_table')}</li>
             </ul>
           </div>
 
           {!session?.user ? (
             <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
               <p className="text-red-700 dark:text-red-300">
-                Veuillez vous connecter pour exécuter les migrations.
+                {t('login_required_migrate')}
               </p>
             </div>
           ) : (
@@ -85,12 +87,12 @@ export default function MigratePage() {
               {loading ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  Exécution des migrations...
+                  {t('running_migrations')}
                 </>
               ) : (
                 <>
                   <Database className="w-5 h-5" />
-                  Exécuter les migrations
+                  {t('run_migrations')}
                 </>
               )}
             </button>

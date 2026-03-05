@@ -26,6 +26,13 @@ const reverseActionMap: Record<string, string> = {
   'traiter': 'PROCESS'
 }
 
+// Friendly display names for modules
+const moduleDisplayNames: Record<string, string> = {
+  'chatbot': 'Workspace',
+  'dashboard': 'Dashboard',
+  'parametres': 'Paramètres',
+}
+
 export async function GET(req: Request) {
   try {
     // Fetch all available permissions
@@ -105,7 +112,8 @@ export async function GET(req: Request) {
 
       // Build modules for display
       const modules = Object.entries(allModulePermissions).map(([moduleName, perms]: [string, any]) => ({
-        title: moduleName.charAt(0).toUpperCase() + moduleName.slice(1),
+        title: moduleDisplayNames[moduleName] || moduleName.charAt(0).toUpperCase() + moduleName.slice(1),
+        key: moduleName,
         badge: perms.base.some((p: any) => p.checked && p.action === 'VIEW') ? "ON" : undefined,
         permissions: perms
       }))

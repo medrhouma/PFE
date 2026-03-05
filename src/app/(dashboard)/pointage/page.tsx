@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import Link from "next/link";
 import {
   Clock,
   LogIn,
@@ -149,6 +151,8 @@ function getGreeting(): string {
 // ========================================
 export default function PointagePage() {
   const { data: session, status: sessionStatus } = useSession();
+  const { t, language } = useLanguage();
+  const locale = language === 'ar' ? 'ar-SA' : language === 'en' ? 'en-US' : 'fr-FR';
   const [status, setStatus] = useState<TodayStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -316,19 +320,19 @@ export default function PointagePage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || "Erreur lors du pointage");
+        setError(data.error || t('pointage_error'));
         return;
       }
 
       setSuccess(
         action === "CHECK_IN"
-          ? `Entrée ${sessionType === "MORNING" ? "matin" : "après-midi"} enregistrée avec succès`
-          : `Sortie ${sessionType === "MORNING" ? "matin" : "après-midi"} enregistrée avec succès`
+          ? `${t('entry')} ${sessionType === "MORNING" ? t('morning') : t('afternoon')} - ${t('success')}`
+          : `${t('exit')} ${sessionType === "MORNING" ? t('morning') : t('afternoon')} - ${t('success')}`
       );
       await fetchStatus();
       setTimeout(() => setSuccess(null), 4000);
     } catch {
-      setError("Erreur de connexion au serveur");
+      setError(t('connection_error'));
     } finally {
       setActionLoading(null);
     }
@@ -387,46 +391,54 @@ export default function PointagePage() {
                 <p className="text-white/70 text-sm font-medium tracking-wide">{getGreeting()}, {userName}</p>
               </div>
               <h1 className="text-3xl lg:text-4xl font-black tracking-tight leading-tight">
-                {isRH ? "Suivi du pointage" : "Pointage du jour"}
+                {isRH ? t('attendance_tracking') : t('today_attendance')}
               </h1>
               <p className="text-white/50 text-sm font-medium">
-                {now.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+                {now.toLocaleDateString(locale, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
               </p>
             </div>
 
             <div className="flex items-center gap-5">
               <div className="text-right space-y-2">
                 <div className="text-5xl lg:text-6xl font-mono font-black tracking-wider tabular-nums bg-clip-text text-transparent bg-gradient-to-b from-white to-white/80">
-                  {now.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                  {now.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
                 </div>
                 <div className="flex items-center gap-2 justify-end">
                   {isRH ? (
                     <span className="inline-flex items-center gap-1.5 text-xs font-bold bg-white/10 text-white/60 px-4 py-1.5 rounded-full border border-white/10 backdrop-blur-sm">
                       <Users className="w-3.5 h-3.5" />
-                      {isAdmin ? "Vue administrateur" : "Vue RH"}
+                      {isAdmin ? t('admin_view') : t('rh_view')}
                     </span>
                   ) : dayComplete ? (
                     <span className="inline-flex items-center gap-1.5 text-xs font-bold bg-emerald-500/20 text-emerald-200 px-4 py-1.5 rounded-full border border-emerald-400/20 backdrop-blur-sm">
                       <CheckCircle className="w-3.5 h-3.5" />
-                      Journée complète
+                      {t('full_day')}
                     </span>
                   ) : status?.morning?.checkIn || status?.afternoon?.checkIn ? (
                     <span className="inline-flex items-center gap-1.5 text-xs font-bold bg-amber-500/20 text-amber-200 px-4 py-1.5 rounded-full border border-amber-400/20 backdrop-blur-sm">
                       <Zap className="w-3.5 h-3.5" />
-                      En cours
+                      {t('in_progress_badge')}
                     </span>
                   ) : (
                     <span className="inline-flex items-center gap-1.5 text-xs font-bold bg-white/10 text-white/60 px-4 py-1.5 rounded-full border border-white/10 backdrop-blur-sm">
                       <Clock className="w-3.5 h-3.5" />
-                      Non pointé
+                      {t('not_checked')}
                     </span>
                   )}
                 </div>
               </div>
+              <Link
+                href="/pointage/resume"
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white/10 hover:bg-white/20 active:scale-95 transition-all duration-200 border border-white/10 backdrop-blur-sm text-sm font-semibold text-white/90 hover:text-white"
+                title={t('monthly_summary')}
+              >
+                <BarChart3 className="w-4 h-4" />
+                <span className="hidden sm:inline">{t('summary')}</span>
+              </Link>
               <button
                 onClick={handleRefresh}
                 className="w-12 h-12 flex items-center justify-center rounded-2xl bg-white/10 hover:bg-white/20 active:scale-95 transition-all duration-200 border border-white/10 backdrop-blur-sm"
-                title="Actualiser"
+                title={t('refresh')}
               >
                 <RefreshCw className={`w-5 h-5 ${refreshing ? "animate-spin" : ""}`} />
               </button>
@@ -458,19 +470,19 @@ export default function PointagePage() {
         {/* ============ STATS GRID (employees only) ============ */}
         {isPointeur && (<>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard icon={<Timer className="w-5 h-5" />} label="Aujourd'hui" value={totalMinutes > 0 ? formatDuration(totalMinutes) : "0h00"} color="indigo" />
-          <StatCard icon={<TrendingUp className="w-5 h-5" />} label="Objectif" value="7h00" color="violet" />
+          <StatCard icon={<Timer className="w-5 h-5" />} label={t('today')} value={totalMinutes > 0 ? formatDuration(totalMinutes) : "0h00"} color="indigo" />
+          <StatCard icon={<TrendingUp className="w-5 h-5" />} label={t('objective')} value="7h00" color="violet" />
           <StatCard
             icon={<BarChart3 className="w-5 h-5" />}
-            label="Progression"
+            label={t('progression')}
             value={`${progressPercent}%`}
             color="emerald"
             progress={progressPercent}
           />
           <StatCard
             icon={<Activity className="w-5 h-5" />}
-            label="Statut"
-            value={dayComplete ? "Terminé" : morningComplete || afternoonComplete ? "Partiel" : status?.morning?.checkIn || status?.afternoon?.checkIn ? "En cours" : "Non pointé"}
+            label={t('status')}
+            value={dayComplete ? t('completed') : morningComplete || afternoonComplete ? t('partial') : status?.morning?.checkIn || status?.afternoon?.checkIn ? t('in_progress_badge') : t('not_checked')}
             color="amber"
           />
         </div>
@@ -528,7 +540,7 @@ export default function PointagePage() {
                       <Star className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                     </div>
                     <div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Présence</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{t('presence')}</p>
                       <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">+{pointsData.breakdown.presencePoints} pts</p>
                     </div>
                   </div>
@@ -538,7 +550,7 @@ export default function PointagePage() {
                       <Minus className="w-4 h-4 text-red-600 dark:text-red-400" />
                     </div>
                     <div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Absences</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{t('absences')}</p>
                       <p className="text-sm font-bold text-red-600 dark:text-red-400">{pointsData.breakdown.absencePoints} pts</p>
                     </div>
                   </div>
@@ -548,7 +560,7 @@ export default function PointagePage() {
                       <TrendingDown className="w-4 h-4 text-orange-600 dark:text-orange-400" />
                     </div>
                     <div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Retards</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{t('delays')}</p>
                       <p className="text-sm font-bold text-orange-600 dark:text-orange-400">{pointsData.breakdown.latePoints} pts</p>
                     </div>
                   </div>
@@ -569,17 +581,17 @@ export default function PointagePage() {
               <div className="mt-6 flex items-center justify-around py-3 px-4 bg-gray-50/80 dark:bg-gray-800/40 rounded-2xl">
                 <div className="text-center">
                   <p className="text-lg font-black text-gray-900 dark:text-white">{pointsData.stats.daysPresent}</p>
-                  <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">Présent</p>
+                  <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">{t('present')}</p>
                 </div>
                 <div className="w-px h-8 bg-gray-200 dark:bg-gray-700" />
                 <div className="text-center">
                   <p className="text-lg font-black text-red-500">{pointsData.stats.daysAbsent}</p>
-                  <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">Absent</p>
+                  <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">{t('absent')}</p>
                 </div>
                 <div className="w-px h-8 bg-gray-200 dark:bg-gray-700" />
                 <div className="text-center">
                   <p className="text-lg font-black text-orange-500">{pointsData.stats.daysLate}</p>
-                  <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">Retards</p>
+                  <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">{t('delays')}</p>
                 </div>
                 <div className="w-px h-8 bg-gray-200 dark:bg-gray-700" />
                 <div className="text-center flex flex-col items-center">
@@ -597,7 +609,7 @@ export default function PointagePage() {
         {/* ============ SESSION CARDS ============ */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <SessionCard
-            label="Matin"
+            label={t('morning')}
             subtitle="09:00 – 12:00"
             icon={<Sun className="w-6 h-6" />}
             gradient="from-amber-400 via-orange-400 to-orange-500"
@@ -606,9 +618,10 @@ export default function PointagePage() {
             isActive={isBeforeNoon}
             actionLoading={actionLoading}
             onAction={handleAction}
+            t={t}
           />
           <SessionCard
-            label="Après-midi"
+            label={t('afternoon')}
             subtitle="14:00 – 18:00"
             icon={<Sunset className="w-6 h-6" />}
             gradient="from-orange-500 via-rose-500 to-pink-500"
@@ -617,6 +630,7 @@ export default function PointagePage() {
             isActive={!isBeforeNoon}
             actionLoading={actionLoading}
             onAction={handleAction}
+            t={t}
           />
         </div>
 
@@ -639,11 +653,11 @@ export default function PointagePage() {
             <div className="relative">
               <div className="absolute left-[19px] top-3 bottom-3 w-[2px] bg-gradient-to-b from-emerald-300 via-violet-300 to-rose-300 dark:from-emerald-700 dark:via-violet-700 dark:to-rose-700 rounded-full" />
               <div className="space-y-1.5">
-                <TimelineItem time={status?.morning?.checkIn ? formatTime(status.morning.checkIn) : "--:--"} label="Entrée matin" icon={<LogIn className="w-3.5 h-3.5" />} done={!!status?.morning?.checkIn} color="emerald" />
-                <TimelineItem time={status?.morning?.checkOut ? formatTime(status.morning.checkOut) : "--:--"} label="Sortie matin" icon={<LogOut className="w-3.5 h-3.5" />} done={!!status?.morning?.checkOut} color="blue" duration={status?.morning?.durationMinutes ? formatDuration(status.morning.durationMinutes) : undefined} />
-                <TimelineItem time="" label="Pause déjeuner" icon={<Coffee className="w-3.5 h-3.5" />} done={morningComplete} color="amber" isPause />
-                <TimelineItem time={status?.afternoon?.checkIn ? formatTime(status.afternoon.checkIn) : "--:--"} label="Entrée après-midi" icon={<LogIn className="w-3.5 h-3.5" />} done={!!status?.afternoon?.checkIn} color="orange" />
-                <TimelineItem time={status?.afternoon?.checkOut ? formatTime(status.afternoon.checkOut) : "--:--"} label="Sortie après-midi" icon={<LogOut className="w-3.5 h-3.5" />} done={!!status?.afternoon?.checkOut} color="rose" duration={status?.afternoon?.durationMinutes ? formatDuration(status.afternoon.durationMinutes) : undefined} />
+                <TimelineItem time={status?.morning?.checkIn ? formatTime(status.morning.checkIn) : "--:--"} label={t('morning_entry')} icon={<LogIn className="w-3.5 h-3.5" />} done={!!status?.morning?.checkIn} color="emerald" />
+                <TimelineItem time={status?.morning?.checkOut ? formatTime(status.morning.checkOut) : "--:--"} label={t('morning_exit')} icon={<LogOut className="w-3.5 h-3.5" />} done={!!status?.morning?.checkOut} color="blue" duration={status?.morning?.durationMinutes ? formatDuration(status.morning.durationMinutes) : undefined} />
+                <TimelineItem time="" label={t('lunch_break')} icon={<Coffee className="w-3.5 h-3.5" />} done={morningComplete} color="amber" isPause />
+                <TimelineItem time={status?.afternoon?.checkIn ? formatTime(status.afternoon.checkIn) : "--:--"} label={t('afternoon_entry')} icon={<LogIn className="w-3.5 h-3.5" />} done={!!status?.afternoon?.checkIn} color="orange" />
+                <TimelineItem time={status?.afternoon?.checkOut ? formatTime(status.afternoon.checkOut) : "--:--"} label={t('afternoon_exit')} icon={<LogOut className="w-3.5 h-3.5" />} done={!!status?.afternoon?.checkOut} color="rose" duration={status?.afternoon?.durationMinutes ? formatDuration(status.afternoon.durationMinutes) : undefined} />
               </div>
             </div>
           </div>
@@ -661,7 +675,7 @@ export default function PointagePage() {
                   <Users className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-black text-gray-900 dark:text-white tracking-tight">Suivi des employés</h3>
+                  <h3 className="text-lg font-black text-gray-900 dark:text-white tracking-tight">{t('employee_tracking')}</h3>
                   <p className="text-xs text-gray-400 dark:text-gray-500 font-medium">Pointage & performance</p>
                 </div>
               </div>
@@ -716,7 +730,7 @@ export default function PointagePage() {
                   className="flex items-center gap-2 px-5 py-2.5 text-sm font-bold bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-2xl hover:bg-gray-800 dark:hover:bg-gray-100 active:scale-95 transition-all disabled:opacity-40 shadow-lg shadow-gray-300/30 dark:shadow-black/20"
                 >
                   <Download className="w-4 h-4" />
-                  {exportingTeam ? "Export..." : "Exporter CSV"}
+                  {exportingTeam ? "Export..." : t('export_csv')}
                 </button>
               </div>
             </div>
@@ -727,12 +741,12 @@ export default function PointagePage() {
                 <div className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200/80 dark:border-gray-700/60 shadow-sm">
                   <Users className="w-4 h-4 text-indigo-500" />
                   <span className="text-sm font-black text-gray-900 dark:text-white">{teamData.totalEmployees}</span>
-                  <span className="text-xs text-gray-400 font-medium">employés</span>
+                  <span className="text-xs text-gray-400 font-medium">{t('employees')}</span>
                 </div>
                 <div className="flex items-center gap-2 px-4 py-2 bg-emerald-50 dark:bg-emerald-950/30 rounded-2xl border border-emerald-200/60 dark:border-emerald-800/40">
                   <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                   <span className="text-sm font-black text-emerald-700 dark:text-emerald-400">{teamData.present}</span>
-                  <span className="text-xs text-emerald-600/70 dark:text-emerald-400/60 font-medium">présents</span>
+                  <span className="text-xs text-emerald-600/70 dark:text-emerald-400/60 font-medium">{t('present_pl')}</span>
                 </div>
                 <div className="flex items-center gap-2 px-4 py-2 bg-red-50 dark:bg-red-950/30 rounded-2xl border border-red-200/60 dark:border-red-800/40">
                   <div className="w-2 h-2 rounded-full bg-red-500" />
@@ -778,8 +792,8 @@ export default function PointagePage() {
                   .map((emp, idx) => {
                     const statusConfig = {
                       absent:   { label: "Absent",   icon: <Minus className="w-3 h-3" />,       bg: "bg-red-500",     glow: "shadow-red-500/20",     ringBg: "bg-red-50 dark:bg-red-950/40",     ringBorder: "border-red-200 dark:border-red-800/50",     text: "text-red-700 dark:text-red-400" },
-                      partial:  { label: "En cours",  icon: <Clock className="w-3 h-3" />,       bg: "bg-amber-500",   glow: "shadow-amber-500/20",   ringBg: "bg-amber-50 dark:bg-amber-950/40", ringBorder: "border-amber-200 dark:border-amber-800/50", text: "text-amber-700 dark:text-amber-400" },
-                      present:  { label: "Présent",   icon: <ArrowUpRight className="w-3 h-3" />,bg: "bg-emerald-500", glow: "shadow-emerald-500/20", ringBg: "bg-emerald-50 dark:bg-emerald-950/40", ringBorder: "border-emerald-200 dark:border-emerald-800/50", text: "text-emerald-700 dark:text-emerald-400" },
+                      partial:  { label: t('in_progress_badge'),  icon: <Clock className="w-3 h-3" />,       bg: "bg-amber-500",   glow: "shadow-amber-500/20",   ringBg: "bg-amber-50 dark:bg-amber-950/40", ringBorder: "border-amber-200 dark:border-amber-800/50", text: "text-amber-700 dark:text-amber-400" },
+                      present:  { label: t('present'),   icon: <ArrowUpRight className="w-3 h-3" />,bg: "bg-emerald-500", glow: "shadow-emerald-500/20", ringBg: "bg-emerald-50 dark:bg-emerald-950/40", ringBorder: "border-emerald-200 dark:border-emerald-800/50", text: "text-emerald-700 dark:text-emerald-400" },
                       complete: { label: "Complet",   icon: <CheckCircle className="w-3 h-3" />, bg: "bg-indigo-500",  glow: "shadow-indigo-500/20",  ringBg: "bg-indigo-50 dark:bg-indigo-950/40", ringBorder: "border-indigo-200 dark:border-indigo-800/50", text: "text-indigo-700 dark:text-indigo-400" },
                     };
                     const st = statusConfig[emp.dayStatus];
@@ -910,7 +924,7 @@ export default function PointagePage() {
                                   }`}>
                                     <Sunset className="w-3.5 h-3.5" />
                                   </div>
-                                  <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Après-midi</span>
+                                  <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('afternoon')}</span>
                                 </div>
                                 {afternoonDur > 0 && (
                                   <span className="text-[10px] font-bold text-orange-600 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/30 px-1.5 py-0.5 rounded-md">
@@ -1011,7 +1025,7 @@ export default function PointagePage() {
                               ) : (
                                 <>
                                   <p className="text-base font-black text-gray-300 dark:text-gray-600 leading-none">—</p>
-                                  <p className="text-[9px] text-gray-300 dark:text-gray-600 font-semibold mt-0.5">présence</p>
+                                  <p className="text-[9px] text-gray-300 dark:text-gray-600 font-semibold mt-0.5">{t('presence')}</p>
                                 </>
                               )}
                             </div>
@@ -1067,8 +1081,8 @@ export default function PointagePage() {
                 <div className="w-14 h-14 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4">
                   <Users className="w-7 h-7 text-gray-300 dark:text-gray-600" />
                 </div>
-                <p className="text-sm font-bold text-gray-400 dark:text-gray-500">Aucune donnée pour cette date</p>
-                <p className="text-xs text-gray-300 dark:text-gray-600 mt-1">Sélectionnez une autre date</p>
+                <p className="text-sm font-bold text-gray-400 dark:text-gray-500">{t('no_data_for_date')}</p>
+                <p className="text-xs text-gray-300 dark:text-gray-600 mt-1">{t('select_other_date')}</p>
               </div>
             )}
           </div>
@@ -1120,7 +1134,7 @@ function StatCard({ icon, label, value, color, progress }: {
 
 
 
-function SessionCard({ label, subtitle, icon, gradient, session, sessionType, isActive, actionLoading, onAction }: {
+function SessionCard({ label, subtitle, icon, gradient, session, sessionType, isActive, actionLoading, onAction, t }: {
   label: string;
   subtitle: string;
   icon: React.ReactNode;
@@ -1130,6 +1144,7 @@ function SessionCard({ label, subtitle, icon, gradient, session, sessionType, is
   isActive: boolean;
   actionLoading: string | null;
   onAction: (action: "CHECK_IN" | "CHECK_OUT", st: "MORNING" | "AFTERNOON") => void;
+  t: (key: string) => string;
 }) {
   const hasCheckedIn = !!session?.checkIn;
   const hasCheckedOut = !!session?.checkOut;
@@ -1170,16 +1185,16 @@ function SessionCard({ label, subtitle, icon, gradient, session, sessionType, is
             {isComplete ? (
               <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-3 py-1.5 rounded-lg border border-emerald-200/80 dark:border-emerald-800/50">
                 <CheckCircle className="w-3 h-3" />
-                Terminé
+                {t('completed')}
               </span>
             ) : hasCheckedIn ? (
               <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-3 py-1.5 rounded-lg border border-amber-200/80 dark:border-amber-800/50">
                 <Clock className="w-3 h-3" />
-                En cours
+                {t('in_progress_badge')}
               </span>
             ) : (
               <span className="inline-flex items-center gap-1 text-[10px] font-bold text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800/50 px-3 py-1.5 rounded-lg border border-gray-200/80 dark:border-gray-700/50">
-                Non pointé
+                {t('not_checked')}
               </span>
             )}
           </div>
@@ -1198,7 +1213,7 @@ function SessionCard({ label, subtitle, icon, gradient, session, sessionType, is
               }`}>
                 <LogIn className="w-3 h-3" />
               </div>
-              <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Entrée</span>
+              <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">{t('entry')}</span>
             </div>
             <p className={`text-2xl font-black tabular-nums ${hasCheckedIn ? "text-emerald-600 dark:text-emerald-400" : "text-gray-200 dark:text-gray-700"}`}>
               {hasCheckedIn ? formatTime(session!.checkIn!) : "--:--"}
@@ -1215,7 +1230,7 @@ function SessionCard({ label, subtitle, icon, gradient, session, sessionType, is
               }`}>
                 <LogOut className="w-3 h-3" />
               </div>
-              <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Sortie</span>
+              <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">{t('exit')}</span>
             </div>
             <p className={`text-2xl font-black tabular-nums ${hasCheckedOut ? "text-blue-600 dark:text-blue-400" : "text-gray-200 dark:text-gray-700"}`}>
               {hasCheckedOut ? formatTime(session!.checkOut!) : "--:--"}
@@ -1227,7 +1242,7 @@ function SessionCard({ label, subtitle, icon, gradient, session, sessionType, is
         {session?.durationMinutes && (
           <div className="mb-5 flex items-center gap-2.5 px-4 py-3 bg-violet-50/80 dark:bg-violet-950/20 rounded-xl border border-violet-200/80 dark:border-violet-800/40">
             <Timer className="w-4 h-4 text-violet-500" />
-            <span className="text-sm font-bold text-violet-600 dark:text-violet-400">Durée: {formatDuration(session.durationMinutes)}</span>
+            <span className="text-sm font-bold text-violet-600 dark:text-violet-400">{t('duration_label')}: {formatDuration(session.durationMinutes)}</span>
           </div>
         )}
 
@@ -1249,7 +1264,7 @@ function SessionCard({ label, subtitle, icon, gradient, session, sessionType, is
                 className="flex-1 flex items-center justify-center gap-2.5 px-6 py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-sm font-bold hover:from-emerald-600 hover:to-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-xl shadow-emerald-200/50 dark:shadow-emerald-900/30 hover:shadow-2xl active:scale-[0.97]"
               >
                 <LogIn className="w-5 h-5" />
-                {isCheckInLoading ? "Enregistrement..." : "Pointer Entrée"}
+                {isCheckInLoading ? t('recording') : t('check_in_btn')}
               </button>
             )}
             {hasCheckedIn && !hasCheckedOut && (
@@ -1259,14 +1274,14 @@ function SessionCard({ label, subtitle, icon, gradient, session, sessionType, is
                 className="flex-1 flex items-center justify-center gap-2.5 px-6 py-4 rounded-2xl bg-gradient-to-r from-rose-500 to-pink-600 text-white text-sm font-bold hover:from-rose-600 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-xl shadow-rose-200/50 dark:shadow-rose-900/30 hover:shadow-2xl active:scale-[0.97]"
               >
                 <LogOut className="w-5 h-5" />
-                {isCheckOutLoading ? "Enregistrement..." : "Pointer Sortie"}
+                {isCheckOutLoading ? t('recording') : t('check_out_btn')}
               </button>
             )}
           </div>
         ) : (
           <div className="flex items-center justify-center gap-2.5 px-5 py-4 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-2xl border border-emerald-200/80 dark:border-emerald-800/40">
             <CheckCircle className="w-5 h-5 text-emerald-500" />
-            <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">Session terminée</span>
+            <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{t('session_completed')}</span>
           </div>
         )}
       </div>

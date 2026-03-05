@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { query, execute } from "@/lib/mysql-direct";
 import { sanitizeImageFromAPI } from "@/lib/utils";
+import { saveBase64Image } from "@/lib/file-upload";
 
 /**
  * GET /api/users/me
@@ -179,8 +180,22 @@ export async function PUT(request: NextRequest) {
       userParams.push(name);
     }
     if (image !== undefined) {
+      // If the image is a base64 data URL, save it to disk and store the file path
+      let imageToStore = image;
+      if (image && image.startsWith('data:image/')) {
+        const savedPath = await saveBase64Image(image, 'avatars', 'avatar');
+        if (savedPath) {
+          imageToStore = savedPath;
+        } else {
+          return NextResponse.json(
+            { error: "Erreur lors du traitement de l'image" },
+            { status: 400 }
+          );
+        }
+      }
+      
       userUpdates.push("image = ?");
-      userParams.push(image);
+      userParams.push(imageToStore);
       
       // Also update Employee photo field if it exists
       try {
@@ -191,7 +206,7 @@ export async function PUT(request: NextRequest) {
         if (existingEmp.length > 0) {
           await execute(
             `UPDATE Employe SET photo = ?, updated_at = NOW() WHERE user_id = ?`,
-            [image, session.user.id]
+            [imageToStore, session.user.id]
           );
         }
       } catch (e) {

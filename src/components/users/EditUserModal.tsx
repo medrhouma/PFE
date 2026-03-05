@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { X, User } from "lucide-react"
 import { useNotification } from "@/contexts/NotificationContext"
+import { useLanguage } from "@/contexts/LanguageContext"
 
 interface EditUserModalProps {
   user: any
@@ -17,6 +18,7 @@ export default function EditUserModal({ user, onClose, onSave }: EditUserModalPr
   const [role, setRole] = useState(user.role || "USER")
   const [saving, setSaving] = useState(false)
   const { showNotification } = useNotification()
+  const { t } = useLanguage()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -41,8 +43,8 @@ export default function EditUserModal({ user, onClose, onSave }: EditUserModalPr
         }
         showNotification({
           type: 'success',
-          title: 'Utilisateur mis à jour',
-          message: 'Les informations de l\'utilisateur ont été mises à jour avec succès',
+          title: t('eu_user_updated'),
+          message: t('eu_user_updated_desc'),
           duration: 4000
         })
         onClose()
@@ -50,8 +52,8 @@ export default function EditUserModal({ user, onClose, onSave }: EditUserModalPr
         const error = await response.json()
         showNotification({
           type: 'error',
-          title: 'Erreur de mise à jour',
-          message: error.message || 'Impossible de mettre à jour l\'utilisateur',
+          title: t('eu_update_error'),
+          message: error.message || t('eu_cannot_update'),
           duration: 5000
         })
       }
@@ -84,10 +86,10 @@ export default function EditUserModal({ user, onClose, onSave }: EditUserModalPr
           <div className="flex-1 text-center">
             <h2 className="text-xl font-bold text-indigo-600 dark:text-indigo-400 flex items-center justify-center gap-2">
               <User className="w-5 h-5" />
-              Modifier l'utilisateur
+              {t('eu_edit_user')}
             </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Mise à jour des informations de l'utilisateur
+              {t('eu_update_info')}
             </p>
           </div>
           <div className="w-6"></div>
@@ -97,14 +99,14 @@ export default function EditUserModal({ user, onClose, onSave }: EditUserModalPr
           {/* First Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              First Name
+              {t('first_name')}
             </label>
             <input
               type="text"
               required
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
-              placeholder="First name"
+              placeholder={t('first_name')}
               className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             />
           </div>
@@ -112,14 +114,14 @@ export default function EditUserModal({ user, onClose, onSave }: EditUserModalPr
           {/* Last Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Last Name
+              {t('last_name')}
             </label>
             <input
               type="text"
               required
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
-              placeholder="Last name"
+              placeholder={t('last_name')}
               className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             />
           </div>
@@ -142,7 +144,7 @@ export default function EditUserModal({ user, onClose, onSave }: EditUserModalPr
           {/* Role */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Role
+              {t('role')}
             </label>
             <select
               value={role}
@@ -168,14 +170,14 @@ export default function EditUserModal({ user, onClose, onSave }: EditUserModalPr
               onClick={onClose}
               className="px-6 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
-              Annuler
+              {t('cancel')}
             </button>
             <button
               type="submit"
               disabled={saving}
               className="px-6 py-2.5 rounded-xl bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {saving ? "Mise à jour..." : "Sauvegarder les modifications"}
+              {saving ? t('eu_updating') : t('eu_save_changes')}
             </button>
           </div>
         </form>

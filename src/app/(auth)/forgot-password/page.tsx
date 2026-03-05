@@ -5,12 +5,14 @@ import { Input } from "@/components/ui/Input"
 import { Button } from "@/components/ui/Button"
 import Link from "next/link"
 import { Mail, ArrowLeft, CheckCircle, AlertCircle, Loader2 } from "lucide-react"
+import { useLanguage } from "@/contexts/LanguageContext"
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const { t } = useLanguage()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -27,12 +29,12 @@ export default function ForgotPasswordPage() {
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.error || "Une erreur est survenue")
+        throw new Error(data.error || t('error_occurred'))
       }
 
       setIsSuccess(true)
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Une erreur est survenue")
+      setError(err instanceof Error ? err.message : t('error_occurred'))
     } finally {
       setIsLoading(false)
     }
@@ -55,10 +57,10 @@ export default function ForgotPasswordPage() {
           </div>
           
           <h2 className="text-3xl font-bold text-white mb-4">
-            Réinitialisation du mot de passe
+            {t('password_reset_title')}
           </h2>
           <p className="text-violet-200 text-lg leading-relaxed">
-            Pas de panique ! Entrez votre email et nous vous enverrons un lien sécurisé pour réinitialiser votre mot de passe.
+            {t('password_reset_desc')}
           </p>
         </div>
       </div>
@@ -72,7 +74,7 @@ export default function ForgotPasswordPage() {
             className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-violet-600 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            Retour à la connexion
+            {t('back_to_login')}
           </Link>
 
           {!isSuccess ? (
@@ -80,10 +82,10 @@ export default function ForgotPasswordPage() {
               {/* Header */}
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">
-                  Mot de passe oublié ?
+                  {t('forgot_password')}
                 </h1>
                 <p className="mt-2 text-gray-600">
-                  Entrez votre email pour recevoir un lien de réinitialisation
+                  {t('enter_email_reset')}
                 </p>
               </div>
 
@@ -99,7 +101,7 @@ export default function ForgotPasswordPage() {
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
                   <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                    Adresse email
+                    {t('email_address')}
                   </label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -123,10 +125,10 @@ export default function ForgotPasswordPage() {
                   {isLoading ? (
                     <>
                       <Loader2 className="w-5 h-5 animate-spin" />
-                      Envoi en cours...
+                      {t('sending_in_progress')}
                     </>
                   ) : (
-                    "Envoyer le lien de réinitialisation"
+                    t('send_reset_link')
                   )}
                 </Button>
               </form>
@@ -140,16 +142,16 @@ export default function ForgotPasswordPage() {
               
               <div>
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                  Email envoyé !
+                  {t('email_sent')}
                 </h2>
                 <p className="text-gray-600">
-                  Si un compte existe avec l'adresse <strong className="text-gray-900">{email}</strong>, vous recevrez un lien de réinitialisation dans quelques instants.
+                  {t('if_account_exists')} <strong className="text-gray-900">{email}</strong>, {t('will_receive_reset_link')}
                 </p>
               </div>
 
               <div className="bg-violet-50 border border-violet-200 rounded-lg p-4 text-left">
                 <p className="text-sm text-violet-800">
-                  <strong>Conseil :</strong> Vérifiez également votre dossier spam si vous ne voyez pas l'email.
+                  <strong>{t('tip')}:</strong> {t('check_spam_folder')}
                 </p>
               </div>
 
@@ -162,7 +164,7 @@ export default function ForgotPasswordPage() {
                   }}
                   className="text-violet-600 hover:text-violet-700 hover:bg-violet-50"
                 >
-                  Essayer avec un autre email
+                  {t('try_another_email')}
                 </Button>
                 
                 <div>
@@ -170,7 +172,7 @@ export default function ForgotPasswordPage() {
                     href="/login"
                     className="text-sm text-gray-600 hover:text-violet-600 transition-colors"
                   >
-                    Retour à la connexion
+                    {t('back_to_login')}
                   </Link>
                 </div>
               </div>

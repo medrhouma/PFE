@@ -6,6 +6,7 @@ import {
   FileText, Calendar, AlertTriangle, Shield, Activity,
   ChevronRight, RefreshCw
 } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface RecentActivity {
   id: string;
@@ -21,15 +22,17 @@ interface RecentActivity {
 }
 
 const typeFilters = [
-  { value: 'all', label: 'Tous', icon: Activity },
-  { value: 'login', label: 'Connexions', icon: LogIn },
-  { value: 'profile', label: 'Profils', icon: User },
-  { value: 'pointage', label: 'Pointages', icon: Clock },
-  { value: 'contract', label: 'Contrats', icon: FileText },
-  { value: 'leave', label: 'Congés', icon: Calendar },
+  { value: 'all', labelKey: 'all', icon: Activity },
+  { value: 'login', labelKey: 'ra_logins', icon: LogIn },
+  { value: 'profile', labelKey: 'profiles', icon: User },
+  { value: 'pointage', labelKey: 'ra_attendances', icon: Clock },
+  { value: 'contract', labelKey: 'ra_contracts', icon: FileText },
+  { value: 'leave', labelKey: 'nav_leaves', icon: Calendar },
 ];
 
 export default function RecentActivities() {
+  const { t, language } = useLanguage();
+  const locale = language === 'ar' ? 'ar-SA' : language === 'en' ? 'en-US' : 'fr-FR';
   const [activities, setActivities] = useState<RecentActivity[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -89,42 +92,30 @@ export default function RecentActivities() {
   };
 
   const getActionLabel = (action: string) => {
-    const labels: Record<string, string> = {
-      'LOGIN_SUCCESS': 'Connexion réussie',
-      'LOGIN_FAILED': 'Échec de connexion',
-      'PROFILE_SUBMITTED': 'Profil soumis',
-      'PROFILE_APPROVED': 'Profil approuvé',
-      'PROFILE_REJECTED': 'Profil rejeté',
-      'POINTAGE_IN': 'Entrée',
-      'POINTAGE_OUT': 'Sortie',
-      'CREATE': 'Création',
-      'UPDATE': 'Modification',
-      'DELETE': 'Suppression',
-      'RH_ACTION_REQUIRED': 'Action RH requise',
-      'SYSTEM_ALERT': 'Alerte système',
-    };
-    return labels[action] || action.replace(/_/g, ' ').toLowerCase();
+    const key = `ra_action_${action.toLowerCase()}`;
+    const translated = t(key);
+    return translated !== key ? translated : action.replace(/_/g, ' ').toLowerCase();
   };
 
   const getStatusBadge = (status: string) => {
-    const badges: Record<string, { bg: string; text: string; label: string }> = {
-      'SUCCESS': { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-700 dark:text-green-400', label: 'Succès' },
-      'ERROR': { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-700 dark:text-red-400', label: 'Erreur' },
-      'WARNING': { bg: 'bg-amber-100 dark:bg-amber-900/30', text: 'text-amber-700 dark:text-amber-400', label: 'Attention' },
-      'PENDING': { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-700 dark:text-blue-400', label: 'En attente' },
-      'INFO': { bg: 'bg-gray-100 dark:bg-gray-700', text: 'text-gray-700 dark:text-gray-300', label: 'Info' },
-      'NORMAL': { bg: 'bg-gray-100 dark:bg-gray-700', text: 'text-gray-700 dark:text-gray-300', label: 'Normal' },
-      'HIGH': { bg: 'bg-orange-100 dark:bg-orange-900/30', text: 'text-orange-700 dark:text-orange-400', label: 'Urgent' },
-      'URGENT': { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-700 dark:text-red-400', label: 'Critique' },
-      'CRITICAL': { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-700 dark:text-red-400', label: 'Critique' },
-      'EN_ATTENTE': { bg: 'bg-amber-100 dark:bg-amber-900/30', text: 'text-amber-700 dark:text-amber-400', label: 'En attente' },
-      'APPROUVE': { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-700 dark:text-green-400', label: 'Approuvé' },
-      'REJETE': { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-700 dark:text-red-400', label: 'Rejeté' },
+    const badges: Record<string, { bg: string; text: string; labelKey: string }> = {
+      'SUCCESS': { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-700 dark:text-green-400', labelKey: 'ra_success' },
+      'ERROR': { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-700 dark:text-red-400', labelKey: 'ra_error' },
+      'WARNING': { bg: 'bg-amber-100 dark:bg-amber-900/30', text: 'text-amber-700 dark:text-amber-400', labelKey: 'ra_warning' },
+      'PENDING': { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-700 dark:text-blue-400', labelKey: 'pending' },
+      'INFO': { bg: 'bg-gray-100 dark:bg-gray-700', text: 'text-gray-700 dark:text-gray-300', labelKey: 'ra_info' },
+      'NORMAL': { bg: 'bg-gray-100 dark:bg-gray-700', text: 'text-gray-700 dark:text-gray-300', labelKey: 'ra_normal' },
+      'HIGH': { bg: 'bg-orange-100 dark:bg-orange-900/30', text: 'text-orange-700 dark:text-orange-400', labelKey: 'urgent' },
+      'URGENT': { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-700 dark:text-red-400', labelKey: 'ra_critical' },
+      'CRITICAL': { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-700 dark:text-red-400', labelKey: 'ra_critical' },
+      'EN_ATTENTE': { bg: 'bg-amber-100 dark:bg-amber-900/30', text: 'text-amber-700 dark:text-amber-400', labelKey: 'pending' },
+      'APPROUVE': { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-700 dark:text-green-400', labelKey: 'approved' },
+      'REJETE': { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-700 dark:text-red-400', labelKey: 'rejected' },
     };
     const badge = badges[status] || badges['INFO'];
     return (
       <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${badge.bg} ${badge.text}`}>
-        {badge.label}
+        {t(badge.labelKey)}
       </span>
     );
   };
@@ -137,12 +128,12 @@ export default function RecentActivities() {
     const diffInHours = Math.floor(diffInMs / 3600000);
     const diffInDays = Math.floor(diffInMs / 86400000);
 
-    if (diffInMinutes < 1) return 'À l\'instant';
-    if (diffInMinutes < 60) return `Il y a ${diffInMinutes} min`;
-    if (diffInHours < 24) return `Il y a ${diffInHours}h`;
-    if (diffInDays < 7) return `Il y a ${diffInDays}j`;
+    if (diffInMinutes < 1) return t('just_now');
+    if (diffInMinutes < 60) return `${diffInMinutes} min`;
+    if (diffInHours < 24) return `${diffInHours}h`;
+    if (diffInDays < 7) return `${diffInDays}${t('days_short')}`;
     
-    return date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+    return date.toLocaleDateString(locale, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
   };
 
   if (loading) {
@@ -174,7 +165,7 @@ export default function RecentActivities() {
       {/* Filters and Refresh */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex gap-2 overflow-x-auto pb-2 flex-1">
-          {typeFilters.map(({ value, label, icon: Icon }) => (
+          {typeFilters.map(({ value, labelKey, icon: Icon }) => (
             <button
               key={value}
               onClick={() => setFilter(value)}
@@ -185,7 +176,7 @@ export default function RecentActivities() {
               }`}
             >
               <Icon className="w-4 h-4" />
-              {label}
+              {t(labelKey)}
             </button>
           ))}
         </div>
@@ -202,8 +193,8 @@ export default function RecentActivities() {
       {activities.length === 0 ? (
         <div className="text-center py-12">
           <Activity className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-          <p className="text-gray-500 dark:text-gray-400 font-medium">Aucune activité récente</p>
-          <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Les activités apparaîtront ici</p>
+          <p className="text-gray-500 dark:text-gray-400 font-medium">{t('ra_no_recent_activity')}</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">{t('ra_activities_will_appear')}</p>
         </div>
       ) : (
         <div className="space-y-2 max-h-[500px] overflow-y-auto pr-2">
@@ -277,7 +268,7 @@ export default function RecentActivities() {
             href="/parametres/logs"
             className="inline-flex items-center gap-1 text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 font-medium group"
           >
-            Voir tous les logs
+            {t('ra_view_all_logs')}
             <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
           </a>
         </div>

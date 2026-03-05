@@ -7,6 +7,7 @@ import {
   ArrowLeft, RefreshCw, TrendingDown, Phone, Briefcase,
   Calendar, Clock, DollarSign,
 } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 /* ═══════════════════ TYPES ═══════════════════ */
 
@@ -127,25 +128,22 @@ interface EmployeeArchive {
 
 /* ═══════════════════ HELPERS ═══════════════════ */
 
-const MONTH_NAMES = ['', 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
-const DAY_NAMES_SHORT = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
-
-function fmtTime(iso: string | null) {
+function fmtTime(iso: string | null, locale = 'fr-FR') {
   if (!iso) return '—';
-  return new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  return new Date(iso).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
 }
 
-function fmtMoney(n: number | null | undefined) {
+function fmtMoney(n: number | null | undefined, locale = 'fr-FR') {
   if (n == null) return '—';
-  return n.toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + ' TND';
+  return n.toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + ' TND';
 }
 
-function statusBadge(status: string) {
+function statusBadge(status: string, t: (key: string) => string) {
   const map: Record<string, { bg: string; text: string; label: string }> = {
-    present:  { bg: 'bg-emerald-100 dark:bg-emerald-900/30', text: 'text-emerald-700 dark:text-emerald-400', label: 'Présent' },
-    partial:  { bg: 'bg-amber-100 dark:bg-amber-900/30',     text: 'text-amber-700 dark:text-amber-400',     label: 'Partiel' },
-    absent:   { bg: 'bg-red-100 dark:bg-red-900/30',         text: 'text-red-700 dark:text-red-400',         label: 'Absent' },
-    leave:    { bg: 'bg-blue-100 dark:bg-blue-900/30',       text: 'text-blue-700 dark:text-blue-400',       label: 'Congé' },
+    present:  { bg: 'bg-emerald-100 dark:bg-emerald-900/30', text: 'text-emerald-700 dark:text-emerald-400', label: t('present_label') },
+    partial:  { bg: 'bg-amber-100 dark:bg-amber-900/30',     text: 'text-amber-700 dark:text-amber-400',     label: t('partial_label') },
+    absent:   { bg: 'bg-red-100 dark:bg-red-900/30',         text: 'text-red-700 dark:text-red-400',         label: t('absent_label') },
+    leave:    { bg: 'bg-blue-100 dark:bg-blue-900/30',       text: 'text-blue-700 dark:text-blue-400',       label: t('leave_label') },
     weekend:  { bg: 'bg-gray-100 dark:bg-gray-800',          text: 'text-gray-400 dark:text-gray-500',       label: '—' },
   };
   const s = map[status] || map.absent;
@@ -167,7 +165,12 @@ function cellLetter(status: string): { letter: string; bg: string; text: string 
 
 export default function RHAttendanceDashboard() {
   const { data: session } = useSession();
+  const { t, language } = useLanguage();
+  const locale = language === 'ar' ? 'ar-SA' : language === 'en' ? 'en-US' : 'fr-FR';
   const now = new Date();
+
+  const MONTH_NAMES_L = ['', t('january'), t('february'), t('march'), t('april'), t('may_month'), t('june'), t('july'), t('august'), t('september'), t('october'), t('november'), t('december')];
+  const DAY_NAMES_SHORT_L = [t('sun'), t('mon'), t('tue'), t('wed'), t('thu'), t('fri'), t('sat')];
 
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
@@ -264,6 +267,10 @@ export default function RHAttendanceDashboard() {
       loading={archiveLoading}
       year={archiveYear}
       month={archiveMonth}
+      t={t}
+      locale={locale}
+      monthNames={MONTH_NAMES_L}
+      dayNames={DAY_NAMES_SHORT_L}
       onBack={() => { setSelectedEmployee(null); setArchive(null); }}
       onChangeMonth={changeArchiveMonth}
       onRecalculate={async () => {
@@ -287,7 +294,7 @@ export default function RHAttendanceDashboard() {
       <div className="min-h-[60vh] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="w-14 h-14 rounded-full border-4 border-blue-200 dark:border-blue-800 border-t-blue-600 dark:border-t-blue-400 animate-spin" />
-          <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Chargement des données de présence...</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">{t('loading_attendance_data')}</p>
         </div>
       </div>
     );
@@ -302,11 +309,11 @@ export default function RHAttendanceDashboard() {
         <div className="relative px-6 py-8 sm:px-8">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div>
-              <p className="text-sm font-medium text-blue-200 mb-1">Tableau de bord RH</p>
+              <p className="text-sm font-medium text-blue-200 mb-1">{t('rh_dashboard')}</p>
               <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
-                Suivi de Présence
+                {t('attendance_tracking')}
               </h1>
-              <p className="text-blue-100/80 mt-1">Vue globale du pointage de tous les employés</p>
+              <p className="text-blue-100/80 mt-1">{t('global_attendance_view')}</p>
             </div>
 
             {/* Month Navigator */}
@@ -315,8 +322,8 @@ export default function RHAttendanceDashboard() {
                 <ChevronLeft className="w-5 h-5" />
               </button>
               <div className="px-4 py-2 text-center min-w-[180px]">
-                <p className="text-lg font-bold text-white">{MONTH_NAMES[month]} {year}</p>
-                <p className="text-xs text-blue-200">{data?.workingDaysCount || 0} jours ouvrables</p>
+                <p className="text-lg font-bold text-white">{MONTH_NAMES_L[month]} {year}</p>
+                <p className="text-xs text-blue-200">{data?.workingDaysCount || 0} {t('working_days')}</p>
               </div>
               <button onClick={() => changeMonth(1)} className="p-2 rounded-lg hover:bg-white/10 text-white transition-colors">
                 <ChevronRight className="w-5 h-5" />
@@ -328,10 +335,10 @@ export default function RHAttendanceDashboard() {
 
       {/* ─── Quick Stats ─── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard symbol="#" label="Total Employés" value={data?.totalEmployees || 0} color="blue" />
-        <StatCard symbol="P" label="Présents Aujourd'hui" value={totalPresent} color="emerald" />
-        <StatCard symbol="A" label="Absents Aujourd'hui" value={totalAbsent} color="red" />
-        <StatCard symbol="!" label="Anomalies (mois)" value={data?.employees.reduce((s, e) => s + e.anomalies, 0) || 0} color="amber" />
+        <StatCard symbol="#" label={t('total_employees')} value={data?.totalEmployees || 0} color="blue" />
+        <StatCard symbol="P" label={t('present_today')} value={totalPresent} color="emerald" />
+        <StatCard symbol="A" label={t('absent_today')} value={totalAbsent} color="red" />
+        <StatCard symbol="!" label={t('anomalies_month')} value={data?.employees.reduce((s, e) => s + e.anomalies, 0) || 0} color="amber" />
       </div>
 
       {/* ─── Filters ─── */}
@@ -342,7 +349,7 @@ export default function RHAttendanceDashboard() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Rechercher un employé..."
+              placeholder={t('search_employee')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-gray-900 dark:text-white placeholder-gray-400"
@@ -352,10 +359,10 @@ export default function RHAttendanceDashboard() {
           {/* Filter buttons */}
           <div className="flex gap-2">
             {([
-              { key: 'all', label: 'Tous', sym: '∀' },
-              { key: 'present', label: 'Assidus', sym: 'P' },
-              { key: 'absent', label: 'Absences', sym: 'A' },
-              { key: 'anomaly', label: 'Anomalies', sym: '!' },
+              { key: 'all', label: t('all'), sym: '∀' },
+              { key: 'present', label: t('diligent'), sym: 'P' },
+              { key: 'absent', label: t('absences'), sym: 'A' },
+              { key: 'anomaly', label: t('anomalies'), sym: '!' },
             ] as const).map((f) => (
               <button
                 key={f.key}
@@ -386,7 +393,7 @@ export default function RHAttendanceDashboard() {
             <thead>
               <tr className="bg-gray-50 dark:bg-gray-800/80">
                 <th className="sticky left-0 z-20 bg-gray-50 dark:bg-gray-800/80 px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider min-w-[220px] border-r border-gray-200 dark:border-gray-700">
-                  Employé
+                  {t('employee')}
                 </th>
                 {data?.days.map((day) => {
                   const d = new Date(day.date);
@@ -402,7 +409,7 @@ export default function RHAttendanceDashboard() {
                           : 'text-gray-500 dark:text-gray-400'
                       }`}
                     >
-                      <div>{DAY_NAMES_SHORT[day.dayOfWeek]}</div>
+                      <div>{DAY_NAMES_SHORT_L[day.dayOfWeek]}</div>
                       <div className={`text-sm font-bold ${isToday ? 'text-blue-600 dark:text-blue-400' : ''}`}>
                         {d.getUTCDate()}
                       </div>
@@ -410,7 +417,7 @@ export default function RHAttendanceDashboard() {
                   );
                 })}
                 <th className="sticky right-0 z-20 bg-gray-50 dark:bg-gray-800/80 px-3 py-3 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider min-w-[80px] border-l border-gray-200 dark:border-gray-700">
-                  Taux
+                  {t('rate')}
                 </th>
               </tr>
             </thead>
@@ -419,8 +426,8 @@ export default function RHAttendanceDashboard() {
                 <tr>
                   <td colSpan={100} className="py-16 text-center">
                     <span className="text-4xl text-gray-300 dark:text-gray-600 block mb-3">∅</span>
-                    <p className="text-gray-500 dark:text-gray-400 font-medium">Aucun employé trouvé</p>
-                    <p className="text-gray-400 dark:text-gray-500 text-sm">Modifiez vos filtres de recherche</p>
+                    <p className="text-gray-500 dark:text-gray-400 font-medium">{t('no_employee_found')}</p>
+                    <p className="text-gray-400 dark:text-gray-500 text-sm">{t('modify_search_filters')}</p>
                   </td>
                 </tr>
               ) : (
@@ -504,13 +511,13 @@ export default function RHAttendanceDashboard() {
 
         {/* Legend */}
         <div className="px-6 py-4 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-100 dark:border-gray-800 flex flex-wrap gap-5 text-xs font-medium text-gray-600 dark:text-gray-400">
-          <span className="flex items-center gap-1.5"><span className="w-6 h-6 rounded-md bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 flex items-center justify-center text-[11px] font-bold">P</span> Présent</span>
-          <span className="flex items-center gap-1.5"><span className="w-6 h-6 rounded-md bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 flex items-center justify-center text-[11px] font-bold">½</span> Partiel</span>
-          <span className="flex items-center gap-1.5"><span className="w-6 h-6 rounded-md bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400 flex items-center justify-center text-[11px] font-bold">A</span> Absent</span>
-          <span className="flex items-center gap-1.5"><span className="w-6 h-6 rounded-md bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 flex items-center justify-center text-[11px] font-bold">C</span> Congé</span>
-          <span className="flex items-center gap-1.5"><span className="w-6 h-6 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 flex items-center justify-center text-[11px] font-bold">—</span> Weekend</span>
-          <span className="flex items-center gap-1.5"><span className="text-sm font-bold text-red-600 dark:text-red-400">!</span> Anomalie</span>
-          <span className="ml-auto text-gray-400 dark:text-gray-500">{filteredEmployees.length} employé(s)</span>
+          <span className="flex items-center gap-1.5"><span className="w-6 h-6 rounded-md bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 flex items-center justify-center text-[11px] font-bold">P</span> {t('present_status')}</span>
+          <span className="flex items-center gap-1.5"><span className="w-6 h-6 rounded-md bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 flex items-center justify-center text-[11px] font-bold">½</span> {t('partial_status')}</span>
+          <span className="flex items-center gap-1.5"><span className="w-6 h-6 rounded-md bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400 flex items-center justify-center text-[11px] font-bold">A</span> {t('absent_status')}</span>
+          <span className="flex items-center gap-1.5"><span className="w-6 h-6 rounded-md bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 flex items-center justify-center text-[11px] font-bold">C</span> {t('leave_status')}</span>
+          <span className="flex items-center gap-1.5"><span className="w-6 h-6 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 flex items-center justify-center text-[11px] font-bold">—</span> {t('weekend_label')}</span>
+          <span className="flex items-center gap-1.5"><span className="text-sm font-bold text-red-600 dark:text-red-400">!</span> {t('anomaly')}</span>
+          <span className="ml-auto text-gray-400 dark:text-gray-500">{filteredEmployees.length} {t('employee_s')}</span>
         </div>
       </div>
 
@@ -518,22 +525,22 @@ export default function RHAttendanceDashboard() {
       <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-800 overflow-hidden">
         <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-800">
           <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-            Récapitulatif Mensuel
+            {t('monthly_summary')}
           </h2>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="bg-gray-50 dark:bg-gray-800/50">
-                <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Employé</th>
-                <th className="px-4 py-3 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Contrat</th>
-                <th className="px-4 py-3 text-center text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase">Jours travaillés</th>
-                <th className="px-4 py-3 text-center text-xs font-bold text-red-600 dark:text-red-400 uppercase">Absences</th>
-                <th className="px-4 py-3 text-center text-xs font-bold text-blue-600 dark:text-blue-400 uppercase">Congés</th>
-                <th className="px-4 py-3 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Heures</th>
-                <th className="px-4 py-3 text-center text-xs font-bold text-amber-600 dark:text-amber-400 uppercase">Anomalies</th>
-                <th className="px-4 py-3 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Taux</th>
-                <th className="px-4 py-3 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Action</th>
+                <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">{t('employee')}</th>
+                <th className="px-4 py-3 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">{t('contract')}</th>
+                <th className="px-4 py-3 text-center text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase">{t('worked_days')}</th>
+                <th className="px-4 py-3 text-center text-xs font-bold text-red-600 dark:text-red-400 uppercase">{t('absences')}</th>
+                <th className="px-4 py-3 text-center text-xs font-bold text-blue-600 dark:text-blue-400 uppercase">{t('leave')}</th>
+                <th className="px-4 py-3 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">{t('hours')}</th>
+                <th className="px-4 py-3 text-center text-xs font-bold text-amber-600 dark:text-amber-400 uppercase">{t('anomalies')}</th>
+                <th className="px-4 py-3 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">{t('rate')}</th>
+                <th className="px-4 py-3 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">{t('action')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -598,7 +605,7 @@ export default function RHAttendanceDashboard() {
                       onClick={(e) => { e.stopPropagation(); openEmployee(emp.id); }}
                       className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
                     >
-                      Voir →
+                      {t('view')} →
                     </button>
                   </td>
                 </tr>
@@ -638,11 +645,15 @@ function StatCard({ symbol, label, value, color }: { symbol: string; label: stri
 
 /* ═══════════════════ EMPLOYEE ARCHIVE VIEW ═══════════════════ */
 
-function EmployeeArchiveView({ archive, loading, year, month, onBack, onChangeMonth, onRecalculate }: {
+function EmployeeArchiveView({ archive, loading, year, month, t, locale, monthNames, dayNames, onBack, onChangeMonth, onRecalculate }: {
   archive: EmployeeArchive;
   loading: boolean;
   year: number;
   month: number;
+  t: (key: string) => string;
+  locale: string;
+  monthNames: string[];
+  dayNames: string[];
   onBack: () => void;
   onChangeMonth: (dir: -1 | 1) => void;
   onRecalculate: () => void;
@@ -657,7 +668,7 @@ function EmployeeArchiveView({ archive, loading, year, month, onBack, onChangeMo
       <div className="flex items-center gap-4">
         <button onClick={onBack} className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors shadow-sm">
           <ArrowLeft className="w-4 h-4" />
-          Retour
+          {t('back')}
         </button>
 
         <div className="flex items-center gap-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-1 shadow-sm">
@@ -665,7 +676,7 @@ function EmployeeArchiveView({ archive, loading, year, month, onBack, onChangeMo
             <ChevronLeft className="w-4 h-4 text-gray-600 dark:text-gray-400" />
           </button>
           <span className="px-3 text-sm font-bold text-gray-900 dark:text-white min-w-[140px] text-center">
-            {MONTH_NAMES[month]} {year}
+            {monthNames[month]} {year}
           </span>
           <button onClick={() => onChangeMonth(1)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
             <ChevronRight className="w-4 h-4 text-gray-600 dark:text-gray-400" />
@@ -700,30 +711,30 @@ function EmployeeArchiveView({ archive, loading, year, month, onBack, onChangeMo
             </div>
 
             <div className="p-6 grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <InfoItem label="Téléphone" value={emp.telephone || 'N/A'} />
-              <InfoItem label="Embauché le" value={emp.dateEmbauche ? new Date(emp.dateEmbauche).toLocaleDateString('fr-FR') : 'N/A'} />
-              <InfoItem label="Salaire de base" value={fmtMoney(emp.baseSalary)} />
-              <InfoItem label="Congé annuel" value={`${emp.annualLeave} jours`} />
+              <InfoItem label={t('phone')} value={emp.telephone || 'N/A'} />
+              <InfoItem label={t('hired_on')} value={emp.dateEmbauche ? new Date(emp.dateEmbauche).toLocaleDateString(locale) : 'N/A'} />
+              <InfoItem label={t('base_salary')} value={fmtMoney(emp.baseSalary, locale)} />
+              <InfoItem label={t('annual_leave')} value={`${emp.annualLeave} ${t('days')}`} />
             </div>
           </div>
 
           {/* ─── Summary Stats ─── */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <MiniStatCard label="Jours présent" value={`${sum.presentDays}`} sub={`/ ${archive.workingDaysCount}`} color="emerald" symbol="P" />
-            <MiniStatCard label="Absences" value={`${sum.absentDays}`} sub="jours" color="red" symbol="A" />
-            <MiniStatCard label="Heures totales" value={`${sum.totalWorkedHours}h`} sub="ce mois" color="blue" symbol="H" />
-            <MiniStatCard label="Taux de présence" value={`${sum.attendanceRate}%`} sub="objectif 95%" color={sum.attendanceRate >= 90 ? 'emerald' : sum.attendanceRate >= 70 ? 'amber' : 'red'} symbol="%" />
+            <MiniStatCard label={t('present_days')} value={`${sum.presentDays}`} sub={`/ ${archive.workingDaysCount}`} color="emerald" symbol="P" />
+            <MiniStatCard label={t('absences')} value={`${sum.absentDays}`} sub={t('days')} color="red" symbol="A" />
+            <MiniStatCard label={t('total_hours')} value={`${sum.totalWorkedHours}h`} sub={t('this_month')} color="blue" symbol="H" />
+            <MiniStatCard label={t('attendance_rate')} value={`${sum.attendanceRate}%`} sub={t('target_95')} color={sum.attendanceRate >= 90 ? 'emerald' : sum.attendanceRate >= 70 ? 'amber' : 'red'} symbol="%" />
           </div>
 
           {/* ─── Daily Detail Table ─── */}
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-800 overflow-hidden">
             <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
               <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                Détail Journalier — {MONTH_NAMES[month]} {year}
+                {t('daily_detail')} — {monthNames[month]} {year}
               </h3>
               {sum.anomalies > 0 && (
                 <span className="text-xs font-bold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-3 py-1 rounded-full">
-                  ! {sum.anomalies} anomalie(s)
+                  ! {sum.anomalies} {t('anomaly_count')}
                 </span>
               )}
             </div>
@@ -731,20 +742,20 @@ function EmployeeArchiveView({ archive, loading, year, month, onBack, onChangeMo
               <table className="w-full">
                 <thead>
                   <tr className="bg-gray-50 dark:bg-gray-800/50">
-                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Date</th>
-                    <th className="px-4 py-3 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Jour</th>
-                    <th className="px-4 py-3 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Statut</th>
-                    <th className="px-4 py-3 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Matin Entrée</th>
-                    <th className="px-4 py-3 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Matin Sortie</th>
-                    <th className="px-4 py-3 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">A-midi Entrée</th>
-                    <th className="px-4 py-3 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">A-midi Sortie</th>
-                    <th className="px-4 py-3 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Durée</th>
-                    <th className="px-4 py-3 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Note</th>
+                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">{t('date')}</th>
+                    <th className="px-4 py-3 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">{t('day')}</th>
+                    <th className="px-4 py-3 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">{t('status')}</th>
+                    <th className="px-4 py-3 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">{t('morning_in')}</th>
+                    <th className="px-4 py-3 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">{t('morning_out')}</th>
+                    <th className="px-4 py-3 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">{t('afternoon_in')}</th>
+                    <th className="px-4 py-3 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">{t('afternoon_out')}</th>
+                    <th className="px-4 py-3 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">{t('duration')}</th>
+                    <th className="px-4 py-3 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">{t('note')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                   {archive.dailyBreakdown.map((day) => {
-                    const badge = statusBadge(day.status);
+                    const badge = statusBadge(day.status, t);
                     const isFuture = new Date(day.date) > new Date();
                     const isToday = day.date === new Date().toISOString().split('T')[0];
                     const hours = day.totalMinutes > 0 ? `${Math.floor(day.totalMinutes / 60)}h${(day.totalMinutes % 60).toString().padStart(2, '0')}` : '—';
@@ -761,11 +772,11 @@ function EmployeeArchiveView({ archive, loading, year, month, onBack, onChangeMo
                         } ${isFuture && !day.isWeekend ? 'opacity-40' : ''}`}
                       >
                         <td className="px-4 py-2.5 text-sm font-medium text-gray-900 dark:text-white">
-                          {new Date(day.date).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}
-                          {isToday && <span className="ml-2 text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 rounded">Auj.</span>}
+                          {new Date(day.date).toLocaleDateString(locale, { day: '2-digit', month: '2-digit' })}
+                          {isToday && <span className="ml-2 text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 rounded">{t('today_short')}</span>}
                         </td>
                         <td className="px-4 py-2.5 text-center text-xs font-medium text-gray-500 dark:text-gray-400">
-                          {DAY_NAMES_SHORT[day.dayOfWeek]}
+                          {dayNames[day.dayOfWeek]}
                         </td>
                         <td className="px-4 py-2.5 text-center">
                           <span className={`inline-flex items-center text-[11px] font-bold px-2.5 py-1 rounded-full ${badge.bg} ${badge.text}`}>
@@ -774,16 +785,16 @@ function EmployeeArchiveView({ archive, loading, year, month, onBack, onChangeMo
                           </span>
                         </td>
                         <td className="px-4 py-2.5 text-center text-sm text-gray-600 dark:text-gray-300 font-mono">
-                          {fmtTime(day.morning?.checkIn || null)}
+                          {fmtTime(day.morning?.checkIn || null, locale)}
                         </td>
                         <td className="px-4 py-2.5 text-center text-sm text-gray-600 dark:text-gray-300 font-mono">
-                          {fmtTime(day.morning?.checkOut || null)}
+                          {fmtTime(day.morning?.checkOut || null, locale)}
                         </td>
                         <td className="px-4 py-2.5 text-center text-sm text-gray-600 dark:text-gray-300 font-mono">
-                          {fmtTime(day.afternoon?.checkIn || null)}
+                          {fmtTime(day.afternoon?.checkIn || null, locale)}
                         </td>
                         <td className="px-4 py-2.5 text-center text-sm text-gray-600 dark:text-gray-300 font-mono">
-                          {fmtTime(day.afternoon?.checkOut || null)}
+                          {fmtTime(day.afternoon?.checkOut || null, locale)}
                         </td>
                         <td className="px-4 py-2.5 text-center text-sm font-semibold text-gray-700 dark:text-gray-300">
                           {hours}
@@ -791,10 +802,10 @@ function EmployeeArchiveView({ archive, loading, year, month, onBack, onChangeMo
                         <td className="px-4 py-2.5 text-center">
                           {day.anomaly ? (
                             <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700 dark:text-amber-400" title={day.anomaly}>
-                              <span className="font-bold">!</span> Anomalie
+                              <span className="font-bold">!</span> {t('anomaly')}
                             </span>
                           ) : day.status === 'leave' ? (
-                            <span className="text-[11px] text-blue-600 dark:text-blue-400 font-medium">En congé</span>
+                            <span className="text-[11px] text-blue-600 dark:text-blue-400 font-medium">{t('on_leave')}</span>
                           ) : null}
                         </td>
                       </tr>
@@ -811,14 +822,14 @@ function EmployeeArchiveView({ archive, loading, year, month, onBack, onChangeMo
             <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-800 overflow-hidden">
               <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                  Calcul de Salaire
+                  {t('salary_calculation')}
                 </h3>
                 <button
                   onClick={onRecalculate}
                   className="text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-3 py-1.5 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors flex items-center gap-1"
                 >
                   <RefreshCw className="w-3 h-3" />
-                  Recalculer
+                  {t('recalculate')}
                 </button>
               </div>
               <div className="p-6">
@@ -826,27 +837,27 @@ function EmployeeArchiveView({ archive, loading, year, month, onBack, onChangeMo
                   <div className="space-y-4">
                     <div className="flex items-end justify-between">
                       <div>
-                        <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Salaire net {sal.status === 'ESTIMATE' ? '(estimé)' : ''}</p>
-                        <p className="text-3xl font-extrabold text-gray-900 dark:text-white">{fmtMoney(sal.netSalary)}</p>
+                        <p className="text-xs font-medium text-gray-500 dark:text-gray-400">{t('net_salary')} {sal.status === 'ESTIMATE' ? `(${t('estimated')})` : ''}</p>
+                        <p className="text-3xl font-extrabold text-gray-900 dark:text-white">{fmtMoney(sal.netSalary, locale)}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Salaire de base</p>
-                        <p className="text-lg font-semibold text-gray-600 dark:text-gray-300">{fmtMoney(sal.baseSalary)}</p>
+                        <p className="text-xs font-medium text-gray-500 dark:text-gray-400">{t('base_salary')}</p>
+                        <p className="text-lg font-semibold text-gray-600 dark:text-gray-300">{fmtMoney(sal.baseSalary, locale)}</p>
                       </div>
                     </div>
 
                     {sal.deductions != null && sal.deductions > 0 && (
                       <div className="flex items-center gap-1.5 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-xl px-4 py-2.5">
                         <TrendingDown className="w-4 h-4" />
-                        Déduction: {fmtMoney(sal.deductions)} (absences)
+                        {t('deduction')}: {fmtMoney(sal.deductions, locale)} ({t('absences_reason')})
                       </div>
                     )}
 
                     {sal.grossSalary != null && (
                       <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 space-y-2">
-                        <div className="flex justify-between text-sm"><span className="text-gray-500">Salaire brut</span><span className="font-semibold text-gray-900 dark:text-white">{fmtMoney(sal.grossSalary)}</span></div>
-                        <div className="flex justify-between text-sm"><span className="text-gray-500">Déductions</span><span className="font-semibold text-red-600">{fmtMoney(sal.deductions)}</span></div>
-                        <div className="border-t border-gray-200 dark:border-gray-700 pt-2 flex justify-between text-sm"><span className="font-bold text-gray-900 dark:text-white">Net à payer</span><span className="font-extrabold text-emerald-600">{fmtMoney(sal.netSalary)}</span></div>
+                        <div className="flex justify-between text-sm"><span className="text-gray-500">{t('gross_salary')}</span><span className="font-semibold text-gray-900 dark:text-white">{fmtMoney(sal.grossSalary, locale)}</span></div>
+                        <div className="flex justify-between text-sm"><span className="text-gray-500">{t('deductions')}</span><span className="font-semibold text-red-600">{fmtMoney(sal.deductions, locale)}</span></div>
+                        <div className="border-t border-gray-200 dark:border-gray-700 pt-2 flex justify-between text-sm"><span className="font-bold text-gray-900 dark:text-white">{t('net_to_pay')}</span><span className="font-extrabold text-emerald-600">{fmtMoney(sal.netSalary, locale)}</span></div>
                       </div>
                     )}
 
@@ -856,15 +867,15 @@ function EmployeeArchiveView({ archive, loading, year, month, onBack, onChangeMo
                         : sal.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
                         : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
                     }`}>
-                      {sal.status === 'ESTIMATE' ? 'Estimation' : sal.status === 'CALCULATED' ? 'Calculé' : sal.status === 'APPROVED' ? 'Approuvé' : sal.status}
+                      {sal.status === 'ESTIMATE' ? t('estimation') : sal.status === 'CALCULATED' ? t('calculated') : sal.status === 'APPROVED' ? t('approved_salary') : sal.status}
                     </span>
                   </div>
                 ) : (
                   <div className="text-center py-8">
                     <span className="text-4xl text-gray-300 dark:text-gray-600 block mb-3">$</span>
-                    <p className="text-gray-500 dark:text-gray-400 text-sm">Aucune donnée salariale disponible</p>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm">{t('no_salary_data')}</p>
                     <button onClick={onRecalculate} className="mt-3 text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-4 py-2 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors">
-                      Calculer maintenant
+                      {t('calculate_now')}
                     </button>
                   </div>
                 )}
@@ -875,15 +886,15 @@ function EmployeeArchiveView({ archive, loading, year, month, onBack, onChangeMo
             <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-800 overflow-hidden">
               <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-800">
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                  Solde de Congés
+                  {t('leave_balance')}
                 </h3>
               </div>
               <div className="p-6 space-y-5">
                 <div className="grid grid-cols-2 gap-4">
-                  <LeaveBox label="Droit annuel" value={archive.leaveBalance.annualAllowance} color="purple" />
-                  <LeaveBox label="Utilisés" value={archive.leaveBalance.used} color="red" />
-                  <LeaveBox label="En attente" value={archive.leaveBalance.pending} color="amber" />
-                  <LeaveBox label="Restant" value={archive.leaveBalance.remaining} color="emerald" />
+                  <LeaveBox label={t('annual_allowance')} value={archive.leaveBalance.annualAllowance} color="purple" daysLabel={t('days')} />
+                  <LeaveBox label={t('used_leave')} value={archive.leaveBalance.used} color="red" daysLabel={t('days')} />
+                  <LeaveBox label={t('en_attente')} value={archive.leaveBalance.pending} color="amber" daysLabel={t('days')} />
+                  <LeaveBox label={t('remaining_leave')} value={archive.leaveBalance.remaining} color="emerald" daysLabel={t('days')} />
                 </div>
 
                 {/* Progress bar */}
@@ -897,14 +908,14 @@ function EmployeeArchiveView({ archive, loading, year, month, onBack, onChangeMo
                 {/* Leave requests list */}
                 {archive.leaveRequests.length > 0 && (
                   <div>
-                    <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">Demandes de congé</p>
+                    <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">{t('leave_requests_label')}</p>
                     <div className="space-y-2">
                       {archive.leaveRequests.slice(0, 5).map((lr) => (
                         <div key={lr.id} className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 rounded-xl px-4 py-2.5">
                           <div>
                             <span className="text-sm font-medium text-gray-900 dark:text-white">{lr.type}</span>
                             <p className="text-[11px] text-gray-400">
-                              {new Date(lr.dateDebut).toLocaleDateString('fr-FR')} — {new Date(lr.dateFin).toLocaleDateString('fr-FR')}
+                              {new Date(lr.dateDebut).toLocaleDateString(locale)} — {new Date(lr.dateFin).toLocaleDateString(locale)}
                             </p>
                           </div>
                           <span className={`text-[11px] font-bold px-2 py-1 rounded-full ${
@@ -912,7 +923,7 @@ function EmployeeArchiveView({ archive, loading, year, month, onBack, onChangeMo
                               : lr.status === 'EN_ATTENTE' ? 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
                               : 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'
                           }`}>
-                            {lr.status === 'VALIDE' ? 'Validé' : lr.status === 'EN_ATTENTE' ? 'En attente' : 'Refusé'}
+                            {lr.status === 'VALIDE' ? t('validated') : lr.status === 'EN_ATTENTE' ? t('en_attente') : t('refused')}
                           </span>
                         </div>
                       ))}
@@ -961,7 +972,7 @@ function MiniStatCard({ label, value, sub, color, symbol }: { label: string; val
   );
 }
 
-function LeaveBox({ label, value, color }: { label: string; value: number; color: string }) {
+function LeaveBox({ label, value, color, daysLabel }: { label: string; value: number; color: string; daysLabel: string }) {
   const colorMap: Record<string, string> = {
     purple:  'text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20',
     red:     'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20',
@@ -971,7 +982,7 @@ function LeaveBox({ label, value, color }: { label: string; value: number; color
   return (
     <div className={`rounded-xl p-4 text-center ${colorMap[color] || colorMap.purple}`}>
       <p className="text-[11px] font-medium opacity-70 mb-1">{label}</p>
-      <p className="text-2xl font-extrabold">{value}<span className="text-xs font-normal ml-1">jours</span></p>
+      <p className="text-2xl font-extrabold">{value}<span className="text-xs font-normal ml-1">{daysLabel}</span></p>
     </div>
   );
 }

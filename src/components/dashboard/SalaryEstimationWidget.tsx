@@ -9,6 +9,7 @@
 
 import { useState, useEffect } from "react";
 import { DollarSign, TrendingUp, TrendingDown, BarChart3, Calendar } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface SalaryEstimate {
   baseSalary: number;
@@ -44,6 +45,8 @@ interface DashboardData {
 }
 
 export default function SalaryEstimationWidget() {
+  const { t, language } = useLanguage();
+  const locale = language === 'ar' ? 'ar-SA' : language === 'en' ? 'en-US' : 'fr-FR';
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -88,15 +91,15 @@ export default function SalaryEstimationWidget() {
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-4">
             <BarChart3 className="w-5 h-5 text-blue-600" />
-            Progression du mois
+            {t('sw_month_progress')}
           </h3>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
-            <StatBox label="Jours travaillés" value={`${progress.workedDays}/${progress.expectedDays}`} />
-            <StatBox label="Heures totales" value={`${progress.totalWorkedHours}h`} />
-            <StatBox label="Taux de présence" value={`${progress.progressPercent}%`} />
+            <StatBox label={t('sw_worked_days')} value={`${progress.workedDays}/${progress.expectedDays}`} />
+            <StatBox label={t('sw_total_hours')} value={`${progress.totalWorkedHours}h`} />
+            <StatBox label={t('sw_attendance_rate')} value={`${progress.progressPercent}%`} />
             <StatBox
-              label="Jours restants"
+              label={t('sw_remaining_days')}
               value={String(Math.max(0, progress.expectedDays - progress.workedDays))}
             />
           </div>
@@ -116,20 +119,20 @@ export default function SalaryEstimationWidget() {
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-4">
             <DollarSign className="w-5 h-5 text-green-600" />
-            Estimation de salaire
+            {t('sw_salary_estimation')}
           </h3>
 
           <div className="flex items-end justify-between mb-4">
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Salaire net estimé</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{t('sw_estimated_net')}</p>
               <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                {salary.estimatedNet.toLocaleString("fr-FR")} <span className="text-base font-normal text-gray-500">TND</span>
+                {salary.estimatedNet.toLocaleString(locale)} <span className="text-base font-normal text-gray-500">TND</span>
               </p>
             </div>
             <div className="text-right">
-              <p className="text-sm text-gray-500 dark:text-gray-400">Salaire de base</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{t('sw_base_salary')}</p>
               <p className="text-lg text-gray-700 dark:text-gray-300">
-                {salary.baseSalary.toLocaleString("fr-FR")} TND
+                {salary.baseSalary.toLocaleString(locale)} TND
               </p>
             </div>
           </div>
@@ -137,17 +140,17 @@ export default function SalaryEstimationWidget() {
           {salary.estimatedNet < salary.baseSalary ? (
             <div className="flex items-center gap-1 text-sm text-red-600 dark:text-red-400">
               <TrendingDown className="w-4 h-4" />
-              Déduction de {(salary.baseSalary - salary.estimatedNet).toLocaleString("fr-FR")} TND (absences)
+              {t('sw_deduction_of')} {(salary.baseSalary - salary.estimatedNet).toLocaleString(locale)} TND ({t('sw_absences')})
             </div>
           ) : (
             <div className="flex items-center gap-1 text-sm text-green-600 dark:text-green-400">
               <TrendingUp className="w-4 h-4" />
-              Aucune déduction ce mois
+              {t('sw_no_deduction')}
             </div>
           )}
 
           <p className="mt-2 text-xs text-gray-400 dark:text-gray-500">
-            * Estimation basée sur le pointage actuel. Le montant final peut varier.
+            * {t('sw_estimation_note')}
           </p>
         </div>
       )}
@@ -157,14 +160,14 @@ export default function SalaryEstimationWidget() {
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-4">
             <Calendar className="w-5 h-5 text-purple-600" />
-            Solde de congés
+            {t('sw_leave_balance')}
           </h3>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <StatBox label="Droit annuel" value={String(leave.annualAllowance)} unit="jours" />
-            <StatBox label="Utilisés" value={String(leave.used)} unit="jours" color="red" />
-            <StatBox label="En attente" value={String(leave.pending)} unit="jours" color="yellow" />
-            <StatBox label="Restant" value={String(leave.remaining)} unit="jours" color="green" />
+            <StatBox label={t('sw_annual_allowance')} value={String(leave.annualAllowance)} unit={t('sw_days')} />
+            <StatBox label={t('sw_used')} value={String(leave.used)} unit={t('sw_days')} color="red" />
+            <StatBox label={t('pending')} value={String(leave.pending)} unit={t('sw_days')} color="yellow" />
+            <StatBox label={t('sw_remaining')} value={String(leave.remaining)} unit={t('sw_days')} color="green" />
           </div>
 
           {/* Usage bar */}

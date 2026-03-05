@@ -90,11 +90,11 @@ export default function DocumentsPage() {
 
   const getCategoryLabel = (category: string) => {
     switch (category) {
-      case 'personnel': return language === 'ar' ? 'شخصي' : language === 'en' ? 'Personal' : 'Personnel'
-      case 'formation': return language === 'ar' ? 'تدريب' : language === 'en' ? 'Training' : 'Formation'
-      case 'experience': return language === 'ar' ? 'خبرة' : language === 'en' ? 'Experience' : 'Expérience'
-      case 'contrat': return language === 'ar' ? 'عقد' : language === 'en' ? 'Contract' : 'Contrat'
-      default: return language === 'ar' ? 'أخرى' : language === 'en' ? 'Other' : 'Autre'
+      case 'personnel': return t('cat_personal')
+      case 'formation': return t('cat_training')
+      case 'experience': return t('cat_experience')
+      case 'contrat': return t('cat_contract')
+      default: return t('cat_other')
     }
   }
 
@@ -117,15 +117,15 @@ export default function DocumentsPage() {
       
       showNotification({
         type: 'success',
-        title: 'Téléchargement',
-        message: `${doc.name} téléchargé avec succès`,
+        title: t('download'),
+        message: `${doc.name} ${t('downloaded_successfully')}`,
         duration: 3000
       })
     } catch (error) {
       showNotification({
         type: 'error',
-        title: 'Erreur',
-        message: 'Impossible de télécharger le document',
+        title: t('error'),
+        message: t('download_error'),
         duration: 5000
       })
     }
@@ -145,8 +145,8 @@ export default function DocumentsPage() {
     if (file.size > maxSize) {
       showNotification({
         type: 'error',
-        title: 'Fichier trop volumineux',
-        message: `La taille maximale est de 5MB. Votre fichier fait ${(file.size / 1024 / 1024).toFixed(2)}MB`,
+        title: t('file_too_large'),
+        message: `${t('max_size_5mb')} (${(file.size / 1024 / 1024).toFixed(2)}MB)`,
         duration: 5000
       })
       return false
@@ -155,8 +155,8 @@ export default function DocumentsPage() {
     if (!allowedTypes.includes(file.type)) {
       showNotification({
         type: 'error',
-        title: 'Type de fichier non supporté',
-        message: 'Formats acceptés: PDF, DOC, DOCX, JPG, PNG, WEBP',
+        title: t('unsupported_file_type'),
+        message: t('accepted_formats'),
         duration: 5000
       })
       return false
@@ -193,8 +193,8 @@ export default function DocumentsPage() {
         if (response.ok) {
           showNotification({
             type: 'success',
-            title: 'Upload réussi',
-            message: `${file.name} a été uploadé avec succès`,
+            title: t('upload_success'),
+            message: `${file.name} ${t('uploaded_successfully')}`,
             duration: 3000
           })
         } else {
@@ -203,8 +203,8 @@ export default function DocumentsPage() {
       } catch (error) {
         showNotification({
           type: 'error',
-          title: 'Erreur d\'upload',
-          message: `Impossible d\'uploader ${file.name}`,
+          title: t('upload_error'),
+          message: `${t('upload_failed_for')} ${file.name}`,
           duration: 5000
         })
       }
@@ -276,15 +276,11 @@ export default function DocumentsPage() {
                   {t("my_documents")}
                   <span className="inline-flex items-center px-3 py-1 bg-white/20 rounded-full text-sm font-medium">
                     <Sparkles className="w-4 h-4 mr-1" />
-                    {documents.length} {language === 'ar' ? 'ملف' : language === 'en' ? 'files' : 'fichiers'}
+                    {documents.length} {t('files')}
                   </span>
                 </h1>
                 <p className="text-white/80 mt-1">
-                  {language === 'ar' 
-                    ? 'الوصول إلى مستنداتك المهنية وإدارتها'
-                    : language === 'en'
-                    ? 'Access and manage your professional documents'
-                    : 'Accédez et gérez vos documents professionnels'}
+                  {t('access_manage_docs')}
                 </p>
               </div>
             </div>
@@ -293,7 +289,7 @@ export default function DocumentsPage() {
               className="hidden md:flex items-center gap-2 px-5 py-3 bg-white text-violet-600 rounded-xl font-semibold hover:bg-white/90 transition-colors shadow-lg"
             >
               <Upload className="w-5 h-5" />
-              {language === 'ar' ? 'إضافة ملف' : language === 'en' ? 'Add file' : 'Ajouter un fichier'}
+              {t('add_file')}
             </button>
           </div>
         </div>
@@ -307,7 +303,7 @@ export default function DocumentsPage() {
             <Search className={`absolute top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5 ${isRTL ? 'right-4' : 'left-4'}`} />
             <input
               type="text"
-              placeholder={language === 'ar' ? 'البحث في المستندات...' : language === 'en' ? 'Search documents...' : 'Rechercher des documents...'}
+              placeholder={t('search_documents')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className={`w-full ${isRTL ? 'pr-12 pl-4' : 'pl-12 pr-4'} py-3 bg-gray-50 dark:bg-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-600 transition-all`}
@@ -327,7 +323,7 @@ export default function DocumentsPage() {
                 }`}
               >
                 {cat === 'all' 
-                  ? (language === 'ar' ? 'الكل' : language === 'en' ? 'All' : 'Tout')
+                  ? t('all')
                   : getCategoryLabel(cat)}
               </button>
             ))}
@@ -347,14 +343,10 @@ export default function DocumentsPage() {
             </div>
             <div>
               <h3 className="font-bold text-gray-900 dark:text-white text-lg">
-                {language === 'ar' ? 'عقودي' : language === 'en' ? 'My Contracts' : 'Mes Contrats'}
+                {t('my_contracts')}
               </h3>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                {language === 'ar' 
-                  ? 'عرض وتوقيع عقود العمل'
-                  : language === 'en'
-                  ? 'View and sign employment contracts'
-                  : 'Consulter et signer les contrats de travail'}
+                {t('view_sign_contracts')}
               </p>
             </div>
           </div>
@@ -375,7 +367,7 @@ export default function DocumentsPage() {
             <Loader2 className="w-8 h-8 animate-spin text-violet-600" />
           </div>
           <p className="text-gray-600 dark:text-gray-400 font-medium">
-            {language === 'ar' ? 'جاري التحميل...' : language === 'en' ? 'Loading...' : 'Chargement...'}
+            {t('loading')}
           </p>
         </div>
       ) : !hasProfile ? (
@@ -384,21 +376,17 @@ export default function DocumentsPage() {
             <AlertCircle className="w-10 h-10 text-orange-500" />
           </div>
           <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-            {language === 'ar' ? 'الملف الشخصي غير مكتمل' : language === 'en' ? 'Profile not complete' : 'Profil non complété'}
+            {t('profile_not_complete')}
           </h3>
           <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-md mx-auto">
-            {language === 'ar' 
-              ? 'أكمل ملفك الشخصي للوصول إلى مستنداتك'
-              : language === 'en'
-              ? 'Complete your profile to access your documents'
-              : 'Complétez votre profil pour accéder à vos documents'}
+            {t('complete_profile_for_docs')}
           </p>
           <a
             href="/complete-profile"
             className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600 text-white rounded-xl font-semibold transition-all shadow-lg shadow-violet-500/30"
           >
             <Plus className="w-5 h-5" />
-            {language === 'ar' ? 'إكمال الملف الشخصي' : language === 'en' ? 'Complete Profile' : 'Compléter le profil'}
+            {t('complete_profile')}
           </a>
         </div>
       ) : filteredDocuments.length === 0 ? (
@@ -407,12 +395,12 @@ export default function DocumentsPage() {
             <Folder className="w-10 h-10 text-gray-400" />
           </div>
           <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-            {language === 'ar' ? 'لا توجد مستندات' : language === 'en' ? 'No documents' : 'Aucun document'}
+            {t('no_documents')}
           </h3>
           <p className="text-gray-600 dark:text-gray-400 max-w-md mx-auto">
             {searchTerm || selectedCategory !== 'all'
-              ? (language === 'ar' ? 'لم يتم العثور على نتائج لبحثك' : language === 'en' ? 'No results found for your search' : 'Aucun résultat pour votre recherche')
-              : (language === 'ar' ? 'لم يتم تحميل أي مستندات بعد' : language === 'en' ? 'No documents uploaded yet' : 'Aucun document n\'a encore été uploadé')}
+              ? t('no_search_results')
+              : t('no_documents_uploaded')}
           </p>
         </div>
       ) : (
@@ -453,14 +441,14 @@ export default function DocumentsPage() {
                     className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-xl text-sm font-semibold text-gray-700 dark:text-gray-300 transition-all"
                   >
                     <Eye className="w-4 h-4" />
-                    {language === 'ar' ? 'عرض' : language === 'en' ? 'View' : 'Voir'}
+                    {t('view')}
                   </button>
                   <button
                     onClick={() => handleDownload(doc)}
                     className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600 rounded-xl text-sm font-semibold text-white transition-all shadow-lg shadow-violet-500/30"
                   >
                     <Download className="w-4 h-4" />
-                    {language === 'ar' ? 'تحميل' : language === 'en' ? 'Download' : 'Télécharger'}
+                    {t('download')}
                   </button>
                 </div>
               </div>
@@ -477,10 +465,10 @@ export default function DocumentsPage() {
           </div>
           <div>
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-              {language === 'ar' ? 'إضافة مستند' : language === 'en' ? 'Add a document' : 'Ajouter un document'}
+              {t('add_document')}
             </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              {language === 'ar' ? 'اسحب وأفلت أو انقر للاستعراض' : language === 'en' ? 'Drag and drop or click to browse' : 'Glissez-déposez ou cliquez pour parcourir'}
+              {t('drag_drop_or_browse')}
             </p>
           </div>
         </div>
@@ -503,7 +491,7 @@ export default function DocumentsPage() {
                 <Loader2 className="w-8 h-8 animate-spin text-violet-600" />
               </div>
               <p className="font-semibold text-gray-900 dark:text-white mb-2">
-                Upload en cours...
+                {t('uploading')}
               </p>
               <div className="w-64 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                 <div 
@@ -526,15 +514,11 @@ export default function DocumentsPage() {
               </div>
               <p className="font-semibold text-gray-900 dark:text-white mb-2">
                 {isDragging 
-                  ? (language === 'ar' ? 'أفلت الملفات هنا' : language === 'en' ? 'Drop files here' : 'Déposez les fichiers ici')
-                  : (language === 'ar' 
-                      ? 'اسحب وأفلت مستنداتك هنا'
-                      : language === 'en'
-                      ? 'Drag and drop your documents here'
-                      : 'Glissez-déposez vos documents ici')}
+                  ? t('drop_files_here')
+                  : t('drag_drop_docs_here')}
               </p>
               <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                {language === 'ar' ? 'أو انقر للاستعراض' : language === 'en' ? 'or click to browse' : 'ou cliquez pour parcourir'}
+                {t('or_click_to_browse')}
               </p>
               
               {/* Supported file types */}
@@ -555,7 +539,7 @@ export default function DocumentsPage() {
                 ))}
               </div>
               <p className="text-xs text-gray-400 mt-3">
-                {language === 'ar' ? 'الحجم الأقصى: 5 ميجابايت' : language === 'en' ? 'Maximum size: 5MB' : 'Taille maximale: 5MB'}
+                {t('max_size_5mb')}
               </p>
             </>
           )}
@@ -633,18 +617,10 @@ export default function DocumentsPage() {
                     <FileText className="w-10 h-10 text-gray-400" />
                   </div>
                   <p className="font-semibold text-gray-900 dark:text-white mb-2">
-                    {language === 'ar' 
-                      ? 'معاينة المستند غير متوفرة'
-                      : language === 'en'
-                      ? 'Document preview not available'
-                      : 'Aperçu du document non disponible'}
+                    {t('preview_not_available')}
                   </p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {language === 'ar' 
-                      ? 'قم بتنزيل المستند لعرضه'
-                      : language === 'en'
-                      ? 'Download the document to view it'
-                      : 'Téléchargez le document pour le visualiser'}
+                    {t('download_to_view')}
                   </p>
                 </div>
               )}
@@ -655,13 +631,13 @@ export default function DocumentsPage() {
                   className="flex-1 flex items-center justify-center gap-2 px-6 py-3.5 bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600 text-white rounded-xl font-semibold transition-all shadow-lg shadow-violet-500/30"
                 >
                   <Download className="w-5 h-5" />
-                  {language === 'ar' ? 'تحميل' : language === 'en' ? 'Download' : 'Télécharger'}
+                  {t('download')}
                 </button>
                 <button
                   onClick={() => setSelectedDocument(null)}
                   className="px-6 py-3.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-semibold transition-colors"
                 >
-                  {language === 'ar' ? 'إغلاق' : language === 'en' ? 'Close' : 'Fermer'}
+                  {t('close')}
                 </button>
               </div>
             </div>

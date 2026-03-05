@@ -6,8 +6,10 @@ import { useRouter, useSearchParams } from "next/navigation";
 import {
   User, Shield, Bell, Moon, Globe, Smartphone,
   Clock, Lock, Mail, Camera, Check, X, AlertCircle,
-  Monitor, Sun, RefreshCw, Trash2, Key, Eye, EyeOff, Calendar
+  Monitor, Sun, RefreshCw, Trash2, Key, Eye, EyeOff, Calendar,
+  ArrowLeft
 } from "lucide-react";
+import Link from "next/link";
 import { 
   getTrustedDevices, 
   removeTrustedDevice, 
@@ -35,7 +37,7 @@ export default function SettingsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab") as SettingsTab | null;
-  const { language, setLanguage: setGlobalLanguage } = useLanguage();
+  const { language, setLanguage: setGlobalLanguage, t } = useLanguage();
   
   const [activeTab, setActiveTab] = useState<SettingsTab>(tabParam || "general");
   const [loading, setLoading] = useState(false);
@@ -47,6 +49,7 @@ export default function SettingsPage() {
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [pushNotifications, setPushNotifications] = useState(true);
   const [soundAlerts, setSoundAlerts] = useState(true);
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(true);
   const [trustedDevices, setTrustedDevices] = useState<DeviceFingerprint[]>([]);
   
   // Password change state
@@ -62,11 +65,11 @@ export default function SettingsPage() {
   const userRole = session?.user?.role?.toUpperCase() || "USER";
 
   const settingsSections: SettingsSection[] = [
-    { id: "general", label: "Général", icon: <User className="w-5 h-5" /> },
-    { id: "security", label: "Sécurité", icon: <Shield className="w-5 h-5" /> },
-    { id: "notifications", label: "Notifications", icon: <Bell className="w-5 h-5" /> },
-    { id: "appearance", label: "Apparence", icon: <Moon className="w-5 h-5" /> },
-    { id: "devices", label: "Appareils", icon: <Smartphone className="w-5 h-5" /> },
+    { id: "general", label: t("general"), icon: <User className="w-5 h-5" /> },
+    { id: "security", label: t("security"), icon: <Shield className="w-5 h-5" /> },
+    { id: "notifications", label: t("notifications"), icon: <Bell className="w-5 h-5" /> },
+    { id: "appearance", label: t("appearance"), icon: <Moon className="w-5 h-5" /> },
+    { id: "devices", label: t("devices"), icon: <Smartphone className="w-5 h-5" /> },
   ];
 
   // User profile data
@@ -125,6 +128,7 @@ export default function SettingsPage() {
         setEmailNotifications(prefs.emailNotifications ?? true);
         setPushNotifications(prefs.pushNotifications ?? true);
         setSoundAlerts(prefs.soundAlerts ?? true);
+        setTwoFactorEnabled(prefs.twoFactorEnabled ?? true);
         if (prefs.theme) {
           setTheme(prefs.theme);
           localStorage.setItem("theme", prefs.theme);
@@ -169,13 +173,13 @@ export default function SettingsPage() {
     
     // Save to database
     savePreference("theme", newTheme);
-    showMessage("success", "Thème mis à jour avec succès");
+    showMessage("success", t("theme_updated"));
   };
   
   const handleLanguageChange = async (newLanguage: string) => {
     await setGlobalLanguage(newLanguage as Language);
     setLanguageDropdownOpen(false);
-    showMessage("success", `Langue changée en ${newLanguage === "fr" ? "Français" : newLanguage === "en" ? "English" : "العربية"}`);
+    showMessage("success", `${t("language_changed")} ${newLanguage === "fr" ? "Français" : newLanguage === "en" ? "English" : "العربية"}`);
   };
   
   const handleNotificationToggle = async (type: "email" | "push" | "sound", value: boolean) => {
@@ -191,7 +195,7 @@ export default function SettingsPage() {
         if (value && "Notification" in window) {
           const permission = await Notification.requestPermission();
           if (permission !== "granted") {
-            showMessage("error", "Permission de notification refusée par le navigateur");
+            showMessage("error", t("notification_permission_denied"));
             setPushNotifications(false);
             await savePreference("pushNotifications", false);
             return;
@@ -203,7 +207,7 @@ export default function SettingsPage() {
         await savePreference("soundAlerts", value);
         break;
     }
-    showMessage("success", "Préférence de notification mise à jour");
+    showMessage("success", t("notification_pref_updated"));
   };
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -212,13 +216,13 @@ export default function SettingsPage() {
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      showMessage("error", "Veuillez sélectionner une image valide");
+      showMessage("error", t("select_valid_image"));
       return;
     }
 
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      showMessage("error", "L'image ne doit pas dépasser 5 Mo");
+      showMessage("error", t("image_too_large"));
       return;
     }
 
@@ -235,21 +239,28 @@ export default function SettingsPage() {
         });
 
         if (response.ok) {
-          setUserImage(base64);
-          showMessage("success", "Photo de profil mise à jour avec succès");
+          // Re-fetch user data to get the stored image URL
+          const meRes = await fetch("/api/users/me");
+          if (meRes.ok) {
+            const meData = await meRes.json();
+            setUserImage(meData.image || meData.employee?.photo || base64);
+          } else {
+            setUserImage(base64);
+          }
+          showMessage("success", t("photo_updated"));
         } else {
           const data = await response.json();
-          showMessage("error", data.error || "Erreur lors de la mise à jour de la photo");
+          showMessage("error", data.error || t("photo_update_error"));
         }
         setLoading(false);
       };
       reader.onerror = () => {
-        showMessage("error", "Erreur lors de la lecture du fichier");
+        showMessage("error", t("file_read_error"));
         setLoading(false);
       };
       reader.readAsDataURL(file);
     } catch (error) {
-      showMessage("error", "Erreur de connexion");
+      showMessage("error", t("connection_error"));
       setLoading(false);
     }
   };
@@ -257,17 +268,17 @@ export default function SettingsPage() {
   const handleRemoveTrustedDevice = (deviceId: string) => {
     removeTrustedDevice(deviceId);
     setTrustedDevices(getTrustedDevices());
-    showMessage("success", "Appareil supprimé des appareils de confiance");
+    showMessage("success", t("device_removed"));
   };
 
   const handlePasswordChange = async () => {
     if (newPassword !== confirmPassword) {
-      showMessage("error", "Les mots de passe ne correspondent pas");
+      showMessage("error", t("passwords_dont_match"));
       return;
     }
 
     if (newPassword.length < 8) {
-      showMessage("error", "Le mot de passe doit contenir au moins 8 caractères");
+      showMessage("error", t("password_min_length"));
       return;
     }
 
@@ -280,16 +291,16 @@ export default function SettingsPage() {
       });
 
       if (response.ok) {
-        showMessage("success", "Mot de passe modifié avec succès");
+        showMessage("success", t("password_changed"));
         setCurrentPassword("");
         setNewPassword("");
         setConfirmPassword("");
       } else {
         const data = await response.json();
-        showMessage("error", data.error || "Erreur lors de la modification du mot de passe");
+        showMessage("error", data.error || t("password_change_error"));
       }
     } catch (error) {
-      showMessage("error", "Erreur de connexion");
+      showMessage("error", t("connection_error"));
     } finally {
       setLoading(false);
     }
@@ -312,11 +323,16 @@ export default function SettingsPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 md:p-8">
       <div className="max-w-5xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Paramètres</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Gérez vos préférences et paramètres de compte
-          </p>
+        <div className="mb-8 flex items-center gap-4">
+          <Link href="/home" className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+            <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+          </Link>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t("settings")}</h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-1">
+              {t("manage_preferences")}
+            </p>
+          </div>
         </div>
 
         {/* Message Alert */}
@@ -360,7 +376,7 @@ export default function SettingsPage() {
               {activeTab === "general" && (
                 <div className="space-y-6">
                   <div>
-                    <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Paramètres Généraux</h2>
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">{t("general_settings")}</h2>
                   </div>
 
                   {/* Profile Info */}
@@ -403,7 +419,7 @@ export default function SettingsPage() {
                         ) : (
                           <Camera className="w-4 h-4 inline mr-2" />
                         )}
-                        {loading ? "Téléchargement..." : "Modifier photo"}
+                        {loading ? t("uploading") : t("change_photo")}
                       </button>
                     </div>
                   </div>
@@ -417,8 +433,8 @@ export default function SettingsPage() {
                     <div className="flex items-center gap-3">
                       <Globe className="w-5 h-5 text-gray-400" />
                       <div>
-                        <p className="font-medium text-gray-900 dark:text-white">Langue</p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Choisissez votre langue préférée</p>
+                        <p className="font-medium text-gray-900 dark:text-white">{t("language")}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{t("choose_language")}</p>
                       </div>
                     </div>
                     <div className="relative">
@@ -463,8 +479,8 @@ export default function SettingsPage() {
                     <div className="flex items-center gap-3">
                       <Clock className="w-5 h-5 text-gray-400" />
                       <div>
-                        <p className="font-medium text-gray-900 dark:text-white">Fuseau horaire</p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Définissez votre fuseau horaire local</p>
+                        <p className="font-medium text-gray-900 dark:text-white">{t("timezone")}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{t("timezone_desc")}</p>
                       </div>
                     </div>
                     <span className="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm">
@@ -478,19 +494,19 @@ export default function SettingsPage() {
               {activeTab === "security" && (
                 <div className="space-y-6">
                   <div>
-                    <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Sécurité</h2>
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">{t("security")}</h2>
                   </div>
 
                   {/* Change Password */}
                   <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                       <Lock className="w-5 h-5" />
-                      Changer le mot de passe
+                      {t("change_password")}
                     </h3>
                     <div className="space-y-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                          Mot de passe actuel
+                          {t("current_password")}
                         </label>
                         <div className="relative">
                           <input
@@ -498,32 +514,32 @@ export default function SettingsPage() {
                             value={currentPassword}
                             onChange={(e) => setCurrentPassword(e.target.value)}
                             className="w-full px-4 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-violet-500 focus:border-transparent"
-                            placeholder="Entrez votre mot de passe actuel"
+                            placeholder={t("enter_current_password")}
                           />
                         </div>
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                          Nouveau mot de passe
+                          {t("new_password")}
                         </label>
                         <input
                           type={showPasswords ? "text" : "password"}
                           value={newPassword}
                           onChange={(e) => setNewPassword(e.target.value)}
                           className="w-full px-4 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-violet-500 focus:border-transparent"
-                          placeholder="Entrez un nouveau mot de passe"
+                          placeholder={t("enter_new_password")}
                         />
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                          Confirmer le mot de passe
+                          {t("confirm_password")}
                         </label>
                         <input
                           type={showPasswords ? "text" : "password"}
                           value={confirmPassword}
                           onChange={(e) => setConfirmPassword(e.target.value)}
                           className="w-full px-4 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-violet-500 focus:border-transparent"
-                          placeholder="Confirmez le nouveau mot de passe"
+                          placeholder={t("confirm_new_password")}
                         />
                       </div>
                       <div className="flex items-center gap-2">
@@ -535,7 +551,7 @@ export default function SettingsPage() {
                           className="rounded border-gray-300 text-violet-600 focus:ring-violet-500"
                         />
                         <label htmlFor="showPasswords" className="text-sm text-gray-600 dark:text-gray-400">
-                          Afficher les mots de passe
+                          {t("show_passwords")}
                         </label>
                       </div>
                       <button
@@ -546,7 +562,7 @@ export default function SettingsPage() {
                         {loading ? (
                           <RefreshCw className="w-5 h-5 animate-spin inline mr-2" />
                         ) : null}
-                        Modifier le mot de passe
+                        {t("update_password")}
                       </button>
                     </div>
                   </div>
@@ -556,13 +572,33 @@ export default function SettingsPage() {
                     <div className="flex items-center gap-3">
                       <Key className="w-5 h-5 text-gray-400" />
                       <div>
-                        <p className="font-medium text-gray-900 dark:text-white">Authentification à deux facteurs</p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Ajoutez une couche de sécurité supplémentaire</p>
+                        <p className="font-medium text-gray-900 dark:text-white">{t("two_factor")}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          {twoFactorEnabled 
+                            ? t("two_factor_desc_on") 
+                            : t("two_factor_desc_off")}
+                        </p>
                       </div>
                     </div>
-                    <span className="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-lg text-sm">
-                      Bientôt disponible
-                    </span>
+                    <button
+                      onClick={async () => {
+                        const newValue = !twoFactorEnabled;
+                        setTwoFactorEnabled(newValue);
+                        await savePreference("twoFactorEnabled", newValue);
+                        showMessage("success", newValue 
+                          ? t("two_factor_enabled") 
+                          : t("two_factor_disabled"));
+                      }}
+                      className={`relative w-12 h-6 rounded-full transition-colors ${
+                        twoFactorEnabled ? "bg-violet-600" : "bg-gray-300 dark:bg-gray-600"
+                      }`}
+                    >
+                      <span
+                        className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${
+                          twoFactorEnabled ? "translate-x-6" : ""
+                        }`}
+                      />
+                    </button>
                   </div>
 
                   {/* Login History */}
@@ -570,44 +606,44 @@ export default function SettingsPage() {
                     <div className="flex items-center gap-3">
                       <Clock className="w-5 h-5 text-gray-400" />
                       <div>
-                        <p className="font-medium text-gray-900 dark:text-white">Historique des connexions</p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Voir vos dernières connexions</p>
+                        <p className="font-medium text-gray-900 dark:text-white">{t("login_history")}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{t("view_connections")}</p>
                       </div>
                     </div>
-                    <button className="px-4 py-2 text-sm font-medium text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-lg transition-colors">
-                      Voir l'historique
-                    </button>
+                    <Link href="/security" className="px-4 py-2 text-sm font-medium text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-lg transition-colors">
+                      {t("view_history")}
+                    </Link>
                   </div>
 
                   {/* Account Info */}
                   <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl mt-6">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                       <Calendar className="w-5 h-5" />
-                      Informations du compte
+                      {t("account_info")}
                     </h3>
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600 dark:text-gray-400">Compte créé le</span>
+                        <span className="text-sm text-gray-600 dark:text-gray-400">{t("account_created")}</span>
                         <span className="font-medium text-gray-900 dark:text-white">
-                          {userCreatedAt ? new Date(userCreatedAt).toLocaleDateString("fr-FR", {
+                          {userCreatedAt ? new Date(userCreatedAt).toLocaleDateString(language === "ar" ? "ar-SA" : language === "en" ? "en-US" : "fr-FR", {
                             day: "numeric",
                             month: "long",
                             year: "numeric",
                             hour: "2-digit",
                             minute: "2-digit"
-                          }) : "Non disponible"}
+                          }) : t("not_available")}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600 dark:text-gray-400">Dernière mise à jour</span>
+                        <span className="text-sm text-gray-600 dark:text-gray-400">{t("last_updated")}</span>
                         <span className="font-medium text-gray-900 dark:text-white">
-                          {userUpdatedAt ? new Date(userUpdatedAt).toLocaleDateString("fr-FR", {
+                          {userUpdatedAt ? new Date(userUpdatedAt).toLocaleDateString(language === "ar" ? "ar-SA" : language === "en" ? "en-US" : "fr-FR", {
                             day: "numeric",
                             month: "long",
                             year: "numeric",
                             hour: "2-digit",
                             minute: "2-digit"
-                          }) : "Non disponible"}
+                          }) : t("not_available")}
                         </span>
                       </div>
                     </div>
@@ -619,7 +655,7 @@ export default function SettingsPage() {
               {activeTab === "notifications" && (
                 <div className="space-y-6">
                   <div>
-                    <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Notifications</h2>
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">{t("notifications")}</h2>
                   </div>
 
                   {/* Email Notifications */}
@@ -627,8 +663,8 @@ export default function SettingsPage() {
                     <div className="flex items-center gap-3">
                       <Mail className="w-5 h-5 text-gray-400" />
                       <div>
-                        <p className="font-medium text-gray-900 dark:text-white">Notifications par email</p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Recevoir des notifications importantes par email</p>
+                        <p className="font-medium text-gray-900 dark:text-white">{t("email_notifications")}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{t("receive_email_notif")}</p>
                       </div>
                     </div>
                     <button
@@ -650,8 +686,8 @@ export default function SettingsPage() {
                     <div className="flex items-center gap-3">
                       <Bell className="w-5 h-5 text-gray-400" />
                       <div>
-                        <p className="font-medium text-gray-900 dark:text-white">Notifications push</p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Recevoir des notifications dans le navigateur</p>
+                        <p className="font-medium text-gray-900 dark:text-white">{t("push_notifications")}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{t("receive_push_notif")}</p>
                       </div>
                     </div>
                     <button
@@ -673,8 +709,8 @@ export default function SettingsPage() {
                     <div className="flex items-center gap-3">
                       <Bell className="w-5 h-5 text-gray-400" />
                       <div>
-                        <p className="font-medium text-gray-900 dark:text-white">Alertes sonores</p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Jouer un son pour les nouvelles notifications</p>
+                        <p className="font-medium text-gray-900 dark:text-white">{t("sound_alerts")}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{t("sound_alerts_desc")}</p>
                       </div>
                     </div>
                     <button
@@ -697,17 +733,17 @@ export default function SettingsPage() {
               {activeTab === "appearance" && (
                 <div className="space-y-6">
                   <div>
-                    <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Apparence</h2>
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">{t("appearance")}</h2>
                   </div>
 
                   {/* Theme Selection */}
                   <div>
-                    <p className="font-medium text-gray-900 dark:text-white mb-4">Thème</p>
+                    <p className="font-medium text-gray-900 dark:text-white mb-4">{t("theme")}</p>
                     <div className="grid grid-cols-3 gap-4">
                       {[
-                        { id: "light", label: "Clair", icon: <Sun className="w-6 h-6" /> },
-                        { id: "dark", label: "Sombre", icon: <Moon className="w-6 h-6" /> },
-                        { id: "system", label: "Système", icon: <Monitor className="w-6 h-6" /> },
+                        { id: "light", label: t("light"), icon: <Sun className="w-6 h-6" /> },
+                        { id: "dark", label: t("dark"), icon: <Moon className="w-6 h-6" /> },
+                        { id: "system", label: t("system"), icon: <Monitor className="w-6 h-6" /> },
                       ].map((themeOption) => (
                         <button
                           key={themeOption.id}
@@ -746,9 +782,9 @@ export default function SettingsPage() {
               {activeTab === "devices" && (
                 <div className="space-y-6">
                   <div>
-                    <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Appareils de confiance</h2>
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">{t("trusted_devices")}</h2>
                     <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                      Ces appareils ont été vérifiés et sont autorisés à se connecter sans vérification supplémentaire.
+                      {t("trusted_devices_desc")}
                     </p>
                   </div>
 
@@ -759,13 +795,13 @@ export default function SettingsPage() {
                         <Monitor className="w-5 h-5 text-green-600 dark:text-green-400" />
                       </div>
                       <div className="flex-1">
-                        <p className="font-medium text-gray-900 dark:text-white">Cet appareil</p>
+                        <p className="font-medium text-gray-900 dark:text-white">{t("this_device")}</p>
                         <p className="text-sm text-gray-500 dark:text-gray-400">
                           {getBasicDeviceInfo().os} - {getBasicDeviceInfo().browser}
                         </p>
                       </div>
                       <span className="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs font-medium rounded-full">
-                        Actif
+                        {t("active")}
                       </span>
                     </div>
                   </div>
@@ -787,7 +823,7 @@ export default function SettingsPage() {
                                 {device.platform}
                               </p>
                               <p className="text-sm text-gray-500 dark:text-gray-400">
-                                Ajouté le {new Date(device.timestamp).toLocaleDateString("fr-FR")}
+                                {t("added_on")} {new Date(device.timestamp).toLocaleDateString(language === "ar" ? "ar-SA" : language === "en" ? "en-US" : "fr-FR")}
                               </p>
                             </div>
                           </div>
@@ -803,7 +839,7 @@ export default function SettingsPage() {
                   ) : (
                     <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                       <Smartphone className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                      <p>Aucun autre appareil de confiance</p>
+                      <p>{t("no_trusted_devices")}</p>
                     </div>
                   )}
                 </div>

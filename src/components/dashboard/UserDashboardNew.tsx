@@ -4,9 +4,11 @@ import { useSession } from "next-auth/react"
 import Link from "next/link"
 import { Calendar, Clock, FileText, TrendingUp, User, Award, Target, Activity } from "lucide-react"
 import { useEffect, useState } from "react"
+import { useLanguage } from "@/contexts/LanguageContext"
 
 export default function UserDashboard() {
   const { data: session } = useSession()
+  const { t } = useLanguage()
   const [stats, setStats] = useState({
     totalDays: 0,
     pendingLeaves: 0,
@@ -36,8 +38,8 @@ export default function UserDashboard() {
 
   const quickActions = [
     {
-      title: "Demande de congé",
-      description: "Soumettre une nouvelle demande",
+      title: t('ud_leave_request'),
+      description: t('ud_submit_new_request'),
       icon: Calendar,
       href: "/conges",
       color: "from-purple-500 to-purple-600",
@@ -45,8 +47,8 @@ export default function UserDashboard() {
       iconColor: "text-purple-600 dark:text-purple-400"
     },
     {
-      title: "Pointage",
-      description: "Enregistrer arrivée/départ",
+      title: t('nav_pointage'),
+      description: t('ud_register_arrival_departure'),
       icon: Clock,
       href: "/pointage",
       color: "from-blue-500 to-blue-600",
@@ -54,8 +56,8 @@ export default function UserDashboard() {
       iconColor: "text-blue-600 dark:text-blue-400"
     },
     {
-      title: "Mon Profil",
-      description: "Informations personnelles",
+      title: t('ud_my_profile'),
+      description: t('ud_personal_info'),
       icon: User,
       href: "/profile",
       color: "from-orange-500 to-orange-600",
@@ -66,7 +68,7 @@ export default function UserDashboard() {
 
   const statCards = [
     {
-      title: "Congés approuvés",
+      title: t('ud_approved_leaves'),
       value: stats.approvedLeaves,
       icon: Award,
       color: "from-green-500 to-emerald-600",
@@ -75,22 +77,22 @@ export default function UserDashboard() {
       trend: "+12%"
     },
     {
-      title: "En attente",
+      title: t('pending'),
       value: stats.pendingLeaves,
       icon: Clock,
       color: "from-amber-500 to-orange-600",
       bgColor: "bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20",
       iconBg: "bg-amber-500",
-      trend: "En cours"
+      trend: t('ud_in_progress')
     },
     {
-      title: "Total jours",
+      title: t('ud_total_days'),
       value: stats.totalDays,
       icon: Target,
       color: "from-purple-500 to-violet-600",
       bgColor: "bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-900/20 dark:to-violet-900/20",
       iconBg: "bg-purple-500",
-      trend: "Cette année"
+      trend: t('ud_this_year')
     },
     {
       title: "Performance",
@@ -120,10 +122,10 @@ export default function UserDashboard() {
               </div>
               <div>
                 <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
-                  Bienvenue, {session?.user?.name || "Employé"}
+                  {t('welcome')}, {session?.user?.name || t('ud_employee')}
                 </h1>
                 <p className="text-purple-100 text-lg">
-                  Votre espace personnel de gestion
+                  {t('ud_personal_management_space')}
                 </p>
               </div>
             </div>
@@ -160,7 +162,7 @@ export default function UserDashboard() {
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
               <TrendingUp className="w-7 h-7 text-purple-600" />
-              Actions rapides
+              {t('ud_quick_actions')}
             </h2>
           </div>
 
@@ -198,7 +200,7 @@ export default function UserDashboard() {
           <div className="bg-gradient-to-r from-purple-600 to-indigo-600 px-6 py-4">
             <h3 className="text-xl font-bold text-white flex items-center gap-2">
               <User className="w-5 h-5" />
-              Informations personnelles
+              {t('ud_personal_info_title')}
             </h3>
           </div>
           
@@ -210,8 +212,8 @@ export default function UserDashboard() {
                     <User className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Nom complet</p>
-                    <p className="font-semibold text-gray-900 dark:text-white">{session?.user?.name || "Non défini"}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('ud_full_name')}</p>
+                    <p className="font-semibold text-gray-900 dark:text-white">{session?.user?.name || t('ud_not_defined')}</p>
                   </div>
                 </div>
 
@@ -221,7 +223,7 @@ export default function UserDashboard() {
                   </div>
                   <div>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Email</p>
-                    <p className="font-semibold text-gray-900 dark:text-white">{session?.user?.email || "Non défini"}</p>
+                    <p className="font-semibold text-gray-900 dark:text-white">{session?.user?.email || t('ud_not_defined')}</p>
                   </div>
                 </div>
               </div>
@@ -232,8 +234,8 @@ export default function UserDashboard() {
                     <Award className="w-5 h-5 text-green-600 dark:text-green-400" />
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Rôle</p>
-                    <p className="font-semibold text-gray-900 dark:text-white">{session?.user?.role || "Employé"}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('role')}</p>
+                    <p className="font-semibold text-gray-900 dark:text-white">{session?.user?.role || t('ud_employee')}</p>
                   </div>
                 </div>
 
@@ -242,8 +244,8 @@ export default function UserDashboard() {
                     <Activity className="w-5 h-5 text-amber-600 dark:text-amber-400" />
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Statut</p>
-                    <p className="font-semibold text-green-600 dark:text-green-400">Actif</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('status')}</p>
+                    <p className="font-semibold text-green-600 dark:text-green-400">{t('active')}</p>
                   </div>
                 </div>
               </div>

@@ -26,6 +26,7 @@ export async function GET(req: NextRequest) {
     };
 
     try {
+      // Get basic counts
       const statsData: any[] = await query(
         `SELECT 
           COUNT(CASE WHEN type = 'IN' THEN 1 END) as totalCheckIns,
@@ -38,13 +39,35 @@ export async function GET(req: NextRequest) {
         [session.user.id, firstDay.toISOString(), lastDay.toISOString()]
       );
 
+      // Calculate actual hours from AttendanceSession durations
+      let totalMinutes = 0;
+      try {
+        const durationData: any[] = await query(
+          `SELECT COALESCE(SUM(durationMinutes), 0) as totalMinutes
+           FROM AttendanceSession 
+           WHERE userId = ? 
+           AND date >= ? 
+           AND date <= ?
+           AND status = 'COMPLETED'`,
+          [session.user.id, firstDay.toISOString().split('T')[0], lastDay.toISOString().split('T')[0]]
+        );
+        if (durationData.length > 0) {
+          totalMinutes = parseInt(durationData[0]?.totalMinutes || 0);
+        }
+      } catch {
+        // AttendanceSession table may not exist, fallback
+      }
+
       if (statsData.length > 0) {
         const totalCheckIns = parseInt(statsData[0]?.totalCheckIns || 0);
         const totalCheckOuts = parseInt(statsData[0]?.totalCheckOuts || 0);
+        const calculatedHours = totalMinutes > 0 
+          ? Math.round(totalMinutes / 60 * 10) / 10 
+          : Math.min(totalCheckIns, totalCheckOuts) * 7; // 7h/day fallback
         stats = {
           month: now.getMonth() + 1,
           year: now.getFullYear(),
-          totalHours: Math.min(totalCheckIns, totalCheckOuts) * 8,
+          totalHours: calculatedHours,
           totalCheckIns: totalCheckIns,
           totalCheckOuts: totalCheckOuts,
           anomalies: parseInt(statsData[0]?.anomalies || 0)

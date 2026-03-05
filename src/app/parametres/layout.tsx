@@ -14,8 +14,8 @@ export default async function ParametresLayout({
     redirect("/login")
   }
 
-  // Only SUPER_ADMIN can access parametres pages
-  if (session.user.role !== "SUPER_ADMIN") {
+  // Only SUPER_ADMIN and RH can access parametres pages
+  if (session.user.role !== "SUPER_ADMIN" && session.user.role !== "RH") {
     redirect("/settings")
   }
 

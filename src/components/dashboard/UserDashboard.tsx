@@ -30,6 +30,7 @@ import {
   Briefcase,
   Shield,
 } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 /* ─── types ─── */
 interface LeaveStats {
@@ -121,6 +122,7 @@ function CircularProgress({ percent, size = 48, stroke = 4, color = '#8b5cf6' }:
 
 export default function UserDashboard() {
   const { data: session } = useSession();
+  const { t, language } = useLanguage();
 
   /* leave stats */
   const [stats, setStats] = useState<LeaveStats>({ approvedLeaves: 0, pendingLeaves: 0, totalDays: 0, performance: 0 });
@@ -193,33 +195,33 @@ export default function UserDashboard() {
         body: JSON.stringify({ action, sessionType }),
       });
       const data = await res.json();
-      if (!res.ok) { setAttendanceMsg({ type: 'error', text: data.error || 'Erreur lors du pointage' }); return; }
+      if (!res.ok) { setAttendanceMsg({ type: 'error', text: data.error || t('pointage_error') }); return; }
       setAttendanceMsg({ type: 'success', text: data.message });
       // refresh attendance
       const r = await fetch('/api/attendance/session');
       if (r.ok) setAttendance(await r.json());
       setTimeout(() => setAttendanceMsg(null), 3000);
     } catch {
-      setAttendanceMsg({ type: 'error', text: 'Erreur de connexion' });
+      setAttendanceMsg({ type: 'error', text: t('connection_error') });
     } finally {
       setActionLoading(null);
     }
   }, []);
 
   /* derived */
-  const firstName = session?.user?.name?.split(' ')[0] || 'Utilisateur';
-  const fullName = session?.user?.name || 'Non renseigné';
-  const email = session?.user?.email || 'Non renseigné';
+  const firstName = session?.user?.name?.split(' ')[0] || t('user');
+  const fullName = session?.user?.name || t('not_specified');
+  const email = session?.user?.email || t('not_specified');
   const userStatus = (session?.user as any)?.status || 'ACTIVE';
   const isPending = userStatus === 'PENDING';
   const isActive = userStatus === 'ACTIVE';
 
   const statusConfig: Record<string, { color: string; text: string; bg: string; dot: string }> = {
-    ACTIVE:    { color: 'text-emerald-400', text: 'Profil Actif',             bg: 'bg-emerald-500/20', dot: 'bg-emerald-400' },
-    PENDING:   { color: 'text-amber-400',   text: 'En attente de validation', bg: 'bg-amber-500/20',   dot: 'bg-amber-400'   },
-    INACTIVE:  { color: 'text-gray-400',    text: 'Profil Incomplet',         bg: 'bg-gray-500/20',    dot: 'bg-gray-400'     },
-    REJECTED:  { color: 'text-red-400',     text: 'Profil Refusé',            bg: 'bg-red-500/20',     dot: 'bg-red-400'      },
-    SUSPENDED: { color: 'text-red-400',     text: 'Compte Suspendu',          bg: 'bg-red-500/20',     dot: 'bg-red-400'      },
+    ACTIVE:    { color: 'text-emerald-400', text: t('profile_active'),             bg: 'bg-emerald-500/20', dot: 'bg-emerald-400' },
+    PENDING:   { color: 'text-amber-400',   text: t('pending_hr_validation'), bg: 'bg-amber-500/20',   dot: 'bg-amber-400'   },
+    INACTIVE:  { color: 'text-gray-400',    text: t('profile_incomplete'),         bg: 'bg-gray-500/20',    dot: 'bg-gray-400'     },
+    REJECTED:  { color: 'text-red-400',     text: t('profile_rejected'),            bg: 'bg-red-500/20',     dot: 'bg-red-400'      },
+    SUSPENDED: { color: 'text-red-400',     text: t('account_suspended_label'),          bg: 'bg-red-500/20',     dot: 'bg-red-400'      },
   };
   const currentStatus = statusConfig[userStatus] || statusConfig.ACTIVE;
 
@@ -239,7 +241,7 @@ export default function UserDashboard() {
             <div className="w-16 h-16 rounded-full border-4 border-purple-200 dark:border-purple-800 border-t-purple-600 dark:border-t-purple-400 animate-spin" />
             <Sparkles className="w-6 h-6 text-purple-500 absolute -top-1 -right-1 animate-pulse" />
           </div>
-          <p className="text-sm text-gray-500 dark:text-gray-400 font-medium animate-pulse">Chargement du tableau de bord...</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 font-medium animate-pulse">{t('loading_dashboard')}</p>
         </div>
       </div>
     );
@@ -267,10 +269,10 @@ export default function UserDashboard() {
               </div>
 
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white tracking-tight">
-                Bienvenue, <span className="bg-gradient-to-r from-purple-200 to-indigo-200 bg-clip-text text-transparent">{firstName}</span>
+                {t('welcome')}, <span className="bg-gradient-to-r from-purple-200 to-indigo-200 bg-clip-text text-transparent">{firstName}</span>
               </h1>
               <p className="text-lg sm:text-xl text-purple-100/80 max-w-xl leading-relaxed">
-                Gérez vos congés, consultez vos documents et suivez vos performances.
+                {t('hero_desc')}
               </p>
 
               {isPending && (
@@ -278,7 +280,7 @@ export default function UserDashboard() {
                   <div className="bg-amber-500/15 backdrop-blur-sm border border-amber-400/20 rounded-xl px-5 py-3">
                     <p className="text-sm text-amber-200 font-medium flex items-center gap-2">
                       <Clock className="w-4 h-4" />
-                      En attente de validation RH
+                      {t('pending_hr_validation')}
                     </p>
                   </div>
                 </div>
@@ -295,7 +297,7 @@ export default function UserDashboard() {
               </div>
               <div className="flex items-center gap-1.5 bg-white/10 backdrop-blur-sm rounded-full px-3 py-1">
                 <Shield className="w-3.5 h-3.5 text-purple-200" />
-                <span className="text-xs text-purple-200 font-medium">Employé</span>
+                <span className="text-xs text-purple-200 font-medium">{t('employee_label')}</span>
               </div>
             </div>
           </div>
@@ -308,10 +310,10 @@ export default function UserDashboard() {
         {/* ─── Stat Cards ─── */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 -mt-12 relative z-10">
           {[
-            { label: 'Congés Approuvés', value: stats.approvedLeaves, sub: 'Demandes acceptées', badge: 'Validé', icon: Award, gradFrom: 'from-emerald-500', gradTo: 'to-green-600', badgeBg: 'bg-emerald-50 dark:bg-emerald-900/30', badgeText: 'text-emerald-700 dark:text-emerald-400', iconBg: 'from-emerald-500 to-green-600' },
-            { label: 'Congés En Attente', value: stats.pendingLeaves, sub: 'En cours de validation', badge: 'En cours', icon: Clock, gradFrom: 'from-amber-500', gradTo: 'to-orange-600', badgeBg: 'bg-amber-50 dark:bg-amber-900/30', badgeText: 'text-amber-700 dark:text-amber-400', iconBg: 'from-amber-500 to-orange-600' },
-            { label: 'Total Jours', value: stats.totalDays, sub: 'Jours de congé utilisés', badge: 'Total', icon: Target, gradFrom: 'from-purple-500', gradTo: 'to-indigo-600', badgeBg: 'bg-purple-50 dark:bg-purple-900/30', badgeText: 'text-purple-700 dark:text-purple-400', iconBg: 'from-purple-500 to-indigo-600' },
-            { label: 'Performance', value: stats.performance, sub: "Taux d'approbation", badge: `${stats.performance}%`, icon: Activity, gradFrom: 'from-cyan-500', gradTo: 'to-blue-600', badgeBg: 'bg-cyan-50 dark:bg-cyan-900/30', badgeText: 'text-cyan-700 dark:text-cyan-400', iconBg: 'from-cyan-500 to-blue-600', isSuffix: '%' },
+            { label: t('approved_leaves'), value: stats.approvedLeaves, sub: t('accepted_requests'), badge: t('validated_badge'), icon: Award, gradFrom: 'from-emerald-500', gradTo: 'to-green-600', badgeBg: 'bg-emerald-50 dark:bg-emerald-900/30', badgeText: 'text-emerald-700 dark:text-emerald-400', iconBg: 'from-emerald-500 to-green-600' },
+            { label: t('pending_leaves'), value: stats.pendingLeaves, sub: t('under_validation'), badge: t('in_progress_badge'), icon: Clock, gradFrom: 'from-amber-500', gradTo: 'to-orange-600', badgeBg: 'bg-amber-50 dark:bg-amber-900/30', badgeText: 'text-amber-700 dark:text-amber-400', iconBg: 'from-amber-500 to-orange-600' },
+            { label: t('total_days'), value: stats.totalDays, sub: t('used_leave_days'), badge: t('total_label'), icon: Target, gradFrom: 'from-purple-500', gradTo: 'to-indigo-600', badgeBg: 'bg-purple-50 dark:bg-purple-900/30', badgeText: 'text-purple-700 dark:text-purple-400', iconBg: 'from-purple-500 to-indigo-600' },
+            { label: t('performance'), value: stats.performance, sub: t('approval_rate'), badge: `${stats.performance}%`, icon: Activity, gradFrom: 'from-cyan-500', gradTo: 'to-blue-600', badgeBg: 'bg-cyan-50 dark:bg-cyan-900/30', badgeText: 'text-cyan-700 dark:text-cyan-400', iconBg: 'from-cyan-500 to-blue-600', isSuffix: '%' },
           ].map((card, i) => (
             <div key={i} className="group relative bg-white dark:bg-gray-900 rounded-2xl shadow-lg shadow-gray-200/50 dark:shadow-black/20 hover:shadow-xl hover:shadow-purple-200/30 dark:hover:shadow-purple-900/20 transition-all duration-500 hover:-translate-y-1 border border-gray-100 dark:border-gray-800 overflow-hidden">
               {/* top accent line */}
@@ -348,10 +350,10 @@ export default function UserDashboard() {
                 <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
                   <Clock className="w-4 h-4 text-white" />
                 </div>
-                Pointage du jour
+                {t('today_attendance')}
               </h3>
               <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">
-                {now.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
+                {now.toLocaleDateString(language === 'ar' ? 'ar-SA' : language === 'en' ? 'en-US' : 'fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
               </span>
             </div>
             <div className="p-6 space-y-4">
@@ -368,24 +370,26 @@ export default function UserDashboard() {
 
               {/* Morning */}
               <AttendanceRow
-                label="Matin"
+                label={t('morning')}
                 icon={<Sun className="w-5 h-5 text-amber-500" />}
                 session={attendance?.morning || null}
                 sessionType="MORNING"
                 isActive={isBeforeNoon}
                 actionLoading={actionLoading}
                 onAction={handleAttendanceAction}
+                t={t}
               />
 
               {/* Afternoon */}
               <AttendanceRow
-                label="Après-midi"
+                label={t('afternoon')}
                 icon={<Sunset className="w-5 h-5 text-orange-500" />}
                 session={attendance?.afternoon || null}
                 sessionType="AFTERNOON"
                 isActive={!isBeforeNoon}
                 actionLoading={actionLoading}
                 onAction={handleAttendanceAction}
+                t={t}
               />
             </div>
           </div>
@@ -399,24 +403,24 @@ export default function UserDashboard() {
                   <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-lg flex items-center justify-center">
                     <BarChart3 className="w-4 h-4 text-white" />
                   </div>
-                  Progression du mois
+                  {t('month_progress')}
                 </h3>
               </div>
               <div className="p-6">
                 {progress ? (
                   <>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-5">
-                      <MiniStat label="Jours travaillés" value={`${progress.workedDays}/${progress.expectedDays}`} icon={<Briefcase className="w-4 h-4" />} />
-                      <MiniStat label="Heures totales" value={`${progress.totalWorkedHours}h`} icon={<Clock className="w-4 h-4" />} />
-                      <MiniStat label="Taux de présence" value={`${progress.progressPercent}%`} icon={<Activity className="w-4 h-4" />} />
-                      <MiniStat label="Jours restants" value={`${Math.max(0, progress.expectedDays - progress.workedDays)}`} icon={<Calendar className="w-4 h-4" />} />
+                      <MiniStat label={t('worked_days')} value={`${progress.workedDays}/${progress.expectedDays}`} icon={<Briefcase className="w-4 h-4" />} />
+                      <MiniStat label={t('total_hours')} value={`${progress.totalWorkedHours}h`} icon={<Clock className="w-4 h-4" />} />
+                      <MiniStat label={t('attendance_rate')} value={`${progress.progressPercent}%`} icon={<Activity className="w-4 h-4" />} />
+                      <MiniStat label={t('remaining_workdays')} value={`${Math.max(0, progress.expectedDays - progress.workedDays)}`} icon={<Calendar className="w-4 h-4" />} />
                     </div>
                     <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2.5 overflow-hidden">
                       <div className="bg-gradient-to-r from-blue-500 to-cyan-500 h-full rounded-full transition-all duration-1000 ease-out" style={{ width: `${Math.min(100, progress.progressPercent)}%` }} />
                     </div>
                   </>
                 ) : (
-                  <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-4">Aucune donnée disponible</p>
+                  <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-4">{t('no_data')}</p>
                 )}
               </div>
             </div>
@@ -428,7 +432,7 @@ export default function UserDashboard() {
                   <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-green-600 rounded-lg flex items-center justify-center">
                     <DollarSign className="w-4 h-4 text-white" />
                   </div>
-                  Estimation de salaire
+                  {t('salary_estimate')}
                 </h3>
               </div>
               <div className="p-6">
@@ -436,31 +440,31 @@ export default function UserDashboard() {
                   <>
                     <div className="flex items-end justify-between mb-4">
                       <div>
-                        <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Salaire net estimé</p>
+                        <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{t('estimated_net')}</p>
                         <p className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
-                          {salary.estimatedNet.toLocaleString('fr-FR')} <span className="text-base font-normal text-gray-400">TND</span>
+                          {salary.estimatedNet.toLocaleString(language === 'ar' ? 'ar-SA' : language === 'en' ? 'en-US' : 'fr-FR')} <span className="text-base font-normal text-gray-400">TND</span>
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Salaire de base</p>
-                        <p className="text-lg font-semibold text-gray-600 dark:text-gray-300">{salary.baseSalary.toLocaleString('fr-FR')} TND</p>
+                        <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{t('base_salary')}</p>
+                        <p className="text-lg font-semibold text-gray-600 dark:text-gray-300">{salary.baseSalary.toLocaleString(language === 'ar' ? 'ar-SA' : language === 'en' ? 'en-US' : 'fr-FR')} TND</p>
                       </div>
                     </div>
                     {salary.estimatedNet < salary.baseSalary ? (
                       <div className="flex items-center gap-1.5 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg px-3 py-2">
                         <TrendingDown className="w-4 h-4" />
-                        Déduction de {(salary.baseSalary - salary.estimatedNet).toLocaleString('fr-FR')} TND (absences)
+                        {t('deduction_of')} {(salary.baseSalary - salary.estimatedNet).toLocaleString(language === 'ar' ? 'ar-SA' : language === 'en' ? 'en-US' : 'fr-FR')} TND ({t('absences')})
                       </div>
                     ) : (
                       <div className="flex items-center gap-1.5 text-sm text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg px-3 py-2">
                         <TrendingUp className="w-4 h-4" />
-                        Aucune déduction ce mois
+                        {t('no_deduction')}
                       </div>
                     )}
-                    <p className="mt-3 text-[11px] text-gray-400 dark:text-gray-500">* Estimation basée sur le pointage actuel. Le montant final peut varier.</p>
+                    <p className="mt-3 text-[11px] text-gray-400 dark:text-gray-500">{t('salary_disclaimer')}</p>
                   </>
                 ) : (
-                  <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-4">Aucune donnée disponible</p>
+                  <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-4">{t('no_data')}</p>
                 )}
               </div>
             </div>
@@ -474,17 +478,17 @@ export default function UserDashboard() {
               <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-violet-600 rounded-lg flex items-center justify-center">
                 <Calendar className="w-4 h-4 text-white" />
               </div>
-              Solde de congés
+              {t('leave_balance_title')}
             </h3>
           </div>
           <div className="p-6">
             {leave ? (
               <>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
-                  <LeaveStatBox label="Droit annuel" value={leave.annualAllowance} unit="jours" color="purple" />
-                  <LeaveStatBox label="Utilisés" value={leave.used} unit="jours" color="red" />
-                  <LeaveStatBox label="En attente" value={leave.pending} unit="jours" color="amber" />
-                  <LeaveStatBox label="Restant" value={leave.remaining} unit="jours" color="emerald" />
+                  <LeaveStatBox label={t('annual_allowance')} value={leave.annualAllowance} unit={t('days')} color="purple" />
+                  <LeaveStatBox label={t('used')} value={leave.used} unit={t('days')} color="red" />
+                  <LeaveStatBox label={t('pending')} value={leave.pending} unit={t('days')} color="amber" />
+                  <LeaveStatBox label={t('remaining_label')} value={leave.remaining} unit={t('days')} color="emerald" />
                 </div>
                 <div className="mt-5 w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2.5 overflow-hidden">
                   <div className="flex h-full rounded-full overflow-hidden">
@@ -494,7 +498,7 @@ export default function UserDashboard() {
                 </div>
               </>
             ) : (
-              <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-4">Aucune donnée disponible</p>
+              <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-4">{t('no_data')}</p>
             )}
           </div>
         </div>
@@ -503,13 +507,13 @@ export default function UserDashboard() {
         <div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-5 flex items-center gap-2.5">
             <Sparkles className="w-6 h-6 text-purple-500" />
-            Actions Rapides
+            {t('quick_actions')}
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {[
-              { href: '/conges', title: 'Demander un Congé', desc: 'Soumettre une nouvelle demande de congé', icon: Calendar, grad: 'from-violet-500 to-purple-600', hoverGrad: 'group-hover:from-violet-600 group-hover:to-purple-700' },
-              { href: '/pointage', title: 'Pointage', desc: 'Gérer vos heures de travail', icon: Clock, grad: 'from-emerald-500 to-teal-600', hoverGrad: 'group-hover:from-emerald-600 group-hover:to-teal-700' },
-              { href: '/profile', title: 'Mon Profil', desc: 'Modifier vos informations', icon: Settings, grad: 'from-cyan-500 to-blue-600', hoverGrad: 'group-hover:from-cyan-600 group-hover:to-blue-700' },
+              { href: '/conges', title: t('request_leave'), desc: t('submit_new_leave'), icon: Calendar, grad: 'from-violet-500 to-purple-600', hoverGrad: 'group-hover:from-violet-600 group-hover:to-purple-700' },
+              { href: '/pointage', title: t('attendance'), desc: t('manage_hours'), icon: Clock, grad: 'from-emerald-500 to-teal-600', hoverGrad: 'group-hover:from-emerald-600 group-hover:to-teal-700' },
+              { href: '/profile', title: t('my_profile'), desc: t('edit_info'), icon: Settings, grad: 'from-cyan-500 to-blue-600', hoverGrad: 'group-hover:from-cyan-600 group-hover:to-blue-700' },
             ].map((a, i) => (
               <Link key={i} href={a.href} className="group relative overflow-hidden bg-gradient-to-br rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-1">
                 <div className={`absolute inset-0 bg-gradient-to-br ${a.grad} ${a.hoverGrad} transition-all duration-500`} />
@@ -535,15 +539,15 @@ export default function UserDashboard() {
               <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg flex items-center justify-center">
                 <User className="w-4 h-4 text-white" />
               </div>
-              Informations Personnelles
+              {t('personal_info')}
             </h3>
           </div>
           <div className="p-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-              <InfoTile icon={<User className="w-5 h-5" />} label="Nom Complet" value={fullName} color="purple" />
-              <InfoTile icon={<Mail className="w-5 h-5" />} label="Email" value={email} color="indigo" />
-              <InfoTile icon={<Phone className="w-5 h-5" />} label="Téléphone" value="Non renseigné" color="emerald" />
-              <InfoTile icon={<MapPin className="w-5 h-5" />} label="Localisation" value="Non renseigné" color="amber" />
+              <InfoTile icon={<User className="w-5 h-5" />} label={t('full_name')} value={fullName} color="purple" />
+              <InfoTile icon={<Mail className="w-5 h-5" />} label={t('email')} value={email} color="indigo" />
+              <InfoTile icon={<Phone className="w-5 h-5" />} label={t('phone')} value={t('not_specified')} color="emerald" />
+              <InfoTile icon={<MapPin className="w-5 h-5" />} label={t('location_label')} value={t('not_specified')} color="amber" />
             </div>
           </div>
         </div>
@@ -555,14 +559,15 @@ export default function UserDashboard() {
 
 /* ═══════════════════ SUB-COMPONENTS ═══════════════════ */
 
-function AttendanceRow({ label, icon, session, sessionType, isActive, actionLoading, onAction }: {
+function AttendanceRow({ label, icon, session, sessionType, isActive, actionLoading, onAction, t }: {
   label: string; icon: React.ReactNode; session: AttendanceSession | null; sessionType: 'MORNING' | 'AFTERNOON';
   isActive: boolean; actionLoading: string | null; onAction: (a: 'CHECK_IN' | 'CHECK_OUT', s: 'MORNING' | 'AFTERNOON') => void;
+  t: (key: string) => string;
 }) {
   const hasIn = !!session?.checkIn;
   const hasOut = !!session?.checkOut;
   const complete = hasIn && hasOut;
-  const statusLabel = complete ? 'Terminé' : hasIn ? 'En cours' : 'Non pointé';
+  const statusLabel = complete ? t('completed') : hasIn ? t('in_progress_badge') : t('not_checked');
   const statusCls = complete
     ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
     : hasIn
@@ -575,15 +580,15 @@ function AttendanceRow({ label, icon, session, sessionType, isActive, actionLoad
         <div className="flex items-center gap-2.5">
           {icon}
           <span className="font-semibold text-gray-900 dark:text-white">{label}</span>
-          {isActive && <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400">Session active</span>}
+          {isActive && <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400">{t('active_session')}</span>}
         </div>
         <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${statusCls}`}>{statusLabel}</span>
       </div>
 
       <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
-        {hasIn && <span>Entrée: {fmtTime(session!.checkIn!)}</span>}
-        {hasOut && <span>Sortie: {fmtTime(session!.checkOut!)}</span>}
-        {session?.durationMinutes != null && <span className="font-medium">Durée: {Math.floor(session.durationMinutes / 60)}h{(session.durationMinutes % 60).toString().padStart(2, '0')}</span>}
+        {hasIn && <span>{t('entry')}: {fmtTime(session!.checkIn!)}</span>}
+        {hasOut && <span>{t('exit')}: {fmtTime(session!.checkOut!)}</span>}
+        {session?.durationMinutes != null && <span className="font-medium">{t('duration_label')}: {Math.floor(session.durationMinutes / 60)}h{(session.durationMinutes % 60).toString().padStart(2, '0')}</span>}
       </div>
 
       {session?.anomalyDetected && (
@@ -595,13 +600,13 @@ function AttendanceRow({ label, icon, session, sessionType, isActive, actionLoad
           {!hasIn && (
             <button onClick={() => onAction('CHECK_IN', sessionType)} disabled={!!actionLoading} className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 text-white text-sm font-semibold hover:from-emerald-600 hover:to-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md hover:shadow-lg">
               <LogIn className="w-4 h-4" />
-              {actionLoading === `CHECK_IN_${sessionType}` ? 'Enregistrement...' : 'Pointer entrée'}
+              {actionLoading === `CHECK_IN_${sessionType}` ? t('recording') : t('check_in_btn')}
             </button>
           )}
           {hasIn && !hasOut && (
             <button onClick={() => onAction('CHECK_OUT', sessionType)} disabled={!!actionLoading} className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-red-500 to-rose-600 text-white text-sm font-semibold hover:from-red-600 hover:to-rose-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md hover:shadow-lg">
               <LogOut className="w-4 h-4" />
-              {actionLoading === `CHECK_OUT_${sessionType}` ? 'Enregistrement...' : 'Pointer sortie'}
+              {actionLoading === `CHECK_OUT_${sessionType}` ? t('recording') : t('check_out_btn')}
             </button>
           )}
         </div>

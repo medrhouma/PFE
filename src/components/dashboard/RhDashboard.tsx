@@ -7,6 +7,7 @@ import {
   Activity, Bell, LogIn, LogOut, AlertCircle 
 } from 'lucide-react';
 import PayrollDashboard from './PayrollDashboard';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface RecentActivity {
   id: string;
@@ -28,6 +29,8 @@ interface Stats {
 
 export default function RhDashboard() {
   const { data: session } = useSession();
+  const { t, language } = useLanguage();
+  const locale = language === 'ar' ? 'ar-SA' : language === 'en' ? 'en-US' : 'fr-FR';
   const [stats, setStats] = useState<Stats>({
     totalEmployees: 0,
     pendingProfiles: 0,
@@ -92,10 +95,10 @@ export default function RhDashboard() {
     const diff = now.getTime() - date.getTime();
     const minutes = Math.floor(diff / 60000);
     
-    if (minutes < 1) return 'À l\'instant';
-    if (minutes < 60) return `Il y a ${minutes} min`;
-    if (minutes < 1440) return `Il y a ${Math.floor(minutes / 60)} h`;
-    return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+    if (minutes < 1) return t('just_now');
+    if (minutes < 60) return `${minutes} min`;
+    if (minutes < 1440) return `${Math.floor(minutes / 60)} h`;
+    return date.toLocaleDateString(locale, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
   };
 
   if (loading) {
@@ -110,8 +113,8 @@ export default function RhDashboard() {
     <div className="space-y-6">
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-600 to-cyan-600 rounded-xl p-6 text-white">
-        <h1 className="text-3xl font-bold mb-2">Dashboard RH</h1>
-        <p className="text-blue-100">Vue d'ensemble des activités et tâches en temps réel</p>
+        <h1 className="text-3xl font-bold mb-2">{t('rh_dashboard')}</h1>
+        <p className="text-blue-100">{t('rh_dashboard_overview')}</p>
       </div>
 
       {/* Stats Grid */}
@@ -119,7 +122,7 @@ export default function RhDashboard() {
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Total Employés</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{t('total_employees')}</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{stats.totalEmployees}</p>
             </div>
             <Users className="w-8 h-8 text-blue-600" />
@@ -129,7 +132,7 @@ export default function RhDashboard() {
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Profils en attente</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{t('pending_profiles')}</p>
               <p className="text-2xl font-bold text-orange-600 mt-1">{stats.pendingProfiles}</p>
             </div>
             <AlertCircle className="w-8 h-8 text-orange-600" />
@@ -139,7 +142,7 @@ export default function RhDashboard() {
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Congés en attente</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{t('pending_leave')}</p>
               <p className="text-2xl font-bold text-purple-600 mt-1">{stats.pendingConges}</p>
             </div>
             <Calendar className="w-8 h-8 text-purple-600" />
@@ -149,7 +152,7 @@ export default function RhDashboard() {
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Pointages aujourd'hui</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{t('today_attendance')}</p>
               <p className="text-2xl font-bold text-green-600 mt-1">{stats.todayPointages}</p>
             </div>
             <Clock className="w-8 h-8 text-green-600" />
@@ -162,14 +165,14 @@ export default function RhDashboard() {
         <div className="border-b border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
             <Activity className="w-5 h-5 text-blue-600" />
-            Activités en Temps Réel
+            {t('realtime_activities')}
           </h2>
           <button
             onClick={fetchDashboardData}
             className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
           >
             <Activity className="w-4 h-4" />
-            Actualiser
+            {t('refresh')}
           </button>
         </div>
 
@@ -177,7 +180,7 @@ export default function RhDashboard() {
           {activities.length === 0 ? (
             <div className="p-8 text-center text-gray-500 dark:text-gray-400">
               <Activity className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p>Aucune activité récente</p>
+              <p>{t('no_recent_activity')}</p>
             </div>
           ) : (
             activities.map((activity) => (
@@ -215,7 +218,7 @@ export default function RhDashboard() {
                             {activity.details.anomaly && (
                               <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400 text-xs rounded">
                                 <AlertCircle className="w-3 h-3" />
-                                Anomalie
+                                {t('anomaly')}
                               </span>
                             )}
                             {activity.details.location && (
@@ -236,14 +239,14 @@ export default function RhDashboard() {
                               {activity.details.status}
                             </span>
                             <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs rounded">
-                              {new Date(activity.details.startDate).toLocaleDateString('fr-FR')} - {new Date(activity.details.endDate).toLocaleDateString('fr-FR')}
+                              {new Date(activity.details.startDate).toLocaleDateString(locale)} - {new Date(activity.details.endDate).toLocaleDateString(locale)}
                             </span>
                           </>
                         )}
                         
                         {activity.type === 'PROFILE' && (
                           <span className="px-2 py-1 bg-orange-100 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400 text-xs rounded">
-                            En attente de validation
+                            {t('pending_validation')}
                           </span>
                         )}
                       </div>
@@ -264,14 +267,14 @@ export default function RhDashboard() {
         >
           <Calendar className="w-8 h-8 text-purple-600 mb-3" />
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-            Gestion des Congés
+            {t('leave_management')}
           </h3>
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            Approuver ou rejeter les demandes
+            {t('approve_or_reject_requests')}
           </p>
           {stats.pendingConges > 0 && (
             <span className="inline-block mt-3 px-3 py-1 bg-purple-100 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400 text-xs font-medium rounded-full">
-              {stats.pendingConges} en attente
+              {stats.pendingConges} {t('en_attente').toLowerCase()}
             </span>
           )}
         </a>
@@ -282,14 +285,14 @@ export default function RhDashboard() {
         >
           <Users className="w-8 h-8 text-blue-600 mb-3" />
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-            Validation Profils
+            {t('profile_validation')}
           </h3>
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            Valider les nouveaux profils
+            {t('validate_new_profiles')}
           </p>
           {stats.pendingProfiles > 0 && (
             <span className="inline-block mt-3 px-3 py-1 bg-orange-100 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400 text-xs font-medium rounded-full">
-              {stats.pendingProfiles} en attente
+              {stats.pendingProfiles} {t('en_attente').toLowerCase()}
             </span>
           )}
         </a>
@@ -300,10 +303,10 @@ export default function RhDashboard() {
         >
           <Bell className="w-8 h-8 text-green-600 mb-3" />
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-            Centre de Notifications
+            {t('notification_center')}
           </h3>
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            Voir toutes les notifications
+            {t('view_all_notifications')}
           </p>
         </a>
       </div>

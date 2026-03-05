@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { 
   Camera, Check, X, Upload, AlertTriangle, 
   RefreshCw, Shield, Lock
@@ -36,6 +37,7 @@ export function SecureCamera({
   showFallbackUpload = true,
   requireUserAction = true
 }: SecureCameraProps) {
+  const { t } = useLanguage();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -83,14 +85,14 @@ export function SecureCamera({
     if (!navigator.mediaDevices) {
       return { 
         supported: false, 
-        error: "Votre navigateur ne supporte pas l'accès à la caméra. Utilisez Chrome, Firefox ou Safari récent." 
+        error: t('cam_no_browser_support')
       };
     }
 
     if (!navigator.mediaDevices.getUserMedia) {
       return { 
         supported: false, 
-        error: "La fonction getUserMedia n'est pas disponible dans ce navigateur." 
+        error: t('cam_no_getusermedia')
       };
     }
 
@@ -98,7 +100,7 @@ export function SecureCamera({
     if (!cameraState.isSecure) {
       return { 
         supported: false, 
-        error: "La caméra requiert une connexion sécurisée (HTTPS). Veuillez utiliser https:// ou localhost." 
+        error: t('cam_requires_https')
       };
     }
 
@@ -114,7 +116,7 @@ export function SecureCamera({
       setCameraState(prev => ({
         ...prev,
         status: "error",
-        error: "L'accès à la caméra doit être déclenché par une action utilisateur."
+        error: t('cam_user_action_required')
       }));
       return;
     }
@@ -125,9 +127,9 @@ export function SecureCamera({
       setCameraState(prev => ({
         ...prev,
         status: "error",
-        error: error || "Caméra non supportée"
+        error: error || t('cam_not_supported')
       }));
-      onError?.(error || "Caméra non supportée");
+      onError?.(error || t('cam_not_supported'));
       return;
     }
 
@@ -182,37 +184,37 @@ export function SecureCamera({
     } catch (error: any) {
       console.error("[SecureCamera] Camera error:", error);
       
-      let errorMessage = "Impossible d'accéder à la caméra.";
+      let errorMessage = t('cam_access_error');
       let permissionDenied = false;
 
       switch (error.name) {
         case "NotAllowedError":
         case "PermissionDeniedError":
-          errorMessage = "Accès à la caméra refusé. Veuillez autoriser l'accès dans les paramètres de votre navigateur, puis rechargez la page.";
+          errorMessage = t('cam_permission_denied');
           permissionDenied = true;
           break;
         case "NotFoundError":
         case "DevicesNotFoundError":
-          errorMessage = "Aucune caméra détectée sur cet appareil.";
+          errorMessage = t('cam_not_found');
           break;
         case "NotReadableError":
         case "TrackStartError":
-          errorMessage = "La caméra est utilisée par une autre application. Fermez les autres applications utilisant la caméra.";
+          errorMessage = t('cam_in_use');
           break;
         case "OverconstrainedError":
-          errorMessage = "Impossible d'obtenir les paramètres vidéo demandés. Essayez avec un autre navigateur.";
+          errorMessage = t('cam_overconstrained');
           break;
         case "NotSupportedError":
-          errorMessage = "Cette fonctionnalité n'est pas supportée dans ce navigateur.";
+          errorMessage = t('cam_not_supported_browser');
           break;
         case "AbortError":
-          errorMessage = "L'accès à la caméra a été interrompu.";
+          errorMessage = t('cam_aborted');
           break;
         case "SecurityError":
-          errorMessage = "L'accès à la caméra a été bloqué pour des raisons de sécurité. Vérifiez que vous utilisez HTTPS.";
+          errorMessage = t('cam_security_error');
           break;
         default:
-          errorMessage = `Erreur caméra: ${error.message || error.name || "Erreur inconnue"}`;
+          errorMessage = `${t('cam_error_generic')}: ${error.message || error.name}`;
       }
 
       setCameraState(prev => ({
@@ -276,7 +278,7 @@ export function SecureCamera({
       setCapturedImage(imageData);
       setCameraState(prev => ({ ...prev, status: "captured" }));
     } else {
-      const error = "Échec de la capture. Veuillez réessayer.";
+      const error = t('cam_capture_failed');
       setCameraState(prev => ({ ...prev, error }));
       onError?.(error);
     }
@@ -309,7 +311,7 @@ export function SecureCamera({
 
     // Validate file type
     if (!file.type.startsWith("image/")) {
-      const error = "Veuillez sélectionner un fichier image (JPEG, PNG, etc.)";
+      const error = t('cam_select_image');
       setCameraState(prev => ({ ...prev, error }));
       onError?.(error);
       return;
@@ -317,7 +319,7 @@ export function SecureCamera({
 
     // Validate file size (max 10MB)
     if (file.size > 10 * 1024 * 1024) {
-      const error = "L'image est trop volumineuse. Maximum 10 Mo.";
+      const error = t('cam_image_too_large');
       setCameraState(prev => ({ ...prev, error }));
       onError?.(error);
       return;
@@ -332,7 +334,7 @@ export function SecureCamera({
       }
     };
     reader.onerror = () => {
-      const error = "Erreur lors de la lecture du fichier.";
+      const error = t('cam_read_error');
       setCameraState(prev => ({ ...prev, error }));
       onError?.(error);
     };
@@ -368,9 +370,9 @@ export function SecureCamera({
           <div className="flex items-center gap-2 text-amber-800 dark:text-amber-300">
             <AlertTriangle className="w-5 h-5 flex-shrink-0" />
             <div>
-              <p className="text-sm font-medium">Connexion non sécurisée</p>
+              <p className="text-sm font-medium">{t('cam_insecure_connection')}</p>
               <p className="text-xs opacity-80">
-                La caméra requiert HTTPS. Utilisez le mode upload ou accédez via https://
+                {t('cam_requires_https_short')}
               </p>
             </div>
           </div>
@@ -388,8 +390,8 @@ export function SecureCamera({
               <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-violet-600 to-purple-600 flex items-center justify-center">
                 <Camera className="w-10 h-10 text-white" />
               </div>
-              <p className="text-lg font-medium">Caméra prête</p>
-              <p className="text-sm opacity-75 mt-1">Cliquez sur le bouton pour démarrer</p>
+              <p className="text-lg font-medium">{t('cam_ready')}</p>
+              <p className="text-sm opacity-75 mt-1">{t('cam_click_to_start')}</p>
             </div>
           </div>
         )}
@@ -399,8 +401,8 @@ export function SecureCamera({
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center text-gray-400">
               <RefreshCw className="w-12 h-12 mx-auto mb-4 animate-spin" />
-              <p className="text-lg font-medium">Demande d'accès...</p>
-              <p className="text-sm opacity-75 mt-1">Veuillez autoriser l'accès à la caméra</p>
+              <p className="text-lg font-medium">{t('cam_requesting')}...</p>
+              <p className="text-sm opacity-75 mt-1">{t('cam_please_allow')}</p>
             </div>
           </div>
         )}
@@ -418,12 +420,12 @@ export function SecureCamera({
             {/* Live indicator */}
             <div className="absolute top-4 left-4 flex items-center gap-2 bg-red-500/90 text-white px-3 py-1 rounded-full text-sm font-medium">
               <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
-              EN DIRECT
+              {t('cam_live')}
             </div>
             {/* Secure indicator */}
             <div className="absolute top-4 right-4 flex items-center gap-2 bg-green-500/90 text-white px-3 py-1 rounded-full text-sm font-medium">
               <Shield className="w-4 h-4" />
-              Sécurisé
+              {t('cam_secure')}
             </div>
             {/* Face guide overlay */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -442,7 +444,7 @@ export function SecureCamera({
             />
             <div className="absolute top-4 right-4 flex items-center gap-2 bg-green-500/90 text-white px-4 py-2 rounded-full text-sm font-bold">
               <Check className="w-4 h-4" />
-              PHOTO CAPTURÉE
+              {t('cam_photo_captured')}
             </div>
           </>
         )}
@@ -454,14 +456,14 @@ export function SecureCamera({
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-500/20 flex items-center justify-center">
                 <AlertTriangle className="w-8 h-8 text-red-400" />
               </div>
-              <p className="text-red-400 font-medium mb-2">Accès caméra impossible</p>
+              <p className="text-red-400 font-medium mb-2">{t('cam_access_impossible')}</p>
               <p className="text-sm text-gray-400 max-w-xs mx-auto">{cameraState.error}</p>
               
               {cameraState.permissionDenied && (
                 <div className="mt-4 p-3 bg-blue-500/10 rounded-lg">
                   <p className="text-xs text-blue-300">
                     <Lock className="inline w-3 h-3 mr-1" />
-                    Conseil: Cliquez sur l'icône de cadenas dans la barre d'adresse pour autoriser la caméra
+                    {t('cam_lock_tip')}
                   </p>
                 </div>
               )}
@@ -485,7 +487,7 @@ export function SecureCamera({
               className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-bold rounded-xl transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Camera className="w-5 h-5" />
-              Démarrer la Caméra
+              {t('cam_start')}
             </button>
           )}
 
@@ -497,7 +499,7 @@ export function SecureCamera({
                 className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-bold rounded-xl transition-all shadow-lg"
               >
                 <Camera className="w-5 h-5" />
-                Capturer
+                {t('cam_capture')}
               </button>
               <button
                 onClick={stopCamera}
@@ -516,7 +518,7 @@ export function SecureCamera({
                 className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-bold rounded-xl transition-all shadow-lg"
               >
                 <Check className="w-5 h-5" />
-                Valider
+                {t('validate')}
               </button>
               <button
                 onClick={stream ? retakePhoto : () => {
@@ -538,7 +540,7 @@ export function SecureCamera({
               className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold rounded-xl transition-all shadow-lg disabled:opacity-50"
             >
               <RefreshCw className="w-5 h-5" />
-              Réessayer
+              {t('try_again')}
             </button>
           )}
 
@@ -549,7 +551,7 @@ export function SecureCamera({
               className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-gray-400 text-white font-bold rounded-xl cursor-not-allowed"
             >
               <RefreshCw className="w-5 h-5 animate-spin" />
-              Chargement...
+              {t('loading')}...
             </button>
           )}
         </div>
@@ -576,7 +578,7 @@ export function SecureCamera({
               className="w-full flex items-center justify-center gap-2 px-6 py-3 border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-violet-500 dark:hover:border-violet-500 text-gray-700 dark:text-gray-300 hover:text-violet-600 dark:hover:text-violet-400 font-medium rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Upload className="w-5 h-5" />
-              Télécharger une Photo
+              {t('cam_upload_photo')}
             </button>
             <input
               ref={fileInputRef}
@@ -596,11 +598,10 @@ export function SecureCamera({
           <Lock className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
           <div>
             <p className="text-sm font-medium text-blue-800 dark:text-blue-300">
-              Protection des données
+              {t('cam_data_protection')}
             </p>
             <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-              Votre photo est utilisée uniquement pour la vérification d'identité. 
-              Elle est traitée de manière sécurisée et n'est pas stockée sans votre consentement.
+              {t('cam_data_protection_desc')}
             </p>
           </div>
         </div>

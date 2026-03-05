@@ -41,6 +41,14 @@ export interface DayAttendanceSummary {
   workedMinutes: number;
   expectedMinutes: number;
   isWorkDay: boolean;
+  // Late/early tracking
+  lateMinutes: number;
+  earlyDepartureMinutes: number;
+  isLate: boolean;
+  isEarlyDeparture: boolean;
+  // Holiday/leave info
+  holidayName?: string;
+  leaveType?: string;
 }
 
 export type DayStatus =
@@ -130,6 +138,17 @@ export interface AttendanceCalculation {
   partialDays: number;
   fullDays: number;
   overtimeHours: number;
+  // Late/early tracking
+  totalLateMinutes: number;
+  totalEarlyDepartureMinutes: number;
+  lateDays: number;
+  earlyDepartureDays: number;
+  // Leave tracking
+  paidLeaveDays: number;
+  unpaidLeaveDays: number;
+  sickLeaveDays: number;
+  holidayDays: number;
+  rewardDays: number;
   dailySummaries: DayAttendanceSummary[];
 }
 

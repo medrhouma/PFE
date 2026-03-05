@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useNotification } from '@/contexts/NotificationContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { getSafeImageSrc } from '@/lib/utils';
 
 interface ApprovedEmployee {
@@ -33,6 +34,8 @@ export default function ApprovedEmployeesList() {
   const [loading, setLoading] = useState(true);
   const [selectedEmployee, setSelectedEmployee] = useState<ApprovedEmployee | null>(null);
   const { showNotification } = useNotification();
+  const { t, language } = useLanguage();
+  const locale = language === 'ar' ? 'ar-SA' : language === 'en' ? 'en-US' : 'fr-FR';
 
   useEffect(() => {
     loadApprovedEmployees();
@@ -50,8 +53,8 @@ export default function ApprovedEmployeesList() {
       console.error('Error loading approved employees:', error);
       showNotification({
         type: 'error',
-        title: 'Erreur',
-        message: 'Impossible de charger les profils approuvés'
+        title: t('error'),
+        message: t('ae_load_error')
       });
     } finally {
       setLoading(false);
@@ -59,13 +62,13 @@ export default function ApprovedEmployeesList() {
   };
 
   if (loading) {
-    return <div className="text-center py-8">Chargement...</div>;
+    return <div className="text-center py-8">{t('loading')}...</div>;
   }
 
   if (employees.length === 0) {
     return (
       <div className="bg-gray-50 rounded-lg p-8 text-center">
-        <p className="text-gray-600">Aucun profil approuvé</p>
+        <p className="text-gray-600">{t('ae_no_approved')}</p>
       </div>
     );
   }
@@ -77,19 +80,19 @@ export default function ApprovedEmployeesList() {
           <thead className="bg-gradient-to-r from-green-600 to-emerald-600">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
-                Nom
+                {t('last_name')}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
                 Email
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
-                Téléphone
+                {t('phone')}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
-                Type de contrat
+                {t('el_contract_type')}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
-                Actions
+                {t('actions')}
               </th>
             </tr>
           </thead>
@@ -116,13 +119,13 @@ export default function ApprovedEmployeesList() {
                   <button
                     onClick={() => setSelectedEmployee(employee)}
                     className="px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-xs font-medium shadow-sm flex items-center gap-1"
-                    title="Voir détails complets du profil"
+                    title={t('el_view_details')}
                   >
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                     </svg>
-                    Détails
+                    {t('ae_details')}
                   </button>
                 </td>
               </tr>
@@ -145,35 +148,35 @@ export default function ApprovedEmployeesList() {
             <div className="flex-1 overflow-y-auto p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Sexe</label>
+                  <label className="text-sm font-medium text-gray-500">{t('ae_gender')}</label>
                   <p className="text-gray-900">{selectedEmployee.sexe || 'N/A'}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Date de naissance</label>
+                  <label className="text-sm font-medium text-gray-500">{t('el_birthday')}</label>
                   <p className="text-gray-900">
-                    {selectedEmployee.birthday ? new Date(selectedEmployee.birthday).toLocaleDateString('fr-FR') : 'N/A'}
+                    {selectedEmployee.birthday ? new Date(selectedEmployee.birthday).toLocaleDateString(locale) : 'N/A'}
                   </p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Téléphone</label>
+                  <label className="text-sm font-medium text-gray-500">{t('phone')}</label>
                   <p className="text-gray-900">{selectedEmployee.telephone || 'N/A'}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500">RIB</label>
+                  <label className="text-sm font-medium text-gray-500">{t('ae_rib')}</label>
                   <p className="text-gray-900">{selectedEmployee.rib || 'N/A'}</p>
                 </div>
                 <div className="col-span-2">
-                  <label className="text-sm font-medium text-gray-500">Adresse</label>
+                  <label className="text-sm font-medium text-gray-500">{t('ae_address')}</label>
                   <p className="text-gray-900">{selectedEmployee.adresse || 'N/A'}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Date d'embauche</label>
+                  <label className="text-sm font-medium text-gray-500">{t('el_hire_date')}</label>
                   <p className="text-gray-900">
-                    {selectedEmployee.dateEmbauche ? new Date(selectedEmployee.dateEmbauche).toLocaleDateString('fr-FR') : 'N/A'}
+                    {selectedEmployee.dateEmbauche ? new Date(selectedEmployee.dateEmbauche).toLocaleDateString(locale) : 'N/A'}
                   </p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Type de contrat</label>
+                  <label className="text-sm font-medium text-gray-500">{t('el_contract_type')}</label>
                   <p className="text-gray-900">{selectedEmployee.typeContrat || 'N/A'}</p>
                 </div>
               </div>
@@ -181,10 +184,10 @@ export default function ApprovedEmployeesList() {
               {/* Photo */}
               {getSafeImageSrc(selectedEmployee.photo) && (
                 <div>
-                  <label className="text-sm font-medium text-gray-500 block mb-2">Photo</label>
+                  <label className="text-sm font-medium text-gray-500 block mb-2">{t('ae_photo')}</label>
                   <img 
                     src={getSafeImageSrc(selectedEmployee.photo)!} 
-                    alt="Photo employé" 
+                    alt={t('pe_employee_photo')} 
                     className="w-32 h-32 object-cover rounded-lg"
                     onError={(e) => { e.currentTarget.style.display = 'none'; }}
                   />
@@ -203,7 +206,7 @@ export default function ApprovedEmployeesList() {
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
-                    Télécharger le CV
+                    {t('el_download_cv')}
                   </a>
                 </div>
               )}
@@ -236,7 +239,7 @@ export default function ApprovedEmployeesList() {
                   <>
                     {formationDocs.length > 0 && (
                       <div className="border-t pt-4">
-                        <label className="text-sm font-medium text-gray-500 block mb-3">Formation ({formationDocs.length})</label>
+                        <label className="text-sm font-medium text-gray-500 block mb-3">{t('ae_training')} ({formationDocs.length})</label>
                         <div className="grid grid-cols-1 gap-2">
                           {formationDocs.map((doc, idx) => (
                             <button
@@ -261,7 +264,7 @@ export default function ApprovedEmployeesList() {
 
                     {experienceDocs.length > 0 && (
                       <div className="border-t pt-4">
-                        <label className="text-sm font-medium text-gray-500 block mb-3">Expérience professionnelle ({experienceDocs.length})</label>
+                        <label className="text-sm font-medium text-gray-500 block mb-3">{t('pe_work_experience')} ({experienceDocs.length})</label>
                         <div className="grid grid-cols-1 gap-2">
                           {experienceDocs.map((doc, idx) => (
                             <button
@@ -286,7 +289,7 @@ export default function ApprovedEmployeesList() {
 
                     {diplomeDocs.length > 0 && (
                       <div className="border-t pt-4">
-                        <label className="text-sm font-medium text-gray-500 block mb-3">Diplômes & Certifications ({diplomeDocs.length})</label>
+                        <label className="text-sm font-medium text-gray-500 block mb-3">{t('pe_diplomas')} ({diplomeDocs.length})</label>
                         <div className="grid grid-cols-1 gap-2">
                           {diplomeDocs.map((doc, idx) => (
                             <button
@@ -311,7 +314,7 @@ export default function ApprovedEmployeesList() {
 
                     {autresDocs.length > 0 && (
                       <div className="border-t pt-4">
-                        <label className="text-sm font-medium text-gray-500 block mb-3">Autres documents ({autresDocs.length})</label>
+                        <label className="text-sm font-medium text-gray-500 block mb-3">{t('pe_other_docs')} ({autresDocs.length})</label>
                         <div className="grid grid-cols-1 gap-2">
                           {autresDocs.map((doc, idx) => (
                             <button
@@ -344,7 +347,7 @@ export default function ApprovedEmployeesList() {
                     onClick={() => setSelectedEmployee(null)}
                     className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
                   >
-                    Fermer
+                    {t('close')}
                   </button>
                 </div>
               </div>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useNotification } from '@/contexts/NotificationContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { User, Calendar, Mail, Phone, MapPin, FileText, CheckCircle, XCircle, AlertCircle, Download, Eye } from 'lucide-react';
 import { getSafeImageSrc } from '@/lib/utils';
 
@@ -41,6 +42,8 @@ export default function ProfilesValidationPage() {
   const [selectedEmployee, setSelectedEmployee] = useState<PendingEmployee | null>(null);
   const [processing, setProcessing] = useState(false);
   const { showNotification } = useNotification();
+  const { t, language } = useLanguage();
+  const locale = language === 'ar' ? 'ar-SA' : language === 'en' ? 'en-US' : 'fr-FR';
 
   useEffect(() => {
     loadPendingEmployees();
@@ -58,8 +61,8 @@ export default function ProfilesValidationPage() {
       console.error('Error loading pending employees:', error);
       showNotification({
         type: 'error',
-        title: 'Erreur',
-        message: 'Impossible de charger les profils en attente'
+        title: t('error'),
+        message: t('cannot_load_pending_profiles')
       });
     } finally {
       setLoading(false);
@@ -73,7 +76,7 @@ export default function ProfilesValidationPage() {
       
       // Si c'est un rejet, demander la raison
       if (action === 'REJETE') {
-        rejectionReason = prompt('Raison du rejet (optionnel):');
+        rejectionReason = prompt(t('rejection_reason_optional'));
         // Si l'utilisateur annule, ne pas continuer
         if (rejectionReason === null) {
           setProcessing(false);
@@ -96,8 +99,8 @@ export default function ProfilesValidationPage() {
 
       showNotification({
         type: 'success',
-        title: 'Succès',
-        message: action === 'APPROUVE' ? 'Profil approuvé avec succès' : 'Profil rejeté'
+        title: t('success'),
+        message: action === 'APPROUVE' ? t('profile_approved_success') : t('profile_rejected_label')
       });
 
       // Reload the list
@@ -107,8 +110,8 @@ export default function ProfilesValidationPage() {
       console.error('Error updating employee status:', error);
       showNotification({
         type: 'error',
-        title: 'Erreur',
-        message: 'Impossible de mettre à jour le statut'
+        title: t('error'),
+        message: t('cannot_update_status')
       });
     } finally {
       setProcessing(false);
@@ -129,8 +132,8 @@ export default function ProfilesValidationPage() {
   };
 
   const formatDate = (date: string | null) => {
-    if (!date) return 'Non spécifié';
-    return new Date(date).toLocaleDateString('fr-FR');
+    if (!date) return t('not_specified');
+    return new Date(date).toLocaleDateString(locale);
   };
 
   if (loading) {
@@ -145,9 +148,9 @@ export default function ProfilesValidationPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="bg-gradient-to-r from-orange-600 to-amber-600 rounded-xl p-6 text-white">
-        <h1 className="text-3xl font-bold mb-2">Validation des Profils</h1>
+        <h1 className="text-3xl font-bold mb-2">{t('profile_validation')}</h1>
         <p className="text-orange-100">
-          Approuver ou rejeter les profils en attente de validation
+          {t('approve_or_reject_pending_profiles')}
         </p>
       </div>
 
@@ -156,7 +159,7 @@ export default function ProfilesValidationPage() {
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">En attente</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{t('en_attente')}</p>
               <p className="text-2xl font-bold text-orange-600 mt-1">{employees.length}</p>
             </div>
             <AlertCircle className="w-8 h-8 text-orange-600" />
@@ -168,7 +171,7 @@ export default function ProfilesValidationPage() {
       <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div className="border-b border-gray-200 dark:border-gray-700 p-4">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-            Profils en attente de validation
+            {t('pending_profiles_validation')}
           </h2>
         </div>
 
@@ -176,7 +179,7 @@ export default function ProfilesValidationPage() {
           {employees.length === 0 ? (
             <div className="p-8 text-center text-gray-500 dark:text-gray-400">
               <CheckCircle className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p>Aucun profil en attente de validation</p>
+              <p>{t('no_pending_profile')}</p>
             </div>
           ) : (
             <div className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -255,14 +258,14 @@ export default function ProfilesValidationPage() {
                           
                           {employee.dateEmbauche && (
                             <span className="px-2 py-1 bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 text-xs rounded">
-                              Embauche: {formatDate(employee.dateEmbauche)}
+                              {t('hire_date_label')}: {formatDate(employee.dateEmbauche)}
                             </span>
                           )}
                           
                           {employee.cv && (
                             <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs rounded flex items-center gap-1">
                               <FileText className="w-3 h-3" />
-                              CV disponible
+                              {t('cv_available')}
                             </span>
                           )}
                         </div>
@@ -297,7 +300,7 @@ export default function ProfilesValidationPage() {
                       <button
                         onClick={() => setSelectedEmployee(employee)}
                         className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-                        title="Voir les détails"
+                        title={t('view_details')}
                       >
                         <Eye className="w-5 h-5" />
                       </button>
@@ -308,7 +311,7 @@ export default function ProfilesValidationPage() {
                         className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <CheckCircle className="w-4 h-4" />
-                        Approuver
+                        {t('approve')}
                       </button>
                       
                       <button
@@ -317,7 +320,7 @@ export default function ProfilesValidationPage() {
                         className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <XCircle className="w-4 h-4" />
-                        Rejeter
+                        {t('reject')}
                       </button>
                     </div>
                   </div>
@@ -334,7 +337,7 @@ export default function ProfilesValidationPage() {
           <div className="bg-white dark:bg-gray-800 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Détails du profil
+                {t('profile_details')}
               </h3>
               <button
                 onClick={() => setSelectedEmployee(null)}
@@ -370,38 +373,38 @@ export default function ProfilesValidationPage() {
               {/* Informations détaillées */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Téléphone</label>
-                  <p className="text-gray-900 dark:text-white">{selectedEmployee.telephone || 'Non spécifié'}</p>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('phone')}</label>
+                  <p className="text-gray-900 dark:text-white">{selectedEmployee.telephone || t('not_specified')}</p>
                 </div>
                 
                 <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Date de naissance</label>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('date_of_birth')}</label>
                   <p className="text-gray-900 dark:text-white">{formatDate(selectedEmployee.birthday)}</p>
                 </div>
                 
                 <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Sexe</label>
-                  <p className="text-gray-900 dark:text-white">{selectedEmployee.sexe || 'Non spécifié'}</p>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('gender')}</label>
+                  <p className="text-gray-900 dark:text-white">{selectedEmployee.sexe || t('not_specified')}</p>
                 </div>
                 
                 <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Type de contrat</label>
-                  <p className="text-gray-900 dark:text-white">{selectedEmployee.typeContrat || 'Non spécifié'}</p>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('contract_type')}</label>
+                  <p className="text-gray-900 dark:text-white">{selectedEmployee.typeContrat || t('not_specified')}</p>
                 </div>
                 
                 <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Date d'embauche</label>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('hire_date')}</label>
                   <p className="text-gray-900 dark:text-white">{formatDate(selectedEmployee.dateEmbauche)}</p>
                 </div>
                 
                 <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">RIB</label>
-                  <p className="text-gray-900 dark:text-white">{selectedEmployee.rib || 'Non spécifié'}</p>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('rib_label')}</label>
+                  <p className="text-gray-900 dark:text-white">{selectedEmployee.rib || t('not_specified')}</p>
                 </div>
                 
                 <div className="md:col-span-2">
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Adresse</label>
-                  <p className="text-gray-900 dark:text-white">{selectedEmployee.adresse || 'Non spécifié'}</p>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('address')}</label>
+                  <p className="text-gray-900 dark:text-white">{selectedEmployee.adresse || t('not_specified')}</p>
                 </div>
               </div>
 
@@ -416,7 +419,7 @@ export default function ProfilesValidationPage() {
                     className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
                   >
                     <Eye className="w-4 h-4" />
-                    Voir le CV
+                    {t('view_cv')}
                   </a>
                 </div>
               )}
@@ -431,7 +434,7 @@ export default function ProfilesValidationPage() {
                   className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <CheckCircle className="w-5 h-5" />
-                  Approuver ce profil
+                  {t('approve_this_profile')}
                 </button>
                 
                 <button
@@ -442,7 +445,7 @@ export default function ProfilesValidationPage() {
                   className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <XCircle className="w-5 h-5" />
-                  Rejeter ce profil
+                  {t('reject_this_profile')}
                 </button>
               </div>
             </div>

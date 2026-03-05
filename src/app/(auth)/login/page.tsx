@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth"
 import { redirect } from "next/navigation"
 import { authOptions } from "@/lib/auth"
 import Image from "next/image"
-import "./login-animations.css"
+import { LoginAnimations } from "./LoginAnimations"
 
 export default async function LoginPage() {
   const session = await getServerSession(authOptions)
@@ -14,6 +14,7 @@ export default async function LoginPage() {
 
   return (
     <div className="min-h-screen flex relative overflow-hidden bg-gradient-to-br from-slate-50 via-white to-violet-50">
+      <LoginAnimations />
       {/* ================= ANIMATED BACKGROUND (Global) ================= */}
       <div className="absolute inset-0 overflow-hidden">
         {/* Gradient Orbs - Version claire */}

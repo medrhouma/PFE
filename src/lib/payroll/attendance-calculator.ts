@@ -3,6 +3,7 @@
  * 
  * Converts raw attendance session data into structured
  * attendance metrics for salary computation.
+ * Includes late/early tracking, leave categorization, and holiday detection.
  */
 
 import { attendanceSessionService } from '@/lib/services/attendance-session-service';
@@ -33,9 +34,34 @@ export async function calculateAttendance(
   let fullDays = 0;
   let partialDays = 0;
   let overtimeMinutes = 0;
+  let totalLateMinutes = 0;
+  let totalEarlyDepartureMinutes = 0;
+  let lateDays = 0;
+  let earlyDepartureDays = 0;
+  let paidLeaveDays = 0;
+  let unpaidLeaveDays = 0;
+  let sickLeaveDays = 0;
+  let holidayDays = 0;
+  let rewardDaysCount = 0;
 
   for (const day of dailySummaries) {
+    // Count holidays
+    if (day.dayStatus === 'HOLIDAY') {
+      holidayDays++;
+      continue;
+    }
+    if (day.dayStatus === 'WEEKEND') continue;
     if (!day.isWorkDay) continue;
+
+    // Track late/early
+    if (day.isLate) {
+      lateDays++;
+      totalLateMinutes += day.lateMinutes;
+    }
+    if (day.isEarlyDeparture) {
+      earlyDepartureDays++;
+      totalEarlyDepartureMinutes += day.earlyDepartureMinutes;
+    }
 
     switch (day.dayStatus) {
       case 'FULL_DAY':
@@ -54,21 +80,36 @@ export async function calculateAttendance(
         break;
 
       case 'LEAVE_FULL':
-        // Full day leave — counts as worked for salary (if paid)
         fullDays++;
         totalWorkedMinutes += day.expectedMinutes;
+        // Categorize leave type
+        if (day.leaveType === 'UNPAID') {
+          unpaidLeaveDays++;
+        } else if (day.leaveType === 'MALADIE') {
+          sickLeaveDays++;
+        } else {
+          paidLeaveDays++;
+        }
         break;
 
       case 'LEAVE_HALF_AM':
       case 'LEAVE_HALF_PM':
-        // Half day leave — count the worked half + leave credit
         fullDays += 0.5;
         partialDays += 0.5;
         totalWorkedMinutes += day.workedMinutes;
+        // Half day leave counts as 0.5
+        if (day.leaveType === 'UNPAID') {
+          unpaidLeaveDays += 0.5;
+        } else if (day.leaveType === 'MALADIE') {
+          sickLeaveDays += 0.5;
+        } else {
+          paidLeaveDays += 0.5;
+        }
         break;
 
       case 'REWARD':
         fullDays++;
+        rewardDaysCount++;
         totalWorkedMinutes += day.expectedMinutes;
         break;
 
@@ -97,6 +138,15 @@ export async function calculateAttendance(
     partialDays,
     fullDays,
     overtimeHours: round2(overtimeHours),
+    totalLateMinutes,
+    totalEarlyDepartureMinutes,
+    lateDays,
+    earlyDepartureDays,
+    paidLeaveDays,
+    unpaidLeaveDays,
+    sickLeaveDays,
+    holidayDays,
+    rewardDays: rewardDaysCount,
     dailySummaries,
   };
 }

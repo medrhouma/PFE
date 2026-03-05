@@ -7,6 +7,7 @@
 
 import { ReactNode } from "react";
 import { ArrowUp, ArrowDown, Minus } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface QuickStatCardProps {
   title: string;
@@ -220,6 +221,7 @@ export function ProgressStatCard({
 }) {
   const colors = colorClasses[color];
   const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+  const { t } = useLanguage();
 
   return (
     <div className={`bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 ${className}`}>
@@ -257,7 +259,7 @@ export function ProgressStatCard({
           </div>
 
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-            {percentage}% complété
+            {percentage}% {t('qsc_completed')}
           </p>
         </>
       )}

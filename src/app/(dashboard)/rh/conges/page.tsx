@@ -6,6 +6,7 @@ import { useNotification } from "@/contexts/NotificationContext"
 import { Button } from "@/components/ui/Button"
 import { Calendar, Check, X, User, Clock, MessageSquare, LayoutGrid, List } from "lucide-react"
 import { LeaveCalendar } from "@/components/conges/LeaveCalendar"
+import { useLanguage } from "@/contexts/LanguageContext"
 
 interface LeaveRequest {
   id: string
@@ -23,6 +24,8 @@ interface LeaveRequest {
 export default function RHCongesPage() {
   const { data: session } = useSession()
   const { showNotification } = useNotification()
+  const { t, language } = useLanguage()
+  const locale = language === 'ar' ? 'ar-SA' : language === 'en' ? 'en-US' : 'fr-FR'
   const [requests, setRequests] = useState<LeaveRequest[]>([])
   const [loading, setLoading] = useState(false)
   const [initialLoading, setInitialLoading] = useState(true)
@@ -49,16 +52,16 @@ export default function RHCongesPage() {
         console.error("❌ Failed to fetch requests:", response.status)
         showNotification({
           type: "error",
-          title: "Erreur",
-          message: "Impossible de charger les demandes de congé"
+          title: t('error'),
+          message: t('cannot_load_requests')
         })
       }
     } catch (error) {
       console.error("Error fetching requests:", error)
       showNotification({
         type: "error",
-        title: "Erreur",
-        message: "Erreur de connexion au serveur"
+        title: t('error'),
+        message: t('server_connection_error')
       })
     } finally {
       setInitialLoading(false)
@@ -81,8 +84,8 @@ export default function RHCongesPage() {
       if (response.ok) {
         showNotification({
           type: "success",
-          title: "Succès",
-          message: data.message || "Demande traitée avec succès"
+          title: t('success'),
+          message: data.message || t('request_processed')
         })
         setShowModal(false)
         setSelectedRequest(null)
@@ -91,15 +94,15 @@ export default function RHCongesPage() {
       } else {
         showNotification({
           type: "error",
-          title: "Erreur",
-          message: data.error || "Erreur lors du traitement"
+          title: t('error'),
+          message: data.error || t('processing_error')
         })
       }
     } catch (error) {
       showNotification({
         type: "error",
-        title: "Erreur",
-        message: "Impossible de traiter la demande"
+        title: t('error'),
+        message: t('cannot_process_request')
       })
     } finally {
       setLoading(false)
@@ -124,20 +127,20 @@ export default function RHCongesPage() {
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case "VALIDE": return "Approuvé"
-      case "REFUSE": return "Refusé"
-      case "EN_ATTENTE": return "En attente"
+      case "VALIDE": return t('approved')
+      case "REFUSE": return t('rejected')
+      case "EN_ATTENTE": return t('en_attente')
       default: return status
     }
   }
 
   const getTypeLabel = (type: string) => {
     switch (type) {
-      case "PAID": return "Congé payé"
-      case "UNPAID": return "Congé sans solde"
-      case "MATERNITE": return "Congé maternité"
-      case "MALADIE": return "Congé maladie"
-      case "PREAVIS": return "Préavis"
+      case "PAID": return t('paid_leave')
+      case "UNPAID": return t('unpaid_leave')
+      case "MATERNITE": return t('maternity_leave')
+      case "MALADIE": return t('sick_leave')
+      case "PREAVIS": return t('notice_period')
       default: return type
     }
   }
@@ -171,7 +174,7 @@ export default function RHCongesPage() {
       <div className="max-w-6xl mx-auto">
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6">
           <p className="text-red-600 dark:text-red-400">
-            Accès refusé - Cette page est réservée au personnel RH
+            {t('access_denied')} - {t('rh_only_page')}
           </p>
         </div>
       </div>
@@ -186,7 +189,7 @@ export default function RHCongesPage() {
           <div className="flex items-center justify-center h-64">
             <div className="flex flex-col items-center gap-4">
               <div className="animate-spin rounded-full h-12 w-12 border-4 border-emerald-500 border-t-transparent"></div>
-              <p className="text-gray-500 dark:text-gray-400">Chargement des demandes...</p>
+              <p className="text-gray-500 dark:text-gray-400">{t('loading')}...</p>
             </div>
           </div>
         </div>
@@ -206,10 +209,10 @@ export default function RHCongesPage() {
               </div>
               <div>
                 <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                  Gestion des Congés
+                  {t('leave_management')}
                 </h1>
                 <p className="text-gray-600 dark:text-gray-400 mt-1">
-                  Gérez les demandes de congé des employés
+                  {t('manage_employee_leave')}
                 </p>
               </div>
             </div>
@@ -225,7 +228,7 @@ export default function RHCongesPage() {
                   }`}
                 >
                   <List className="w-4 h-4" />
-                  <span className="hidden sm:inline">Liste</span>
+                  <span className="hidden sm:inline">{t('list')}</span>
                 </button>
                 <button
                   onClick={() => setViewMode("calendar")}
@@ -236,7 +239,7 @@ export default function RHCongesPage() {
                   }`}
                 >
                   <LayoutGrid className="w-4 h-4" />
-                  <span className="hidden sm:inline">Calendrier</span>
+                  <span className="hidden sm:inline">{t('calendar')}</span>
                 </button>
               </div>
               <Button
@@ -244,7 +247,7 @@ export default function RHCongesPage() {
                 className="bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all"
               >
                 <Clock className="w-5 h-5 mr-2" />
-                Actualiser
+                {t('refresh')}
               </Button>
             </div>
           </div>
@@ -265,7 +268,7 @@ export default function RHCongesPage() {
                 <span className="text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30 px-2 py-1 rounded-full">Total</span>
               </div>
               <p className="text-4xl font-bold text-gray-900 dark:text-white mb-1">{requests.length}</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Demandes</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{t('requests')}</p>
             </div>
           </div>
 
@@ -280,11 +283,11 @@ export default function RHCongesPage() {
                   <Clock className="w-6 h-6 text-white" />
                 </div>
                 {pendingCount > 0 && (
-                  <span className="text-xs font-semibold text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 px-2 py-1 rounded-full animate-pulse">Action requise</span>
+                  <span className="text-xs font-semibold text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 px-2 py-1 rounded-full animate-pulse">{t('action_required')}</span>
                 )}
               </div>
               <p className="text-4xl font-bold text-amber-600 dark:text-amber-400 mb-1">{pendingCount}</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400">En attente</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{t('en_attente')}</p>
             </div>
           </div>
 
@@ -298,10 +301,10 @@ export default function RHCongesPage() {
                 <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-green-500 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/30 group-hover:scale-110 transition-transform">
                   <Check className="w-6 h-6 text-white" />
                 </div>
-                <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30 px-2 py-1 rounded-full">Traité</span>
+                <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30 px-2 py-1 rounded-full">{t('processed')}</span>
               </div>
               <p className="text-4xl font-bold text-emerald-600 dark:text-emerald-400 mb-1">{approvedCount}</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Approuvés</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{t('approved')}</p>
             </div>
           </div>
 
@@ -315,10 +318,10 @@ export default function RHCongesPage() {
                 <div className="w-12 h-12 bg-gradient-to-br from-rose-500 to-red-500 rounded-xl flex items-center justify-center shadow-lg shadow-rose-500/30 group-hover:scale-110 transition-transform">
                   <X className="w-6 h-6 text-white" />
                 </div>
-                <span className="text-xs font-semibold text-rose-600 dark:text-rose-400 bg-rose-100 dark:bg-rose-900/30 px-2 py-1 rounded-full">Traité</span>
+                <span className="text-xs font-semibold text-rose-600 dark:text-rose-400 bg-rose-100 dark:bg-rose-900/30 px-2 py-1 rounded-full">{t('processed')}</span>
               </div>
               <p className="text-4xl font-bold text-rose-600 dark:text-rose-400 mb-1">{rejectedCount}</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Refusés</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{t('rejected')}</p>
             </div>
           </div>
         </div>
@@ -347,8 +350,8 @@ export default function RHCongesPage() {
               <Calendar className="w-5 h-5 text-gray-600 dark:text-gray-300" />
             </div>
             <div>
-              <h3 className="font-bold text-gray-900 dark:text-white">Filtrer par statut</h3>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Sélectionnez un statut pour filtrer</p>
+              <h3 className="font-bold text-gray-900 dark:text-white">{t('filter_by_status')}</h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{t('select_status_filter')}</p>
             </div>
           </div>
           <div className="flex flex-wrap gap-3">
@@ -360,7 +363,7 @@ export default function RHCongesPage() {
                   : "bg-gray-100 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
               }`}
             >
-              Toutes ({requests.length})
+              {t('all')} ({requests.length})
             </button>
             <button
               onClick={() => setFilter("pending")}
@@ -370,7 +373,7 @@ export default function RHCongesPage() {
                   : "bg-gray-100 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
               }`}
             >
-              En attente ({pendingCount})
+              {t('en_attente')} ({pendingCount})
               {pendingCount > 0 && filter !== "pending" && (
                 <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
               )}
@@ -383,7 +386,7 @@ export default function RHCongesPage() {
                   : "bg-gray-100 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
               }`}
             >
-              Approuvés ({approvedCount})
+              {t('approved')} ({approvedCount})
             </button>
             <button
               onClick={() => setFilter("rejected")}
@@ -393,7 +396,7 @@ export default function RHCongesPage() {
                   : "bg-gray-100 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
               }`}
             >
-              Refusés ({rejectedCount})
+              {t('rejected')} ({rejectedCount})
             </button>
           </div>
         </div>
@@ -408,14 +411,14 @@ export default function RHCongesPage() {
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-white">
-                    {filteredRequests.length} demande{filteredRequests.length > 1 ? 's' : ''}
+                    {filteredRequests.length} {t('requests').toLowerCase()}
                   </h3>
-                  <p className="text-gray-300 text-sm">Liste des demandes de congé</p>
+                  <p className="text-gray-300 text-sm">{t('leave_requests_list')}</p>
                 </div>
               </div>
               {pendingCount > 0 && (
                 <span className="px-3 py-1.5 bg-amber-500/20 text-amber-300 rounded-full text-sm font-medium animate-pulse">
-                  {pendingCount} en attente
+                  {pendingCount} {t('en_attente').toLowerCase()}
                 </span>
               )}
             </div>
@@ -426,9 +429,9 @@ export default function RHCongesPage() {
               <div className="w-20 h-20 bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded-full flex items-center justify-center mb-6">
                 <Calendar className="w-10 h-10 text-gray-400 dark:text-gray-500" />
               </div>
-              <p className="text-xl font-bold text-gray-900 dark:text-white mb-2">Aucune demande</p>
+              <p className="text-xl font-bold text-gray-900 dark:text-white mb-2">{t('no_requests')}</p>
               <p className="text-gray-500 dark:text-gray-400 text-center max-w-md">
-                {filter !== "all" ? `Aucune demande ${filter === "pending" ? "en attente" : filter === "approved" ? "approuvée" : "refusée"}` : "Aucune demande de congé pour le moment"}
+                {filter !== "all" ? `${t('no_requests')} ${filter === "pending" ? t('en_attente').toLowerCase() : filter === "approved" ? t('approved').toLowerCase() : t('rejected').toLowerCase()}` : t('no_leave_requests_yet')}
               </p>
             </div>
           ) : (
@@ -436,14 +439,14 @@ export default function RHCongesPage() {
               <table className="w-full">
                 <thead className="bg-gray-50 dark:bg-gray-700/50">
                   <tr>
-                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Employé</th>
-                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Type</th>
-                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Période</th>
-                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Durée</th>
-                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Motif</th>
-                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Statut</th>
-                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Demandé le</th>
-                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Actions</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">{t('employee')}</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">{t('type')}</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">{t('period')}</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">{t('duration')}</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">{t('reason_label')}</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">{t('status')}</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">{t('requested_on')}</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">{t('actions')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
@@ -470,25 +473,25 @@ export default function RHCongesPage() {
                       <td className="px-6 py-5">
                         <div className="flex flex-col gap-1">
                           <span className="text-sm font-medium text-gray-900 dark:text-white">
-                            {new Date(request.startDate).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                            {new Date(request.startDate).toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' })}
                           </span>
                           <span className="flex items-center gap-1 text-xs text-gray-500">
-                            <span className="w-3 h-px bg-gray-400" /> au <span className="w-3 h-px bg-gray-400" />
+                            <span className="w-3 h-px bg-gray-400" /> {t('to')} <span className="w-3 h-px bg-gray-400" />
                           </span>
                           <span className="text-sm font-medium text-gray-900 dark:text-white">
-                            {new Date(request.endDate).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                            {new Date(request.endDate).toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' })}
                           </span>
                         </div>
                       </td>
                       <td className="px-6 py-5">
                         <div className="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 dark:bg-gray-700/50 rounded-lg">
                           <span className="text-lg font-bold text-gray-900 dark:text-white">{request.duration}</span>
-                          <span className="text-xs text-gray-500">jour{request.duration > 1 ? 's' : ''}</span>
+                          <span className="text-xs text-gray-500">{t('day_s')}</span>
                         </div>
                       </td>
                       <td className="px-6 py-5 max-w-xs">
                         <p className="text-sm text-gray-700 dark:text-gray-300 truncate" title={request.reason}>
-                          {request.reason || <span className="text-gray-400 italic">Aucun motif</span>}
+                          {request.reason || <span className="text-gray-400 italic">{t('no_reason')}</span>}
                         </p>
                       </td>
                       <td className="px-6 py-5">
@@ -506,7 +509,7 @@ export default function RHCongesPage() {
                         </span>
                       </td>
                       <td className="px-6 py-5 text-sm text-gray-700 dark:text-gray-300">
-                        {new Date(request.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}
+                        {new Date(request.createdAt).toLocaleDateString(locale, { day: '2-digit', month: 'short' })}
                       </td>
                       <td className="px-6 py-5">
                         {request.status === "EN_ATTENTE" ? (
@@ -514,22 +517,22 @@ export default function RHCongesPage() {
                             <button
                               onClick={() => openModal(request, "APPROVED")}
                               className="group/btn inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-xl text-sm font-semibold shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:shadow-emerald-500/40 hover:scale-105 transition-all duration-200"
-                              title="Approuver"
+                              title={t('approve')}
                             >
                               <Check className="w-4 h-4" />
-                              <span className="hidden lg:inline">Approuver</span>
+                              <span className="hidden lg:inline">{t('approve')}</span>
                             </button>
                             <button
                               onClick={() => openModal(request, "REJECTED")}
                               className="group/btn inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-rose-500 to-red-600 text-white rounded-xl text-sm font-semibold shadow-lg shadow-rose-500/30 hover:shadow-xl hover:shadow-rose-500/40 hover:scale-105 transition-all duration-200"
-                              title="Refuser"
+                              title={t('reject')}
                             >
                               <X className="w-4 h-4" />
-                              <span className="hidden lg:inline">Refuser</span>
+                              <span className="hidden lg:inline">{t('reject')}</span>
                             </button>
                           </div>
                         ) : (
-                          <span className="text-gray-400 text-sm italic">Traité</span>
+                          <span className="text-gray-400 text-sm italic">{t('processed')}</span>
                         )}
                       </td>
                     </tr>
@@ -558,9 +561,9 @@ export default function RHCongesPage() {
                   </div>
                   <div>
                     <h3 className="text-xl font-bold text-white">
-                      {actionType === "APPROVED" ? "Approuver" : "Refuser"} la demande
+                      {actionType === "APPROVED" ? t('approve') : t('reject')} {t('the_request')}
                     </h3>
-                    <p className="text-white/80 text-sm">Confirmer l'action</p>
+                    <p className="text-white/80 text-sm">{t('confirm_action')}</p>
                   </div>
                 </div>
               </div>
@@ -584,11 +587,11 @@ export default function RHCongesPage() {
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <Clock className="w-4 h-4 text-gray-400" />
-                      <span className="font-semibold text-gray-900 dark:text-white">{selectedRequest.duration} jour{selectedRequest.duration > 1 ? 's' : ''}</span>
+                      <span className="font-semibold text-gray-900 dark:text-white">{selectedRequest.duration} {t('day_s')}</span>
                     </div>
                   </div>
                   <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600 text-sm text-gray-600 dark:text-gray-400">
-                    {new Date(selectedRequest.startDate).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })} → {new Date(selectedRequest.endDate).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    {new Date(selectedRequest.startDate).toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' })} → {new Date(selectedRequest.endDate).toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' })}
                   </div>
                 </div>
 
@@ -596,14 +599,14 @@ export default function RHCongesPage() {
                 <div className="mb-6">
                   <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                     <MessageSquare className="w-4 h-4" />
-                    Commentaire {actionType === "REJECTED" && <span className="text-rose-500">*</span>}
+                    {t('comment_label')} {actionType === "REJECTED" && <span className="text-rose-500">*</span>}
                   </label>
                   <textarea
                     value={comments}
                     onChange={(e) => setComments(e.target.value)}
                     className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent dark:bg-gray-700/50 transition-all resize-none"
                     rows={3}
-                    placeholder={actionType === "APPROVED" ? "Message optionnel pour l'employé..." : "Raison du refus (obligatoire)..."}
+                    placeholder={actionType === "APPROVED" ? t('optional_message_employee') : t('rejection_reason_required')}
                     required={actionType === "REJECTED"}
                   />
                 </div>
@@ -622,12 +625,12 @@ export default function RHCongesPage() {
                     {loading ? (
                       <span className="flex items-center gap-2">
                         <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        Traitement...
+                        {t('processing')}...
                       </span>
                     ) : (
                       <span className="flex items-center gap-2">
                         {actionType === "APPROVED" ? <Check className="w-4 h-4" /> : <X className="w-4 h-4" />}
-                        {actionType === "APPROVED" ? "Approuver" : "Refuser"}
+                        {actionType === "APPROVED" ? t('approve') : t('reject')}
                       </span>
                     )}
                   </Button>
@@ -640,7 +643,7 @@ export default function RHCongesPage() {
                     disabled={loading}
                     className="flex-1 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-semibold transition-all"
                   >
-                    Annuler
+                    {t('cancel')}
                   </Button>
                 </div>
               </div>

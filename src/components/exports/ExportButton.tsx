@@ -8,6 +8,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useExport, ExportOptions } from "@/hooks/useExport";
 import { Download, ChevronDown, FileText, Users, Calendar, Clock, Shield } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface ExportButtonProps {
   /** Available export types for this button */
@@ -35,36 +36,36 @@ interface ExportButtonProps {
   singleType?: 'employees' | 'pointages' | 'conges' | 'audit' | 'monthly' | 'personal';
 }
 
-const exportTypeLabels: Record<string, { label: string; icon: any; description: string }> = {
+const exportTypeLabels: Record<string, { labelKey: string; icon: any; descKey: string }> = {
   employees: {
-    label: 'Liste des employés',
+    labelKey: 'ex_employee_list',
     icon: Users,
-    description: 'Exporter tous les employés'
+    descKey: 'ex_export_employees'
   },
   pointages: {
-    label: 'Historique pointages',
+    labelKey: 'ex_attendance_history',
     icon: Clock,
-    description: 'Exporter les pointages'
+    descKey: 'ex_export_attendance'
   },
   conges: {
-    label: 'Demandes de congés',
+    labelKey: 'ex_leave_requests',
     icon: Calendar,
-    description: 'Exporter les congés'
+    descKey: 'ex_export_leaves'
   },
   audit: {
-    label: 'Logs d\'audit',
+    labelKey: 'ex_audit_logs',
     icon: Shield,
-    description: 'Exporter les logs système'
+    descKey: 'ex_export_system_logs'
   },
   monthly: {
-    label: 'Rapport mensuel',
+    labelKey: 'ex_monthly_report',
     icon: FileText,
-    description: 'Rapport mensuel complet'
+    descKey: 'ex_complete_monthly_report'
   },
   personal: {
-    label: 'Mon relevé personnel',
+    labelKey: 'ex_personal_statement',
     icon: FileText,
-    description: 'Votre relevé de pointage'
+    descKey: 'ex_your_attendance_statement'
   }
 };
 
@@ -79,6 +80,8 @@ export default function ExportButton({
   singleType,
 }: ExportButtonProps) {
   const { exportData, isExporting, error, canExport } = useExport();
+  const { t, language } = useLanguage();
+  const locale = language === 'ar' ? 'ar-SA' : language === 'en' ? 'en-US' : 'fr-FR';
   const [isOpen, setIsOpen] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -156,14 +159,14 @@ export default function ExportButton({
         onClick={handleSingleExport}
         disabled={isExporting}
         className={buttonClasses}
-        title={typeInfo?.description}
+        title={typeInfo ? t(typeInfo.descKey) : ''}
       >
         {isExporting ? (
           <span className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
         ) : (
           <Icon className="w-4 h-4" />
         )}
-        <span>Exporter</span>
+        <span>{t('ex_export')}</span>
       </button>
     );
   }
@@ -181,7 +184,7 @@ export default function ExportButton({
         ) : (
           <Download className="w-4 h-4" />
         )}
-        <span>Exporter</span>
+        <span>{t('ex_export')}</span>
         <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
@@ -191,7 +194,7 @@ export default function ExportButton({
           {(availableTypes.includes('monthly') || availableTypes.includes('personal')) && (
             <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
               <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
-                Période pour les rapports
+                {t('ex_report_period')}
               </p>
               <div className="flex gap-2">
                 <select
@@ -201,7 +204,7 @@ export default function ExportButton({
                 >
                   {Array.from({ length: 12 }, (_, i) => (
                     <option key={i + 1} value={i + 1}>
-                      {new Date(2000, i).toLocaleDateString('fr-FR', { month: 'long' })}
+                      {new Date(2000, i).toLocaleDateString(locale, { month: 'long' })}
                     </option>
                   ))}
                 </select>
@@ -236,10 +239,10 @@ export default function ExportButton({
                   </div>
                   <div className="flex-1">
                     <p className="font-medium text-gray-900 dark:text-white text-sm">
-                      {typeInfo?.label}
+                      {typeInfo ? t(typeInfo.labelKey) : type}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {typeInfo?.description}
+                      {typeInfo ? t(typeInfo.descKey) : ''}
                     </p>
                   </div>
                 </button>

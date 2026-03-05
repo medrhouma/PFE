@@ -1,47 +1,39 @@
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { redirect } from "next/navigation"
-import { ModuleCard } from "@/components/dashboard/ModuleCard"
 import { query } from "@/lib/mysql-direct"
+import { HomeContent } from "@/components/dashboard/HomeContent"
 
-// Icons Components
-
-const DashboardIcon = () => (
-  <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h18v18H3V3zM9 3v18M15 3v18M3 9h18M3 15h18" />
-  </svg>
-)
-
-
-
-
-const ParametresIcon = () => (
-  <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-  </svg>
-)
-
-
-
-// Configuration des modules
+// Configuration des modules — only 3 core modules
 const allModules = [
   {
     id: "dashboard",
-    title: "Tableau de bord",
-    description: "Vue d'ensemble des indicateurs clés et performances RH.",
-    icon: <DashboardIcon />,
+    titleKey: "dashboard_module_title",
+    descriptionKey: "dashboard_module_desc",
+    iconId: "dashboard",
     href: "/dashboard",
     color: "violet" as const,
+    roles: ["USER", "RH", "SUPER_ADMIN"],
     permissionModule: "dashboard",
   },
   {
+    id: "workspace",
+    titleKey: "workspace_module_title",
+    descriptionKey: "workspace_module_desc",
+    iconId: "workspace",
+    href: "/workspace",
+    color: "blue" as const,
+    roles: ["USER", "RH", "SUPER_ADMIN"],
+    permissionModule: "chatbot",
+  },
+  {
     id: "parametres",
-    title: "Paramètres",
-    description: "Gestion des utilisateurs, rôles et paramètres généraux de la plateforme.",
-    icon: <ParametresIcon />,
-    href: "/parametres/users",
+    titleKey: "settings_module_title",
+    descriptionKey: "settings_module_desc",
+    iconId: "settings",
+    href: "/settings",
     color: "green" as const,
+    roles: ["USER", "RH", "SUPER_ADMIN"],
     permissionModule: "parametres",
   },
 ]
@@ -127,47 +119,35 @@ export default async function HomePage() {
     }
   }
 
-  const firstName = session.user.name?.split(" ")[0] || "Utilisateur"
+  const firstName = session.user.name?.split(" ")[0] || ""
   
-  // Get user permissions from database
-  const { permissions: userPermissions } = await getUserPermissions(session.user.email!)
-  
-  // Filter modules based on VIEW permission
-  const modules = allModules.filter((module) => {
-    // SUPER_ADMIN has access to everything
+  // Load DB permissions for this user
+  const { permissions } = await getUserPermissions(session.user.email!)
+
+  // SUPER_ADMIN sees everything; others filtered by DB VIEW permission
+  const hasView = (permModule: string) => {
     if (userRole === "SUPER_ADMIN") return true
-    
-    // Check if user has VIEW permission for this module
-    const modulePerms = (userPermissions as Record<string, string[]>)[module.permissionModule]
-    return modulePerms && modulePerms.includes('VIEW')
-  })
+    const actions = permissions[permModule]
+    if (Array.isArray(actions)) return actions.includes("VIEW")
+    return false
+  }
+
+  // Filter modules based on role AND DB permissions
+  const modules = allModules
+    .filter((module) => module.roles.includes(userRole))
+    .filter((module) => hasView(module.permissionModule))
+    .map(({ roles, permissionModule, ...rest }) => {
+      // RH / SUPER_ADMIN: Settings card → user management, USER → personal settings
+      if (rest.id === "parametres" && (userRole === "RH" || userRole === "SUPER_ADMIN")) {
+        return { ...rest, href: "/parametres/users" }
+      }
+      return rest
+    })
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-8">
-      {/* Bienvenue */}
-      <h1 className="text-3xl font-bold text-gray-900">
-        Bienvenue, <span className="text-violet-600">{firstName}</span>
-      </h1>
-
-      {/* ✅ Section Modules - Titre centré AU-DESSUS des cartes */}
-      <div className="mt-12 mb-8 text-center">
-        <h2 className="text-2xl font-bold text-gray-900">Modules disponibles</h2>
-        <p className="text-gray-500 mt-2">Sélectionnez un module pour commencer votre session</p>
-      </div>
-
-      {/* Grille des Modules */}
-      <div className="grid grid-cols-1 md: grid-cols-2 lg: grid-cols-4 gap-6">
-        {modules.map((module) => (
-          <ModuleCard
-            key={module.id}
-            title={module.title}
-            description={module.description}
-            icon={module.icon}
-            href={module.href}
-            color={module.color}
-          />
-        ))}
-      </div>
-    </div>
+    <HomeContent
+      firstName={firstName}
+      modules={modules}
+    />
   )
 }

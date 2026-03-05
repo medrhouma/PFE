@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useNotification } from "@/contexts/NotificationContext"
+import { useLanguage } from "@/contexts/LanguageContext"
 import { Button } from "@/components/ui/Button"
 import { Calendar, Clock, Check, X, AlertCircle, Edit, Trash2 } from "lucide-react"
 import { LoadingSpinner, EmptyState } from "@/components/ui"
@@ -29,6 +30,8 @@ type LeaveMode = "full" | "half" | "split";
 
 export default function CongesPage() {
   const { showNotification } = useNotification()
+  const { t, language } = useLanguage()
+  const locale = language === 'ar' ? 'ar-SA' : language === 'en' ? 'en-US' : 'fr-FR'
   const [requests, setRequests] = useState<LeaveRequest[]>([])
   const [loading, setLoading] = useState(false)
   const [initialLoading, setInitialLoading] = useState(true)
@@ -59,9 +62,9 @@ export default function CongesPage() {
 
     // Check if start date is valid
     if (isNaN(startDate.getTime())) {
-      errors.startDate = "Date de début invalide"
+      errors.startDate = t('invalid_start_date')
     } else if (startDate < today && !editingRequest) {
-      errors.startDate = "La date de début ne peut pas être dans le passé"
+      errors.startDate = t('start_date_past')
     }
 
     if (leaveMode === "half") {
@@ -72,16 +75,16 @@ export default function CongesPage() {
       // Full day mode
       const endDate = new Date(formData.endDate)
       if (isNaN(endDate.getTime())) {
-        errors.endDate = "Date de fin invalide"
+        errors.endDate = t('invalid_end_date')
       } else if (endDate < startDate) {
-        errors.endDate = "La date de fin doit être après la date de début"
+        errors.endDate = t('end_before_start')
       }
 
       // Check duration
       if (!errors.startDate && !errors.endDate) {
         const duration = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
         if (duration > 365) {
-          errors.general = "La durée du congé ne peut pas dépasser 365 jours"
+          errors.general = t('max_duration')
         }
       }
     }
@@ -101,8 +104,8 @@ export default function CongesPage() {
       console.error("Error fetching requests:", error)
       showNotification({
         type: "error",
-        title: "Erreur",
-        message: "Impossible de charger les demandes de congé"
+        title: t('error'),
+        message: t('cannot_load_requests')
       })
     } finally {
       setInitialLoading(false)
@@ -116,8 +119,8 @@ export default function CongesPage() {
     if (!validateForm()) {
       showNotification({
         type: "error",
-        title: "Formulaire invalide",
-        message: "Veuillez corriger les erreurs dans le formulaire"
+        title: t('invalid_form'),
+        message: t('fix_form_errors')
       })
       return
     }
@@ -156,8 +159,8 @@ export default function CongesPage() {
       if (response.ok) {
         showNotification({
           type: "success",
-          title: "Succès",
-          message: editingRequest ? "Demande modifiée avec succès" : "Demande de congé soumise avec succès"
+          title: t('success'),
+          message: editingRequest ? t('request_modified') : t('request_submitted')
         })
         setShowForm(false)
         setEditingRequest(null)
@@ -168,15 +171,15 @@ export default function CongesPage() {
       } else {
         showNotification({
           type: "error",
-          title: "Erreur",
-          message: data.error || "Erreur lors de la soumission"
+          title: t('error'),
+          message: data.error || t('submission_error')
         })
       }
     } catch (error) {
       showNotification({
         type: "error",
-        title: "Erreur",
-        message: "Impossible de soumettre la demande"
+        title: t('error'),
+        message: t('cannot_submit')
       })
     } finally {
       setLoading(false)
@@ -204,7 +207,7 @@ export default function CongesPage() {
   }
 
   const handleDelete = async (requestId: string) => {
-    if (!confirm("Êtes-vous sûr de vouloir supprimer cette demande ?")) {
+    if (!confirm(t('confirm_delete_request'))) {
       return
     }
 
@@ -218,22 +221,22 @@ export default function CongesPage() {
       if (response.ok) {
         showNotification({
           type: "success",
-          title: "Succès",
-          message: "Demande supprimée avec succès"
+          title: t('success'),
+          message: t('request_deleted')
         })
         fetchRequests()
       } else {
         showNotification({
           type: "error",
-          title: "Erreur",
-          message: data.error || "Erreur lors de la suppression"
+          title: t('error'),
+          message: data.error || t('delete_error')
         })
       }
     } catch (error) {
       showNotification({
         type: "error",
-        title: "Erreur",
-        message: "Impossible de supprimer la demande"
+        title: t('error'),
+        message: t('cannot_delete')
       })
     }
   }
@@ -257,20 +260,20 @@ export default function CongesPage() {
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case "VALIDE": return "Approuvé"
-      case "REFUSE": return "Refusé"
-      case "EN_ATTENTE": return "En attente"
+      case "VALIDE": return t('approved')
+      case "REFUSE": return t('rejected')
+      case "EN_ATTENTE": return t('en_attente')
       default: return status
     }
   }
 
   const getTypeLabel = (type: string) => {
     switch (type) {
-      case "PAID": return "Congé payé"
-      case "UNPAID": return "Congé sans solde"
-      case "MATERNITE": return "Congé maternité"
-      case "MALADIE": return "Congé maladie"
-      case "PREAVIS": return "Préavis"
+      case "PAID": return t('paid_leave')
+      case "UNPAID": return t('unpaid_leave')
+      case "MATERNITE": return t('maternity_leave')
+      case "MALADIE": return t('sick_leave')
+      case "PREAVIS": return t('notice_period')
       default: return type
     }
   }
@@ -280,24 +283,24 @@ export default function CongesPage() {
       <div className="mb-8 flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            Demandes de congé
+            {t('leave_requests')}
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-2">
-            Gérez vos demandes de congé et absences
+            {t('manage_leave_desc')}
           </p>
         </div>
         <Button
           onClick={() => setShowForm(!showForm)}
           className="bg-violet-600 hover:bg-violet-700"
         >
-          {showForm ? "Annuler" : "Nouvelle demande"}
+          {showForm ? t('cancel') : t('new_request')}
         </Button>
       </div>
 
       {showForm && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
           <h2 className="text-xl font-semibold mb-4">
-            {editingRequest ? "Modifier la demande de congé" : "Nouvelle demande de congé"}
+            {editingRequest ? t('edit_request') : t('new_leave_request')}
           </h2>
           
           {formErrors.general && (
@@ -309,7 +312,7 @@ export default function CongesPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Type de congé
+                {t('leave_type')}
               </label>
               <select
                 value={formData.type}
@@ -317,18 +320,18 @@ export default function CongesPage() {
                 className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-violet-500 dark:bg-gray-700"
                 required
               >
-                <option value="PAID">Congé payé</option>
-                <option value="MALADIE">Congé maladie</option>
-                <option value="UNPAID">Congé sans solde</option>
-                <option value="MATERNITE">Congé maternité</option>
-                <option value="PREAVIS">Préavis</option>
+                <option value="PAID">{t('paid_leave')}</option>
+                <option value="MALADIE">{t('sick_leave')}</option>
+                <option value="UNPAID">{t('unpaid_leave')}</option>
+                <option value="MATERNITE">{t('maternity_leave')}</option>
+                <option value="PREAVIS">{t('notice_period')}</option>
               </select>
             </div>
 
             {/* Mode selector */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Mode de congé
+                {t('leave_mode')}
               </label>
               <div className="grid grid-cols-3 gap-2">
                 <button
@@ -341,7 +344,7 @@ export default function CongesPage() {
                   }`}
                 >
                   <Calendar className="w-4 h-4 inline mr-1.5" />
-                  Journée complète
+                  {t('full_day')}
                 </button>
                 <button
                   type="button"
@@ -353,7 +356,7 @@ export default function CongesPage() {
                   }`}
                 >
                   <Clock className="w-4 h-4 inline mr-1.5" />
-                  Demi-journée
+                  {t('half_day')}
                 </button>
                 <button
                   type="button"
@@ -365,17 +368,17 @@ export default function CongesPage() {
                   }`}
                 >
                   <Calendar className="w-4 h-4 inline mr-1.5" />
-                  Jour séparé
+                  {t('split_day')}
                 </button>
               </div>
               {leaveMode === "split" && (
                 <p className="mt-2 text-xs text-violet-600 dark:text-violet-400">
-                  Après-midi du jour sélectionné + Matin du jour suivant = 1 jour de congé
+                  {t('split_desc')}
                 </p>
               )}
               {leaveMode === "half" && (
                 <p className="mt-2 text-xs text-violet-600 dark:text-violet-400">
-                  Choisissez matin ou après-midi = 0.5 jour de congé
+                  {t('half_desc')}
                 </p>
               )}
             </div>
@@ -385,7 +388,7 @@ export default function CongesPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Date de début
+                    {t('start_date')}
                   </label>
                   <input
                     type="date"
@@ -408,7 +411,7 @@ export default function CongesPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Date de fin
+                    {t('end_date')}
                   </label>
                   <input
                     type="date"
@@ -433,7 +436,7 @@ export default function CongesPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Date
+                    {t('date')}
                   </label>
                   <input
                     type="date"
@@ -456,7 +459,7 @@ export default function CongesPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Session
+                    {t('session_label')}
                   </label>
                   <div className="grid grid-cols-2 gap-2">
                     <button
@@ -468,7 +471,7 @@ export default function CongesPage() {
                           : "bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600"
                       }`}
                     >
-                      ☀️ Matin
+                      ☀️ {t('morning')}
                     </button>
                     <button
                       type="button"
@@ -479,7 +482,7 @@ export default function CongesPage() {
                           : "bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600"
                       }`}
                     >
-                      🌙 Après-midi
+                      🌙 {t('afternoon')}
                     </button>
                   </div>
                 </div>
@@ -488,7 +491,7 @@ export default function CongesPage() {
               /* Split mode */
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Premier jour (après-midi)
+                  {t('first_day_afternoon')}
                 </label>
                 <input
                   type="date"
@@ -516,11 +519,11 @@ export default function CongesPage() {
                 {formData.startDate && (
                   <div className="mt-3 p-3 bg-violet-50 dark:bg-violet-900/20 rounded-lg border border-violet-200 dark:border-violet-800">
                     <p className="text-sm text-violet-700 dark:text-violet-300">
-                      <span className="font-medium">Après-midi</span> du {new Date(formData.startDate).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}
+                      <span className="font-medium">{t('afternoon_of')}</span> {new Date(formData.startDate).toLocaleDateString(locale, { weekday: "long", day: "numeric", month: "long" })}
                       {" + "}
-                      <span className="font-medium">Matin</span> du {(() => { const d = new Date(formData.startDate); d.setDate(d.getDate() + 1); return d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" }); })()}
+                      <span className="font-medium">{t('morning_of')}</span> {(() => { const d = new Date(formData.startDate); d.setDate(d.getDate() + 1); return d.toLocaleDateString(locale, { weekday: "long", day: "numeric", month: "long" }); })()}
                     </p>
-                    <p className="text-xs text-violet-500 dark:text-violet-400 mt-1">= 1 jour de congé</p>
+                    <p className="text-xs text-violet-500 dark:text-violet-400 mt-1">{t('one_leave_day')}</p>
                   </div>
                 )}
               </div>
@@ -530,13 +533,13 @@ export default function CongesPage() {
             {formData.startDate && (
               <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  <strong>Durée :</strong>{" "}
+                  <strong>{t('duration_preview')} :</strong>{" "}
                   {leaveMode === "half"
-                    ? "0.5 jour"
+                    ? t('half_day_duration')
                     : leaveMode === "split"
-                    ? "1 jour (séparé)"
+                    ? t('split_day_duration')
                     : formData.endDate
-                    ? `${Math.max(1, Math.ceil((new Date(formData.endDate).getTime() - new Date(formData.startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1)} jour(s)`
+                    ? `${Math.max(1, Math.ceil((new Date(formData.endDate).getTime() - new Date(formData.startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1)} ${t('day_s')}`
                     : "—"}
                 </p>
               </div>
@@ -544,7 +547,7 @@ export default function CongesPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Raison / Motif
+                {t('reason_label')}
               </label>
               <textarea
                 value={formData.reason}
@@ -557,10 +560,10 @@ export default function CongesPage() {
 
             <div className="flex gap-3">
               <Button type="submit" disabled={loading} className="bg-violet-600 hover:bg-violet-700">
-                {loading ? (editingRequest ? "Modification..." : "Envoi...") : (editingRequest ? "Modifier" : "Soumettre la demande")}
+                {loading ? (editingRequest ? t('modifying') : t('sending')) : (editingRequest ? t('modify') : t('submit_request'))}
               </Button>
               <Button type="button" onClick={handleCancelEdit} className="bg-gray-300 hover:bg-gray-400 text-gray-700">
-                Annuler
+                {t('cancel')}
               </Button>
             </div>
           </form>
@@ -573,19 +576,19 @@ export default function CongesPage() {
           <div className="p-12 text-center">
             <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <p className="text-gray-500 dark:text-gray-400">
-              Aucune demande de congé pour le moment
+              {t('no_leave_requests')}
             </p>
           </div>
         ) : (
           <table className="w-full">
             <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Type</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Période</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Durée</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Statut</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Demandé le</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Actions</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">{t('type')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">{t('period')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">{t('duration')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">{t('status')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">{t('requested_on')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">{t('actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -593,23 +596,23 @@ export default function CongesPage() {
                 <tr key={request.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                   <td className="px-6 py-4 text-sm">{getTypeLabel(request.type)}</td>
                   <td className="px-6 py-4 text-sm">
-                    {new Date(request.startDate).toLocaleDateString('fr-FR')} - {new Date(request.endDate).toLocaleDateString('fr-FR')}
+                    {new Date(request.startDate).toLocaleDateString(locale)} - {new Date(request.endDate).toLocaleDateString(locale)}
                   </td>
                   <td className="px-6 py-4 text-sm">
                     {request.isHalfDay ? (
                       request.duration === 1 ? (
                         <span className="inline-flex items-center gap-1 text-violet-600 dark:text-violet-400">
                           <Calendar className="w-3.5 h-3.5" />
-                          1 jour (séparé)
+                          {t('split_one_day')}
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400">
                           <Clock className="w-3.5 h-3.5" />
-                          ½ jour ({request.halfDaySession === "MORNING" ? "Matin" : "Après-midi"})
+                          {t('half_day_label')} ({request.halfDaySession === "MORNING" ? t('morning') : t('afternoon')})
                         </span>
                       )
                     ) : (
-                      <>{request.duration} jour(s)</>
+                      <>{request.duration} {t('day_s')}</>
                     )}
                   </td>
                   <td className="px-6 py-4 text-sm">
@@ -617,21 +620,21 @@ export default function CongesPage() {
                       {getStatusLabel(request.status)}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-sm">{new Date(request.createdAt).toLocaleDateString('fr-FR')}</td>
+                  <td className="px-6 py-4 text-sm">{new Date(request.createdAt).toLocaleDateString(locale)}</td>
                   <td className="px-6 py-4 text-sm">
                     {request.status === "EN_ATTENTE" ? (
                       <div className="flex gap-2">
                         <button
                           onClick={() => handleEdit(request)}
                           className="p-2 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-                          title="Modifier"
+                          title={t('modify')}
                         >
                           <Edit className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleDelete(request.id)}
                           className="p-2 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                          title="Supprimer"
+                          title={t('delete')}
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>

@@ -116,6 +116,12 @@ export async function POST(request: Request) {
     // ========================================
     // STEP 5: Send OTP email (PROD only)
     // ========================================
+    try {
+      await emailService.sendOTPEmail(email, otp, user.name || "Utilisateur");
+    } catch (emailErr) {
+      console.error("[OTP ERROR] Failed to send OTP email:", emailErr);
+      // Don't fail the request - in dev mode, use 000000
+    }
 
     return NextResponse.json({
       success: true,

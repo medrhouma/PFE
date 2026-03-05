@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react"
 import { X, User, Check, AlertCircle } from "lucide-react"
 import { useNotification } from "@/contexts/NotificationContext"
+import { useLanguage } from "@/contexts/LanguageContext"
 
 interface AddUserModalProps {
   onClose: () => void
@@ -32,6 +33,7 @@ export default function AddUserModal({ onClose, onSave }: AddUserModalProps) {
   const [emailExists, setEmailExists] = useState(false)
   const [emailChecked, setEmailChecked] = useState(false)
   const { showNotification } = useNotification()
+  const { t } = useLanguage()
 
   // Password validation state
   const passwordValidation = validatePassword(password)
@@ -76,8 +78,8 @@ export default function AddUserModal({ onClose, onSave }: AddUserModalProps) {
     if (!passwordValidation.isValid) {
       showNotification({
         type: 'error',
-        title: 'Mot de passe invalide',
-        message: 'Le mot de passe ne respecte pas les critères requis',
+        title: t('um_invalid_password'),
+        message: t('um_password_criteria'),
         duration: 5000
       })
       return
@@ -86,8 +88,8 @@ export default function AddUserModal({ onClose, onSave }: AddUserModalProps) {
     if (emailExists) {
       showNotification({
         type: 'error',
-        title: 'Email déjà utilisé',
-        message: 'Cet email est déjà associé à un compte existant',
+        title: t('um_email_taken'),
+        message: t('um_email_taken_desc'),
         duration: 5000
       })
       return
@@ -116,8 +118,8 @@ export default function AddUserModal({ onClose, onSave }: AddUserModalProps) {
         }
         showNotification({
           type: 'success',
-          title: 'Utilisateur créé',
-          message: 'Le nouvel utilisateur a été créé avec succès',
+          title: t('um_user_created'),
+          message: t('um_user_created_desc'),
           duration: 4000
         })
         onClose()
@@ -125,8 +127,8 @@ export default function AddUserModal({ onClose, onSave }: AddUserModalProps) {
         const error = await response.json()
         showNotification({
           type: 'error',
-          title: 'Erreur de création',
-          message: error.error || 'Impossible de créer l\'utilisateur',
+          title: t('um_creation_error'),
+          message: error.error || t('um_cannot_create_user'),
           duration: 5000
         })
       }
@@ -134,8 +136,8 @@ export default function AddUserModal({ onClose, onSave }: AddUserModalProps) {
       console.error("Error creating user:", error)
       showNotification({
         type: 'error',
-        title: 'Erreur de connexion',
-        message: 'Impossible de créer l\'utilisateur. Veuillez vérifier votre connexion.',
+        title: t('um_connection_error'),
+        message: t('um_cannot_create_check_connection'),
         duration: 5000
       })
     } finally {
@@ -159,10 +161,10 @@ export default function AddUserModal({ onClose, onSave }: AddUserModalProps) {
           <div className="flex-1 text-center">
             <h2 className="text-xl font-bold text-indigo-600 dark:text-indigo-400 flex items-center justify-center gap-2">
               <User className="w-5 h-5" />
-              Ajout d'utilisateur
+              {t('um_add_user')}
             </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Création d'un nouvel utilisateur
+              {t('um_create_new_user')}
             </p>
           </div>
           <div className="w-6"></div>
@@ -172,14 +174,14 @@ export default function AddUserModal({ onClose, onSave }: AddUserModalProps) {
           {/* First Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              First Name
+              {t('first_name')}
             </label>
             <input
               type="text"
               required
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
-              placeholder="First name"
+              placeholder={t('first_name')}
               className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             />
           </div>
@@ -187,14 +189,14 @@ export default function AddUserModal({ onClose, onSave }: AddUserModalProps) {
           {/* Last Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Last Name
+              {t('last_name')}
             </label>
             <input
               type="text"
               required
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
-              placeholder="Last name"
+              placeholder={t('last_name')}
               className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             />
           </div>
@@ -235,13 +237,13 @@ export default function AddUserModal({ onClose, onSave }: AddUserModalProps) {
             {emailChecked && emailExists && (
               <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
                 <AlertCircle className="w-4 h-4" />
-                Cet email est déjà utilisé
+                {t('um_email_already_used')}
               </p>
             )}
             {emailChecked && !emailExists && email && (
               <p className="mt-1 text-sm text-green-500 flex items-center gap-1">
                 <Check className="w-4 h-4" />
-                Email disponible
+                {t('um_email_available')}
               </p>
             )}
           </div>
@@ -282,15 +284,15 @@ export default function AddUserModal({ onClose, onSave }: AddUserModalProps) {
               <div className="mt-2 space-y-1">
                 <div className={`flex items-center gap-2 text-xs ${passwordValidation.minLength ? 'text-green-600' : 'text-gray-500'}`}>
                   {passwordValidation.minLength ? <Check className="w-3.5 h-3.5" /> : <div className="w-3.5 h-3.5 rounded-full border border-gray-400" />}
-                  Au moins 8 caractères
+                  {t('um_min_8_chars')}
                 </div>
                 <div className={`flex items-center gap-2 text-xs ${passwordValidation.hasUppercase ? 'text-green-600' : 'text-gray-500'}`}>
                   {passwordValidation.hasUppercase ? <Check className="w-3.5 h-3.5" /> : <div className="w-3.5 h-3.5 rounded-full border border-gray-400" />}
-                  Au moins une majuscule (A-Z)
+                  {t('um_has_uppercase')}
                 </div>
                 <div className={`flex items-center gap-2 text-xs ${passwordValidation.hasNumber ? 'text-green-600' : 'text-gray-500'}`}>
                   {passwordValidation.hasNumber ? <Check className="w-3.5 h-3.5" /> : <div className="w-3.5 h-3.5 rounded-full border border-gray-400" />}
-                  Au moins un chiffre (0-9)
+                  {t('um_has_number')}
                 </div>
               </div>
             )}
@@ -322,7 +324,7 @@ export default function AddUserModal({ onClose, onSave }: AddUserModalProps) {
           {role === "USER" && (
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                Type de compte
+                {t('um_account_type')}
               </label>
               <div className="grid grid-cols-2 gap-3">
                 {/* User simple */}
@@ -350,10 +352,10 @@ export default function AddUserModal({ onClose, onSave }: AddUserModalProps) {
                   </div>
                   <div>
                     <span className="block text-sm font-semibold text-gray-900 dark:text-white">
-                      Utilisateur
+                      {t('user')}
                     </span>
                     <span className="block text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                      Accès direct au dashboard
+                      {t('um_direct_dashboard_access')}
                     </span>
                   </div>
                 </label>
@@ -383,18 +385,18 @@ export default function AddUserModal({ onClose, onSave }: AddUserModalProps) {
                   </div>
                   <div>
                     <span className="block text-sm font-semibold text-gray-900 dark:text-white">
-                      Employé
+                      {t('um_employee')}
                     </span>
                     <span className="block text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                      Doit compléter son profil
+                      {t('um_must_complete_profile')}
                     </span>
                   </div>
                 </label>
               </div>
               <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
                 {accountType === "USER" 
-                  ? "L'utilisateur accèdera directement au dashboard sans compléter de profil employé."
-                  : "L'employé devra compléter son profil avant d'accéder à la plateforme."
+                  ? t('um_user_direct_access_desc')
+                  : t('um_employee_complete_profile_desc')
                 }
               </p>
             </div>
@@ -403,7 +405,7 @@ export default function AddUserModal({ onClose, onSave }: AddUserModalProps) {
           {/* Info Message */}
           <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl px-4 py-3">
             <p className="text-sm text-blue-700 dark:text-blue-300">
-              Les modules sont gérés automatiquement via les permissions du rôle sélectionné.
+              {t('um_modules_auto_managed')}
             </p>
           </div>
 
@@ -434,14 +436,14 @@ export default function AddUserModal({ onClose, onSave }: AddUserModalProps) {
                   Employé Daemon
                 </h4>
                 <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
-                  Les permissions Daemon sont gérées via les rôles et permissions. Assignez la permission "process" ou "edit" pour le module "daemon" dans la page des rôles.
+                  {t('um_daemon_desc')}
                 </p>
               </div>
               <button
                 type="button"
                 className="text-blue-600 dark:text-blue-400 text-sm font-medium hover:underline whitespace-nowrap"
               >
-                Géré par permissions
+                {t('um_managed_by_permissions')}
               </button>
             </div>
           </div>
@@ -453,14 +455,14 @@ export default function AddUserModal({ onClose, onSave }: AddUserModalProps) {
               onClick={onClose}
               className="px-6 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
-              Annuler
+              {t('cancel')}
             </button>
             <button
               type="submit"
               disabled={saving}
               className="px-6 py-2.5 rounded-xl bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {saving ? "Création..." : "Créer l'utilisateur"}
+              {saving ? t('um_creating') : t('um_create_user')}
             </button>
           </div>
         </form>

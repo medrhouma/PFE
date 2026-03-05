@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { User, Mail, Phone, Briefcase, X, FileText, MapPin, Calendar } from "lucide-react";
 import { getSafeImageSrc } from "@/lib/utils";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Employee {
   id: string;
@@ -34,6 +35,8 @@ export default function EmployeeList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
+  const { t, language } = useLanguage();
+  const locale = language === 'ar' ? 'ar-SA' : language === 'en' ? 'en-US' : 'fr-FR';
 
   useEffect(() => {
     loadEmployees();
@@ -48,7 +51,7 @@ export default function EmployeeList() {
       const data = await response.json();
       setEmployees(data);
     } catch (err) {
-      setError("Erreur lors du chargement des employés");
+      setError(t('el_load_error'));
       console.error(err);
     } finally {
       setLoading(false);
@@ -57,7 +60,7 @@ export default function EmployeeList() {
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "N/A";
-    return new Date(dateString).toLocaleDateString("fr-FR");
+    return new Date(dateString).toLocaleDateString(locale);
   };
 
   if (loading) {
@@ -89,10 +92,10 @@ export default function EmployeeList() {
             </div>
             <div>
               <h2 className="text-2xl font-bold text-white">
-                Liste des Employés
+                {t('el_employee_list')}
               </h2>
               <p className="text-violet-100 text-sm mt-1">
-                {employees.length} employé{employees.length > 1 ? 's' : ''} enregistré{employees.length > 1 ? 's' : ''}
+                {employees.length} {t('el_employees_registered')}
               </p>
             </div>
           </div>
@@ -105,7 +108,7 @@ export default function EmployeeList() {
       {employees.length === 0 ? (
         <div className="text-center py-12 px-8 text-gray-500 dark:text-gray-400">
           <User className="w-16 h-16 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
-          <p className="text-lg">Aucun employé trouvé</p>
+          <p className="text-lg">{t('el_no_employee')}</p>
         </div>
       ) : (
         <div className="overflow-x-auto p-6">
@@ -122,16 +125,16 @@ export default function EmployeeList() {
                   Email
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                  Téléphone
+                  {t('phone')}
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                  Type Contrat
+                  {t('el_contract_type')}
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                  Date Embauche
+                  {t('el_hire_date')}
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                  Rôle
+                  {t('role')}
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                   Actions
@@ -204,7 +207,7 @@ export default function EmployeeList() {
                       className="px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors flex items-center gap-2"
                     >
                       <User className="w-4 h-4" />
-                      Voir détails
+                      {t('el_view_details')}
                     </button>
                   </td>
                 </tr>
@@ -236,7 +239,7 @@ export default function EmployeeList() {
                   <h3 className="text-2xl font-bold text-white">
                     {selectedEmployee.nom} {selectedEmployee.prenom}
                   </h3>
-                  <p className="text-violet-100 text-sm mt-1">Profil Employé Complet</p>
+                  <p className="text-violet-100 text-sm mt-1">{t('el_full_profile')}</p>
                 </div>
               </div>
               <button
@@ -255,16 +258,16 @@ export default function EmployeeList() {
                     <User className="w-5 h-5 text-violet-600 dark:text-violet-400" />
                   </div>
                   <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    Informations Personnelles
+                    {t('el_personal_info')}
                   </h4>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-gray-50 dark:bg-gray-700/50 p-6 rounded-lg">
                   <div>
-                    <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Nom</span>
+                    <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('last_name')}</span>
                     <p className="text-base font-medium text-gray-900 dark:text-white mt-1">{selectedEmployee.nom || "N/A"}</p>
                   </div>
                   <div>
-                    <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Prénom</span>
+                    <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('first_name')}</span>
                     <p className="text-base font-medium text-gray-900 dark:text-white mt-1">{selectedEmployee.prenom || "N/A"}</p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -277,7 +280,7 @@ export default function EmployeeList() {
                   <div className="flex items-center gap-2">
                     <Calendar className="w-4 h-4 text-violet-600 dark:text-violet-400" />
                     <div className="flex-1">
-                      <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Date de naissance</span>
+                      <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('el_birthday')}</span>
                       <p className="text-base font-medium text-gray-900 dark:text-white mt-1">{formatDate(selectedEmployee.birthday)}</p>
                     </div>
                   </div>
@@ -288,7 +291,7 @@ export default function EmployeeList() {
                   <div className="flex items-center gap-2">
                     <Phone className="w-4 h-4 text-violet-600 dark:text-violet-400" />
                     <div className="flex-1">
-                      <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Téléphone</span>
+                      <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('phone')}</span>
                       <p className="text-base font-medium text-gray-900 dark:text-white mt-1">{selectedEmployee.telephone || "N/A"}</p>
                     </div>
                   </div>
@@ -309,12 +312,12 @@ export default function EmployeeList() {
                     <Briefcase className="w-5 h-5 text-violet-600 dark:text-violet-400" />
                   </div>
                   <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    Informations Professionnelles
+                    {t('el_professional_info')}
                   </h4>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-gray-50 dark:bg-gray-700/50 p-6 rounded-lg">
                   <div>
-                    <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Type de contrat</span>
+                    <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('el_contract_type')}</span>
                     <p className="mt-2">
                       <span className={`px-3 py-1 inline-flex text-sm font-semibold rounded-full ${
                         selectedEmployee.typeContrat === "CDI"
@@ -332,12 +335,12 @@ export default function EmployeeList() {
                   <div className="flex items-center gap-2">
                     <Calendar className="w-4 h-4 text-violet-600 dark:text-violet-400" />
                     <div className="flex-1">
-                      <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Date d'embauche</span>
+                      <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('el_hire_date')}</span>
                       <p className="text-base font-medium text-gray-900 dark:text-white mt-1">{formatDate(selectedEmployee.dateEmbauche)}</p>
                     </div>
                   </div>
                   <div>
-                    <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Rôle</span>
+                    <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('role')}</span>
                     <p className="mt-2">
                       <span className={`px-3 py-1 inline-flex text-sm font-semibold rounded-full ${
                         selectedEmployee.user.roleEnum === "SUPER_ADMIN"
@@ -358,7 +361,7 @@ export default function EmployeeList() {
                           ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
                           : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
                       }`}>
-                        {selectedEmployee.user.isActive ? "Actif" : "Inactif"}
+                        {selectedEmployee.user.isActive ? t('active') : t('inactive')}
                       </span>
                     </p>
                   </div>
@@ -372,7 +375,7 @@ export default function EmployeeList() {
                     <FileText className="w-5 h-5 text-violet-600 dark:text-violet-400" />
                   </div>
                   <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    Informations Bancaires
+                    {t('el_banking_info')}
                   </h4>
                 </div>
                 <div className="bg-gray-50 dark:bg-gray-700/50 p-6 rounded-lg">
@@ -399,7 +402,7 @@ export default function EmployeeList() {
                     className="inline-flex items-center gap-2 px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors"
                   >
                     <FileText className="w-4 h-4" />
-                    Télécharger CV
+                    {t('el_download_cv')}
                   </a>
                 </div>
               )}
@@ -410,7 +413,7 @@ export default function EmployeeList() {
                 onClick={() => setSelectedEmployee(null)}
                 className="px-6 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
               >
-                Fermer
+                {t('close')}
               </button>
             </div>
           </div>

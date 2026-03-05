@@ -21,6 +21,8 @@ import {
   LATEST_CHECKOUT_HOUR,
   isWorkDay,
   toDateString,
+  calculateLateMinutes,
+  calculateEarlyDepartureMinutes,
 } from '@/lib/payroll/constants';
 import type {
   SessionType,
@@ -342,6 +344,19 @@ class AttendanceSessionService {
       },
     });
 
+    // Load holidays from the database for this period
+    const holidays = await prisma.jourFerie.findMany({
+      where: {
+        date: { gte: startDate, lte: endDate },
+      },
+    });
+
+    // Build a set of holiday dates for quick lookup
+    const holidayMap = new Map<string, string>();
+    for (const h of holidays) {
+      holidayMap.set(toDateString(new Date(h.date)), h.nom);
+    }
+
     // Build day-by-day summary
     const summaries: DayAttendanceSummary[] = [];
     const current = new Date(startDate);
@@ -349,7 +364,8 @@ class AttendanceSessionService {
     while (current <= endDate) {
       const dateStr = toDateString(current);
       const dayDate = new Date(current);
-      const isWork = isWorkDay(dayDate);
+      const isHolidayFromDB = holidayMap.has(dateStr);
+      const isWork = isWorkDay(dayDate) && !isHolidayFromDB;
 
       const daySessions = sessions.filter(
         s => toDateString(new Date(s.date)) === dateStr
@@ -374,21 +390,50 @@ class AttendanceSessionService {
       let dayStatus: DayStatus;
       let workedMinutes = 0;
       const expectedMinutes = isWork ? 420 : 0; // 7h = 420min
+      let lateMinutes = 0;
+      let earlyDepartureMinutes = 0;
+      let holidayName: string | undefined;
+      let leaveType: string | undefined;
 
       if (!isWork) {
-        dayStatus = isWeekendDay(dayDate) ? 'WEEKEND' : 'HOLIDAY';
+        if (isHolidayFromDB) {
+          dayStatus = 'HOLIDAY';
+          holidayName = holidayMap.get(dateStr);
+        } else {
+          dayStatus = isWeekendDay(dayDate) ? 'WEEKEND' : 'HOLIDAY';
+          if (dayStatus === 'HOLIDAY') {
+            // Check fixed holidays
+            const fixedHoliday = getFixedHolidayName(dayDate);
+            if (fixedHoliday) holidayName = fixedHoliday;
+          }
+        }
       } else if (dayReward) {
         dayStatus = 'REWARD';
-        workedMinutes = 480; // Full day credit
+        workedMinutes = 420; // Full day credit (7h, not 8h)
       } else if (dayLeave) {
+        leaveType = dayLeave.type || undefined;
         if (dayLeave.isHalfDay) {
           const leavedSession = dayLeave.halfDaySession;
           if (leavedSession === 'MORNING') {
             dayStatus = 'LEAVE_HALF_AM';
             workedMinutes = (afternoon?.durationMinutes || 0);
+            // Calculate late for afternoon session if applicable
+            if (afternoon?.checkIn) {
+              lateMinutes += calculateLateMinutes(new Date(afternoon.checkIn), 'AFTERNOON');
+            }
+            if (afternoon?.checkOut) {
+              earlyDepartureMinutes += calculateEarlyDepartureMinutes(new Date(afternoon.checkOut), 'AFTERNOON');
+            }
           } else {
             dayStatus = 'LEAVE_HALF_PM';
             workedMinutes = (morning?.durationMinutes || 0);
+            // Calculate late for morning session if applicable
+            if (morning?.checkIn) {
+              lateMinutes += calculateLateMinutes(new Date(morning.checkIn), 'MORNING');
+            }
+            if (morning?.checkOut) {
+              earlyDepartureMinutes += calculateEarlyDepartureMinutes(new Date(morning.checkOut), 'MORNING');
+            }
           }
           // Add credit for the leave half (morning=180min/3h, afternoon=240min/4h)
           workedMinutes += leavedSession === 'MORNING' ? 180 : 240;
@@ -399,6 +444,21 @@ class AttendanceSessionService {
       } else {
         dayStatus = this.computeDayStatus(morning, afternoon, dayDate);
         workedMinutes = (morning?.durationMinutes || 0) + (afternoon?.durationMinutes || 0);
+        
+        // Calculate late minutes for each session
+        if (morning?.checkIn) {
+          lateMinutes += calculateLateMinutes(new Date(morning.checkIn), 'MORNING');
+        }
+        if (afternoon?.checkIn) {
+          lateMinutes += calculateLateMinutes(new Date(afternoon.checkIn), 'AFTERNOON');
+        }
+        // Calculate early departure minutes
+        if (morning?.checkOut) {
+          earlyDepartureMinutes += calculateEarlyDepartureMinutes(new Date(morning.checkOut), 'MORNING');
+        }
+        if (afternoon?.checkOut) {
+          earlyDepartureMinutes += calculateEarlyDepartureMinutes(new Date(afternoon.checkOut), 'AFTERNOON');
+        }
       }
 
       summaries.push({
@@ -410,6 +470,12 @@ class AttendanceSessionService {
         workedMinutes,
         expectedMinutes,
         isWorkDay: isWork,
+        lateMinutes,
+        earlyDepartureMinutes,
+        isLate: lateMinutes > 0,
+        isEarlyDeparture: earlyDepartureMinutes > 0,
+        holidayName,
+        leaveType,
       });
 
       current.setDate(current.getDate() + 1);
@@ -502,6 +568,22 @@ class AttendanceSessionService {
 function isWeekendDay(date: Date): boolean {
   const day = date.getDay();
   return day === 0 || day === 6;
+}
+
+function getFixedHolidayName(date: Date): string | null {
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  const holidays: Record<string, string> = {
+    '1-1': 'Nouvel An',
+    '1-14': 'Fête de la Révolution',
+    '3-20': "Fête de l'Indépendance",
+    '4-9': 'Journée des Martyrs',
+    '5-1': 'Fête du Travail',
+    '7-25': 'Fête de la République',
+    '8-13': 'Fête de la Femme',
+    '10-15': "Fête de l'Évacuation",
+  };
+  return holidays[`${month}-${day}`] || null;
 }
 
 export const attendanceSessionService = new AttendanceSessionService();

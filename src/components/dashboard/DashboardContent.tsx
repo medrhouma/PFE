@@ -17,8 +17,8 @@ interface DashboardContentProps {
 export function DashboardContent({ userRole, showSidebar, children }: DashboardContentProps) {
   const pathname = usePathname()
 
-  // Pages where sidebar should NOT appear (home/landing page)
-  const noSidebarPages = ["/home", "/welcome"]
+  // Pages where sidebar should NOT appear
+  const noSidebarPages = ["/home", "/welcome", "/workspace"]
   const isHomePage = noSidebarPages.some(page => pathname === page || pathname.startsWith(page + "/"))
 
   // Show sidebar only if allowed AND not on home page

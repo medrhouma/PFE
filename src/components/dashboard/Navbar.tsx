@@ -14,27 +14,27 @@ import {
 } from "lucide-react"
 
 // Breadcrumb configuration based on routes
-const routeConfig: Record<string, { label: string; icon: React.ReactNode; parent?: string }> = {
-  "/home": { label: "Accueil", icon: <Home className="w-4 h-4" /> },
-  "/dashboard": { label: "Tableau de bord", icon: <LayoutDashboard className="w-4 h-4" /> },
-  "/workspace": { label: "Espace de travail", icon: <Activity className="w-4 h-4" /> },
-  "/pointage": { label: "Pointage", icon: <Clock className="w-4 h-4" /> },
-  "/conges": { label: "Congés", icon: <Calendar className="w-4 h-4" /> },
-  "/rh/conges": { label: "Gestion Congés", icon: <Calendar className="w-4 h-4" />, parent: "RH" },
-  "/rh/profiles": { label: "Validation Profils", icon: <UserCheck className="w-4 h-4" />, parent: "RH" },
-  "/rh/notifications": { label: "Notifications", icon: <Bell className="w-4 h-4" />, parent: "RH" },
-  "/parametres/users": { label: "Utilisateurs", icon: <Users className="w-4 h-4" />, parent: "Administration" },
-  "/parametres/roles": { label: "Rôles", icon: <Settings className="w-4 h-4" />, parent: "Administration" },
-  "/parametres/logs": { label: "Logs", icon: <Activity className="w-4 h-4" />, parent: "Administration" },
-  "/parametres/cookies": { label: "Cookies", icon: <Shield className="w-4 h-4" />, parent: "Administration" },
-  "/profile": { label: "Mon Profil", icon: <Users className="w-4 h-4" /> },
-  "/settings": { label: "Paramètres", icon: <Settings className="w-4 h-4" /> },
+const routeConfig: Record<string, { labelKey: string; icon: React.ReactNode; parentKey?: string }> = {
+  "/home": { labelKey: "nav_home", icon: <Home className="w-4 h-4" /> },
+  "/dashboard": { labelKey: "nav_dashboard", icon: <LayoutDashboard className="w-4 h-4" /> },
+  "/workspace": { labelKey: "workspace_module_title", icon: <Activity className="w-4 h-4" /> },
+  "/pointage": { labelKey: "nav_attendance", icon: <Clock className="w-4 h-4" /> },
+  "/conges": { labelKey: "nav_leaves", icon: <Calendar className="w-4 h-4" /> },
+  "/rh/conges": { labelKey: "nav_leave_management", icon: <Calendar className="w-4 h-4" />, parentKey: "hr" },
+  "/rh/profiles": { labelKey: "nav_profile_validation", icon: <UserCheck className="w-4 h-4" />, parentKey: "hr" },
+  "/rh/notifications": { labelKey: "notifications", icon: <Bell className="w-4 h-4" />, parentKey: "hr" },
+  "/parametres/users": { labelKey: "nav_users", icon: <Users className="w-4 h-4" />, parentKey: "nav_administration" },
+  "/parametres/roles": { labelKey: "nav_roles", icon: <Settings className="w-4 h-4" />, parentKey: "nav_administration" },
+  "/parametres/logs": { labelKey: "nav_logs", icon: <Activity className="w-4 h-4" />, parentKey: "nav_administration" },
+  "/parametres/cookies": { labelKey: "nav_cookies", icon: <Shield className="w-4 h-4" />, parentKey: "nav_administration" },
+  "/profile": { labelKey: "nav_my_profile", icon: <Users className="w-4 h-4" /> },
+  "/settings": { labelKey: "settings_module_title", icon: <Settings className="w-4 h-4" /> },
 }
 
 export function Navbar() {
   const { data: session } = useSession()
   const pathname = usePathname()
-  const { isRTL } = useLanguage()
+  const { isRTL, t } = useLanguage()
 
   // Get current route info for breadcrumb
   const getCurrentRoute = () => {
@@ -73,10 +73,10 @@ export function Navbar() {
 
         {/* Center: Breadcrumb / Page Title */}
         <div className={`hidden md:flex items-center gap-2 text-sm ${isRTL ? 'flex-row-reverse' : ''}`}>
-          {currentRoute?.parent && (
+          {currentRoute?.parentKey && (
             <>
               <span className="text-gray-400 dark:text-gray-500 font-medium">
-                {currentRoute.parent}
+                {t(currentRoute.parentKey)}
               </span>
               <ChevronRight className="w-4 h-4 text-gray-300 dark:text-gray-600" />
             </>
@@ -86,7 +86,7 @@ export function Navbar() {
               <span className="text-gray-400 dark:text-gray-500">
                 {currentRoute.icon}
               </span>
-              <span>{currentRoute.label}</span>
+              <span>{t(currentRoute.labelKey)}</span>
             </div>
           )}
         </div>

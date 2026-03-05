@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useNotification } from '@/contexts/NotificationContext';
 import { getSafeImageSrc } from '@/lib/utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface DocumentFile {
   name: string;
@@ -39,6 +40,8 @@ export default function PendingEmployeesList() {
   const [loading, setLoading] = useState(true);
   const [selectedEmployee, setSelectedEmployee] = useState<PendingEmployee | null>(null);
   const { showNotification } = useNotification();
+  const { t, language } = useLanguage();
+  const locale = language === 'ar' ? 'ar-SA' : language === 'en' ? 'en-US' : 'fr-FR';
 
   useEffect(() => {
     loadPendingEmployees();
@@ -56,8 +59,8 @@ export default function PendingEmployeesList() {
       console.error('Error loading pending employees:', error);
       showNotification({
         type: 'error',
-        title: 'Erreur',
-        message: 'Impossible de charger les profils en attente'
+        title: t('error'),
+        message: t('pe_load_error')
       });
     } finally {
       setLoading(false);
@@ -70,7 +73,7 @@ export default function PendingEmployeesList() {
       
       // Si c'est un rejet, demander la raison
       if (action === 'REJETE') {
-        rejectionReason = prompt('Raison du rejet (optionnel):');
+        rejectionReason = prompt(t('pe_rejection_reason'));
         // Si l'utilisateur annule, ne pas continuer
         if (rejectionReason === null) {
           return;
@@ -92,8 +95,8 @@ export default function PendingEmployeesList() {
 
       showNotification({
         type: 'success',
-        title: 'Succès',
-        message: action === 'APPROUVE' ? 'Profil approuvé' : 'Profil rejeté'
+        title: t('ra_success'),
+        message: action === 'APPROUVE' ? t('pe_profile_approved') : t('pe_profile_rejected')
       });
 
       // Reload the list
@@ -103,20 +106,20 @@ export default function PendingEmployeesList() {
       console.error('Error updating employee status:', error);
       showNotification({
         type: 'error',
-        title: 'Erreur',
-        message: 'Impossible de mettre à jour le statut'
+        title: t('error'),
+        message: t('pe_update_error')
       });
     }
   };
 
   if (loading) {
-    return <div className="text-center py-8">Chargement...</div>;
+    return <div className="text-center py-8">{t('loading')}...</div>;
   }
 
   if (employees.length === 0) {
     return (
       <div className="bg-gray-50 rounded-lg p-8 text-center">
-        <p className="text-gray-600">Aucun profil en attente de validation</p>
+        <p className="text-gray-600">{t('pe_no_pending')}</p>
       </div>
     );
   }
@@ -134,10 +137,10 @@ export default function PendingEmployeesList() {
                 Email
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
-                Téléphone
+                {t('phone')}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
-                Type de contrat
+                {t('el_contract_type')}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
                 Actions
@@ -168,7 +171,7 @@ export default function PendingEmployeesList() {
                     onClick={() => setSelectedEmployee(employee)}
                     className="text-violet-600 hover:text-violet-900"
                   >
-                    Voir détails
+                    {t('el_view_details')}
                   </button>
                 </td>
               </tr>
@@ -195,13 +198,13 @@ export default function PendingEmployeesList() {
                   <p className="text-gray-900">{selectedEmployee.sexe || 'N/A'}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Date de naissance</label>
+                  <label className="text-sm font-medium text-gray-500">{t('el_birthday')}</label>
                   <p className="text-gray-900">
-                    {selectedEmployee.birthday ? new Date(selectedEmployee.birthday).toLocaleDateString('fr-FR') : 'N/A'}
+                    {selectedEmployee.birthday ? new Date(selectedEmployee.birthday).toLocaleDateString(locale) : 'N/A'}
                   </p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Téléphone</label>
+                  <label className="text-sm font-medium text-gray-500">{t('phone')}</label>
                   <p className="text-gray-900">{selectedEmployee.telephone || 'N/A'}</p>
                 </div>
                 <div>
@@ -213,13 +216,13 @@ export default function PendingEmployeesList() {
                   <p className="text-gray-900">{selectedEmployee.adresse || 'N/A'}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Date d'embauche</label>
+                  <label className="text-sm font-medium text-gray-500">{t('el_hire_date')}</label>
                   <p className="text-gray-900">
-                    {selectedEmployee.dateEmbauche ? new Date(selectedEmployee.dateEmbauche).toLocaleDateString('fr-FR') : 'N/A'}
+                    {selectedEmployee.dateEmbauche ? new Date(selectedEmployee.dateEmbauche).toLocaleDateString(locale) : 'N/A'}
                   </p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Type de contrat</label>
+                  <label className="text-sm font-medium text-gray-500">{t('el_contract_type')}</label>
                   <p className="text-gray-900">{selectedEmployee.typeContrat || 'N/A'}</p>
                 </div>
               </div>
@@ -230,7 +233,7 @@ export default function PendingEmployeesList() {
                   <label className="text-sm font-medium text-gray-500 block mb-2">Photo</label>
                   <img 
                     src={getSafeImageSrc(selectedEmployee.photo)!} 
-                    alt="Photo employé" 
+                    alt={t('pe_employee_photo')} 
                     className="w-32 h-32 object-cover rounded-lg"
                     onError={(e) => { e.currentTarget.style.display = 'none'; }}
                   />
@@ -251,7 +254,7 @@ export default function PendingEmployeesList() {
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
-                    Télécharger le CV
+                    {t('el_download_cv')}
                   </a>
                 </div>
               )}
@@ -309,7 +312,7 @@ export default function PendingEmployeesList() {
 
                     {experienceDocs.length > 0 && (
                       <div className="border-t pt-4">
-                        <label className="text-sm font-medium text-gray-500 block mb-3">Expérience professionnelle ({experienceDocs.length})</label>
+                        <label className="text-sm font-medium text-gray-500 block mb-3">{t('pe_work_experience')} ({experienceDocs.length})</label>
                         <div className="grid grid-cols-1 gap-2">
                           {experienceDocs.map((doc, idx) => (
                             <button
@@ -334,7 +337,7 @@ export default function PendingEmployeesList() {
 
                     {diplomeDocs.length > 0 && (
                       <div className="border-t pt-4">
-                        <label className="text-sm font-medium text-gray-500 block mb-3">Diplômes & Certifications ({diplomeDocs.length})</label>
+                        <label className="text-sm font-medium text-gray-500 block mb-3">{t('pe_diplomas')} ({diplomeDocs.length})</label>
                         <div className="grid grid-cols-1 gap-2">
                           {diplomeDocs.map((doc, idx) => (
                             <button
@@ -359,7 +362,7 @@ export default function PendingEmployeesList() {
 
                     {autresDocs.length > 0 && (
                       <div className="border-t pt-4">
-                        <label className="text-sm font-medium text-gray-500 block mb-3">Autres documents ({autresDocs.length})</label>
+                        <label className="text-sm font-medium text-gray-500 block mb-3">{t('pe_other_docs')} ({autresDocs.length})</label>
                         <div className="grid grid-cols-1 gap-2">
                           {autresDocs.map((doc, idx) => (
                             <button
@@ -391,19 +394,19 @@ export default function PendingEmployeesList() {
                   onClick={() => handleAction(selectedEmployee.id, 'APPROUVE')}
                   className="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
                 >
-                  ✓ Approuver
+                  ✓ {t('approve')}
                 </button>
                 <button
                   onClick={() => handleAction(selectedEmployee.id, 'REJETE')}
                   className="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
                 >
-                  ✗ Rejeter
+                  ✗ {t('reject')}
                 </button>
                 <button
                   onClick={() => setSelectedEmployee(null)}
                   className="flex-1 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors"
                 >
-                  Annuler
+                  {t('cancel')}
                 </button>
               </div>
             </div>

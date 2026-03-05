@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     try {
       const results: any[] = await query(
         `SELECT language, emailNotifications, pushNotifications, soundAlerts, theme, 
-                timezone, createdAt, updatedAt
+                timezone, twoFactorEnabled, createdAt, updatedAt
          FROM UserPreferences WHERE userId = ?`,
         [session.user.id]
       );
@@ -62,7 +62,8 @@ export async function GET(request: NextRequest) {
       pushNotifications: preferences?.pushNotifications ?? true,
       soundAlerts: preferences?.soundAlerts ?? true,
       theme: preferences?.theme || "system",
-      timezone: preferences?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone
+      timezone: preferences?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
+      twoFactorEnabled: preferences?.twoFactorEnabled ?? true
     });
 
   } catch (error) {
@@ -90,7 +91,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { language, emailNotifications, pushNotifications, soundAlerts, theme, timezone } = body;
+    const { language, emailNotifications, pushNotifications, soundAlerts, theme, timezone, twoFactorEnabled } = body;
 
     // Ensure table exists
     try {
@@ -116,8 +117,8 @@ export async function PUT(request: NextRequest) {
     // Upsert preferences
     try {
       await execute(
-        `INSERT INTO UserPreferences (userId, language, emailNotifications, pushNotifications, soundAlerts, theme, timezone)
-         VALUES (?, ?, ?, ?, ?, ?, ?)
+        `INSERT INTO UserPreferences (userId, language, emailNotifications, pushNotifications, soundAlerts, theme, timezone, twoFactorEnabled)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
          ON DUPLICATE KEY UPDATE 
            language = COALESCE(VALUES(language), language),
            emailNotifications = COALESCE(VALUES(emailNotifications), emailNotifications),
@@ -125,6 +126,7 @@ export async function PUT(request: NextRequest) {
            soundAlerts = COALESCE(VALUES(soundAlerts), soundAlerts),
            theme = COALESCE(VALUES(theme), theme),
            timezone = COALESCE(VALUES(timezone), timezone),
+           twoFactorEnabled = COALESCE(VALUES(twoFactorEnabled), twoFactorEnabled),
            updatedAt = NOW()`,
         [
           session.user.id,
@@ -133,7 +135,8 @@ export async function PUT(request: NextRequest) {
           pushNotifications ?? true,
           soundAlerts ?? true,
           theme ?? 'system',
-          timezone ?? 'Europe/Paris'
+          timezone ?? 'Europe/Paris',
+          twoFactorEnabled ?? true
         ]
       );
     } catch (e) {

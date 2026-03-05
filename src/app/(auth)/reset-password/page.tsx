@@ -15,10 +15,12 @@ import {
   Lock,
   ShieldCheck
 } from "lucide-react"
+import { useLanguage } from "@/contexts/LanguageContext"
 
 function ResetPasswordContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
+  const { t } = useLanguage()
   const token = searchParams.get("token")
 
   const [isValidating, setIsValidating] = useState(true)
@@ -48,7 +50,7 @@ function ResetPasswordContent() {
     const validateToken = async () => {
       if (!token) {
         setIsValidating(false)
-        setTokenError("Token de réinitialisation manquant")
+        setTokenError(t('missing_reset_token'))
         return
       }
 
@@ -60,10 +62,10 @@ function ResetPasswordContent() {
           setIsTokenValid(true)
           setEmail(data.email)
         } else {
-          setTokenError(data.error || "Token invalide")
+          setTokenError(data.error || t('invalid_token'))
         }
       } catch (err) {
-        setTokenError("Erreur lors de la validation du token")
+        setTokenError(t('token_validation_error'))
       } finally {
         setIsValidating(false)
       }
@@ -103,7 +105,7 @@ function ResetPasswordContent() {
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.error || "Une erreur est survenue")
+        throw new Error(data.error || t('error_occurred'))
       }
 
       setIsSuccess(true)
@@ -113,7 +115,7 @@ function ResetPasswordContent() {
         router.push("/login")
       }, 3000)
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Une erreur est survenue")
+      setError(err instanceof Error ? err.message : t('error_occurred'))
     } finally {
       setIsLoading(false)
     }
@@ -125,7 +127,7 @@ function ResetPasswordContent() {
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center space-y-4">
           <Loader2 className="w-12 h-12 text-violet-600 animate-spin mx-auto" />
-          <p className="text-gray-600">Validation du lien...</p>
+          <p className="text-gray-600">{t('validating_link')}</p>
         </div>
       </div>
     )
@@ -142,16 +144,16 @@ function ResetPasswordContent() {
           
           <div>
             <h1 className="text-2xl font-bold text-gray-900 mb-2">
-              Lien invalide
+              {t('invalid_link')}
             </h1>
             <p className="text-gray-600">
-              {tokenError || "Ce lien de réinitialisation est invalide ou a expiré."}
+              {tokenError || t('invalid_or_expired_link')}
             </p>
           </div>
 
           <Link href="/forgot-password">
             <Button className="bg-violet-600 hover:bg-violet-700 text-white">
-              Demander un nouveau lien
+              {t('request_new_link')}
             </Button>
           </Link>
 
@@ -160,7 +162,7 @@ function ResetPasswordContent() {
               href="/login"
               className="text-sm text-gray-600 hover:text-violet-600 transition-colors"
             >
-              Retour à la connexion
+              {t('back_to_login')}
             </Link>
           </div>
         </div>
@@ -179,18 +181,18 @@ function ResetPasswordContent() {
           
           <div>
             <h1 className="text-2xl font-bold text-gray-900 mb-2">
-              Mot de passe modifié !
+              {t('password_changed')}
             </h1>
             <p className="text-gray-600">
-              Votre mot de passe a été réinitialisé avec succès.
+              {t('password_reset_success')}
               <br />
-              Vous allez être redirigé vers la page de connexion...
+              {t('redirect_to_login')}
             </p>
           </div>
 
           <Link href="/login">
             <Button className="bg-violet-600 hover:bg-violet-700 text-white">
-              Se connecter
+              {t('sign_in')}
             </Button>
           </Link>
         </div>
@@ -215,10 +217,10 @@ function ResetPasswordContent() {
           </div>
           
           <h2 className="text-3xl font-bold text-white mb-4">
-            Nouveau mot de passe
+            {t('new_password')}
           </h2>
           <p className="text-violet-200 text-lg leading-relaxed">
-            Choisissez un mot de passe fort et unique pour sécuriser votre compte.
+            {t('choose_strong_password')}
           </p>
         </div>
       </div>
@@ -232,16 +234,16 @@ function ResetPasswordContent() {
             className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-violet-600 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            Retour à la connexion
+            {t('back_to_login')}
           </Link>
 
           {/* Header */}
           <div>
             <h1 className="text-3xl font-bold text-gray-900">
-              Créer un nouveau mot de passe
+              {t('create_new_password')}
             </h1>
             <p className="mt-2 text-gray-600">
-              Pour le compte : <strong>{email}</strong>
+              {t('for_account')}: <strong>{email}</strong>
             </p>
           </div>
 
@@ -258,14 +260,14 @@ function ResetPasswordContent() {
             {/* Password Field */}
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                Nouveau mot de passe
+                {t('new_password')}
               </label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="Entrez votre nouveau mot de passe"
+                  placeholder={t('enter_new_password')}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
@@ -284,14 +286,14 @@ function ResetPasswordContent() {
             {/* Confirm Password Field */}
             <div>
               <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
-                Confirmer le mot de passe
+                {t('confirm_password')}
               </label>
               <div className="relative">
                 <ShieldCheck className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
                   id="confirmPassword"
                   type={showConfirmPassword ? "text" : "password"}
-                  placeholder="Confirmez votre mot de passe"
+                  placeholder={t('confirm_new_password')}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
@@ -310,13 +312,13 @@ function ResetPasswordContent() {
             {/* Password Requirements */}
             <div className="bg-gray-100 rounded-lg p-4 space-y-2">
               <p className="text-sm font-medium text-gray-700 mb-2">
-                Exigences du mot de passe :
+                {t('password_requirements')}:
               </p>
-              <ValidationItem valid={validations.minLength} text="Au moins 8 caractères" />
-              <ValidationItem valid={validations.hasUppercase} text="Au moins une majuscule" />
-              <ValidationItem valid={validations.hasLowercase} text="Au moins une minuscule" />
-              <ValidationItem valid={validations.hasNumber} text="Au moins un chiffre" />
-              <ValidationItem valid={validations.passwordsMatch} text="Les mots de passe correspondent" />
+              <ValidationItem valid={validations.minLength} text={t('min_8_chars')} />
+              <ValidationItem valid={validations.hasUppercase} text={t('at_least_uppercase')} />
+              <ValidationItem valid={validations.hasLowercase} text={t('at_least_lowercase')} />
+              <ValidationItem valid={validations.hasNumber} text={t('at_least_number')} />
+              <ValidationItem valid={validations.passwordsMatch} text={t('passwords_match')} />
             </div>
 
             <Button 
@@ -327,10 +329,10 @@ function ResetPasswordContent() {
               {isLoading ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  Modification en cours...
+                  {t('changing_password')}
                 </>
               ) : (
-                "Réinitialiser le mot de passe"
+                t('reset_password')
               )}
             </Button>
           </form>

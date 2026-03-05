@@ -7,6 +7,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
+import { useLanguage } from "@/contexts/LanguageContext";
 import {
   Shield,
   Search,
@@ -36,7 +37,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { format as formatDate, subDays, startOfDay, endOfDay } from "date-fns";
-import { fr } from "date-fns/locale";
+import { fr, enUS, ar } from "date-fns/locale";
 
 interface AuditLog {
   id: string;
@@ -83,31 +84,12 @@ const SEVERITY_CONFIG = {
   CRITICAL: { icon: XCircle, color: "text-red-500", bg: "bg-red-500/10" },
 };
 
-const ACTION_LABELS: Record<string, string> = {
-  LOGIN: "Connexion",
-  LOGOUT: "Déconnexion",
-  LOGIN_FAILED: "Échec connexion",
-  COOKIE_CONSENT_ACCEPTED: "Cookies acceptés",
-  COOKIE_CONSENT_REJECTED: "Cookies refusés",
-  COOKIE_CONSENT_CUSTOMIZED: "Cookies personnalisés",
-  FACE_VERIFY_SUCCESS: "Vérif. faciale OK",
-  FACE_VERIFY_FAILED: "Vérif. faciale échouée",
-  POINTAGE_ENTREE: "Pointage entrée",
-  POINTAGE_SORTIE: "Pointage sortie",
-  LEAVE_REQUEST_CREATED: "Demande congé créée",
-  LEAVE_REQUEST_APPROVED: "Congé approuvé",
-  LEAVE_REQUEST_REJECTED: "Congé refusé",
-  EMPLOYEE_APPROVED: "Employé validé",
-  EMPLOYEE_REJECTED: "Employé refusé",
-  DOCUMENT_UPLOADED: "Document uploadé",
-  SECURITY_RATE_LIMIT: "Rate limit atteint",
-  CREATE: "Création",
-  UPDATE: "Modification",
-  DELETE: "Suppression",
-};
+// ACTION_LABELS moved to LanguageContext as log_action_* keys
 
 export default function AdminLogsDashboard() {
   const { data: session } = useSession();
+  const { t, language } = useLanguage();
+  const dateFnsLocale = language === 'ar' ? ar : language === 'en' ? enUS : fr;
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [stats, setStats] = useState<LogStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -292,7 +274,9 @@ export default function AdminLogsDashboard() {
   };
 
   const formatActionLabel = (action: string) => {
-    return ACTION_LABELS[action] || action.replace(/_/g, " ");
+    const key = `log_action_${action.toLowerCase()}`;
+    const translated = t(key);
+    return translated !== key ? translated : action.replace(/_/g, " ");
   };
 
   return (
@@ -307,10 +291,10 @@ export default function AdminLogsDashboard() {
               </div>
               <div>
                 <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                  Journal d'audit
+                  {t('pm_audit_log')}
                 </h1>
                 <p className="text-gray-600 dark:text-gray-400 mt-1">
-                  Suivi en temps réel de toutes les actions système
+                  {t('log_realtime_tracking')}
                 </p>
               </div>
             </div>
@@ -324,7 +308,7 @@ export default function AdminLogsDashboard() {
                 }`}
               >
                 <BarChart3 className="h-5 w-5" />
-                <span className="hidden sm:inline">Statistiques</span>
+                <span className="hidden sm:inline">{t('log_statistics')}</span>
               </button>
               <button
                 onClick={() => setShowFilters(!showFilters)}
@@ -335,7 +319,7 @@ export default function AdminLogsDashboard() {
                 }`}
               >
                 <Filter className="h-5 w-5" />
-                <span className="hidden sm:inline">Filtres</span>
+                <span className="hidden sm:inline">{t('filters')}</span>
               </button>
               <button
                 onClick={() => fetchLogs()}
@@ -350,7 +334,7 @@ export default function AdminLogsDashboard() {
                   className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-xl font-medium shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:shadow-emerald-500/40 transition-all disabled:opacity-50"
                 >
                   <Download className="h-5 w-5" />
-                  Exporter
+                  {t('export')}
                 </button>
                 <div className="absolute right-0 mt-2 w-44 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10 overflow-hidden">
                   <button
@@ -388,7 +372,7 @@ export default function AdminLogsDashboard() {
                   <span className="text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30 px-2 py-1 rounded-full">Total</span>
                 </div>
                 <p className="text-4xl font-bold text-gray-900 dark:text-white mb-1">{stats.totalLogs.toLocaleString()}</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Événements enregistrés</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{t('log_events_recorded')}</p>
               </div>
             </div>
 
@@ -402,7 +386,7 @@ export default function AdminLogsDashboard() {
                   <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30 px-2 py-1 rounded-full">Info</span>
                 </div>
                 <p className="text-4xl font-bold text-gray-900 dark:text-white mb-1">{(stats.bySeverity.INFO || 0).toLocaleString()}</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Logs informatifs</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{t('log_informative')}</p>
               </div>
             </div>
 
@@ -413,10 +397,10 @@ export default function AdminLogsDashboard() {
                   <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/30">
                     <AlertTriangle className="h-6 w-6 text-white" />
                   </div>
-                  <span className="text-xs font-semibold text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 px-2 py-1 rounded-full">Attention</span>
+                  <span className="text-xs font-semibold text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 px-2 py-1 rounded-full">{t('log_warning_badge')}</span>
                 </div>
                 <p className="text-4xl font-bold text-gray-900 dark:text-white mb-1">{(stats.bySeverity.WARNING || 0).toLocaleString()}</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Avertissements</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{t('log_warnings')}</p>
               </div>
             </div>
 
@@ -428,11 +412,11 @@ export default function AdminLogsDashboard() {
                     <XCircle className="h-6 w-6 text-white" />
                   </div>
                   {((stats.bySeverity.ERROR || 0) + (stats.bySeverity.CRITICAL || 0)) > 0 && (
-                    <span className="text-xs font-semibold text-rose-600 dark:text-rose-400 bg-rose-100 dark:bg-rose-900/30 px-2 py-1 rounded-full animate-pulse">Critique</span>
+                    <span className="text-xs font-semibold text-rose-600 dark:text-rose-400 bg-rose-100 dark:bg-rose-900/30 px-2 py-1 rounded-full animate-pulse">{t('log_critical_badge')}</span>
                   )}
                 </div>
                 <p className="text-4xl font-bold text-gray-900 dark:text-white mb-1">{((stats.bySeverity.ERROR || 0) + (stats.bySeverity.CRITICAL || 0)).toLocaleString()}</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Erreurs & Critiques</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{t('log_errors_critical')}</p>
               </div>
             </div>
           </div>
@@ -446,14 +430,14 @@ export default function AdminLogsDashboard() {
                 <Filter className="h-5 w-5 text-white" />
               </div>
               <div>
-                <h3 className="font-bold text-gray-900 dark:text-white">Filtres avancés</h3>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Affinez votre recherche dans les logs</p>
+                <h3 className="font-bold text-gray-900 dark:text-white">{t('log_advanced_filters')}</h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{t('log_refine_search')}</p>
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  Recherche
+                  {t('search')}
                 </label>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -461,7 +445,7 @@ export default function AdminLogsDashboard() {
                     type="text"
                     value={filters.search}
                     onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))}
-                    placeholder="Rechercher..."
+                    placeholder={`${t('search')}...`}
                     className="w-full pl-10 pr-4 py-2.5 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
                   />
                 </div>
@@ -475,7 +459,7 @@ export default function AdminLogsDashboard() {
                   onChange={(e) => setFilters(f => ({ ...f, action: e.target.value }))}
                   className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
                 >
-                  <option value="">Toutes les actions</option>
+                  <option value="">{t('log_all_actions')}</option>
                   {actionTypes.map(action => (
                     <option key={action} value={action}>
                       {formatActionLabel(action)}
@@ -485,14 +469,14 @@ export default function AdminLogsDashboard() {
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  Type d'entité
+                  {t('log_entity_type')}
                 </label>
                 <select
                   value={filters.entityType}
                   onChange={(e) => setFilters(f => ({ ...f, entityType: e.target.value }))}
                   className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
                 >
-                  <option value="">Tous les types</option>
+                  <option value="">{t('all_types')}</option>
                   {entityTypes.map(type => (
                     <option key={type} value={type}>{type}</option>
                   ))}
@@ -500,14 +484,14 @@ export default function AdminLogsDashboard() {
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  Sévérité
+                  {t('log_severity')}
                 </label>
                 <select
                   value={filters.severity}
                   onChange={(e) => setFilters(f => ({ ...f, severity: e.target.value }))}
                   className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
                 >
-                  <option value="">Toutes</option>
+                  <option value="">{t('all')}</option>
                   <option value="INFO">🔵 Info</option>
                   <option value="WARNING">🟠 Warning</option>
                   <option value="ERROR">🟠 Error</option>
@@ -516,7 +500,7 @@ export default function AdminLogsDashboard() {
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  Date début
+                  {t('log_start_date')}
                 </label>
                 <input
                   type="date"
@@ -527,7 +511,7 @@ export default function AdminLogsDashboard() {
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  Date fin
+                  {t('log_end_date')}
                 </label>
                 <input
                   type="date"
@@ -549,15 +533,15 @@ export default function AdminLogsDashboard() {
                   <FileText className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-gray-900 dark:text-white">Journal des activités</h3>
+                  <h3 className="font-bold text-gray-900 dark:text-white">{t('log_activity_journal')}</h3>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {pagination.totalCount} entrées • Page {pagination.page} sur {pagination.totalPages}
+                    {pagination.totalCount} {t('log_entries')} • Page {pagination.page} / {pagination.totalPages}
                   </p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-xs text-gray-500 dark:text-gray-400">
-                  Cliquez sur une ligne pour voir les détails
+                  {t('log_click_row_details')}
                 </span>
               </div>
             </div>
@@ -569,13 +553,13 @@ export default function AdminLogsDashboard() {
                   <th className="px-5 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                     <div className="flex items-center gap-2">
                       <Clock className="h-3.5 w-3.5" />
-                      Date/Heure
+                      {t('log_date_time')}
                     </div>
                   </th>
                   <th className="px-5 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                     <div className="flex items-center gap-2">
                       <AlertCircle className="h-3.5 w-3.5" />
-                      Sévérité
+                      {t('log_severity')}
                     </div>
                   </th>
                   <th className="px-5 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
@@ -587,25 +571,19 @@ export default function AdminLogsDashboard() {
                   <th className="px-5 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                     <div className="flex items-center gap-2">
                       <Database className="h-3.5 w-3.5" />
-                      Entité
+                      {t('log_entity')}
                     </div>
                   </th>
                   <th className="px-5 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                     <div className="flex items-center gap-2">
                       <User className="h-3.5 w-3.5" />
-                      Utilisateur
-                    </div>
-                  </th>
-                  <th className="px-5 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                    <div className="flex items-center gap-2">
-                      <Globe className="h-3.5 w-3.5" />
-                      IP
+                      {t('user')}
                     </div>
                   </th>
                   <th className="px-5 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                     <div className="flex items-center gap-2">
                       <Eye className="h-3.5 w-3.5" />
-                      Détails
+                      {t('log_details')}
                     </div>
                   </th>
                 </tr>
@@ -619,8 +597,8 @@ export default function AdminLogsDashboard() {
                           <RefreshCw className="h-8 w-8 animate-spin text-violet-500" />
                         </div>
                         <div>
-                          <p className="font-semibold text-gray-900 dark:text-white">Chargement en cours</p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">Récupération des logs...</p>
+                          <p className="font-semibold text-gray-900 dark:text-white">{t('log_loading')}</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">{t('log_fetching')}...</p>
                         </div>
                       </div>
                     </td>
@@ -633,8 +611,8 @@ export default function AdminLogsDashboard() {
                           <FileText className="h-10 w-10 text-gray-400" />
                         </div>
                         <div>
-                          <p className="font-semibold text-gray-900 dark:text-white">Aucun log trouvé</p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">Essayez de modifier vos filtres</p>
+                          <p className="font-semibold text-gray-900 dark:text-white">{t('log_no_logs')}</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">{t('try_modifying_filters')}</p>
                         </div>
                       </div>
                     </td>
@@ -653,10 +631,10 @@ export default function AdminLogsDashboard() {
                           </div>
                           <div>
                             <span className="font-medium text-gray-900 dark:text-white block">
-                              {formatDate(new Date(log.createdAt), "dd MMM yyyy", { locale: fr })}
+                              {formatDate(new Date(log.createdAt), "dd MMM yyyy", { locale: dateFnsLocale })}
                             </span>
                             <span className="text-xs text-gray-500">
-                              {formatDate(new Date(log.createdAt), "HH:mm:ss", { locale: fr })}
+                              {formatDate(new Date(log.createdAt), "HH:mm:ss", { locale: dateFnsLocale })}
                             </span>
                           </div>
                         </div>
@@ -707,7 +685,7 @@ export default function AdminLogsDashboard() {
                             </div>
                           </div>
                         ) : (
-                          <span className="text-sm text-gray-400 italic">Système</span>
+                          <span className="text-sm text-gray-400 italic">{t('pm_system')}</span>
                         )}
                       </td>
                       <td className="px-5 py-4 whitespace-nowrap">
@@ -719,7 +697,7 @@ export default function AdminLogsDashboard() {
                       <td className="px-5 py-4">
                         <button className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-violet-500 to-purple-500 text-white rounded-lg text-xs font-semibold hover:from-violet-600 hover:to-purple-600 transition-all shadow-sm hover:shadow-md">
                           <Eye className="h-3.5 w-3.5" />
-                          Voir
+                          {t('view')}
                         </button>
                       </td>
                     </tr>
@@ -738,13 +716,13 @@ export default function AdminLogsDashboard() {
               <span className="text-sm text-gray-600 dark:text-gray-300">
                 <span className="font-semibold text-gray-900 dark:text-white">
                   {((pagination.page - 1) * pagination.limit) + 1}
-                </span>{" "}à{" "}
+                </span>{" "}{t('log_to')}{" "}
                 <span className="font-semibold text-gray-900 dark:text-white">
                   {Math.min(pagination.page * pagination.limit, pagination.totalCount)}
-                </span>{" "}sur{" "}
+                </span>{" "}{t('log_of')}{" "}
                 <span className="font-semibold text-violet-600 dark:text-violet-400">
                   {pagination.totalCount}
-                </span>{" "}résultats
+                </span>{" "}{t('log_results')}
               </span>
             </div>
             <div className="flex items-center gap-3">
@@ -811,10 +789,10 @@ export default function AdminLogsDashboard() {
                     </div>
                     <div>
                       <h3 className="text-xl font-bold text-white">
-                        Détails du log
+                        {t('log_details')}
                       </h3>
                       <p className="text-violet-200 text-sm">
-                        {formatDate(new Date(selectedLog.createdAt), "dd MMMM yyyy à HH:mm", { locale: fr })}
+                        {formatDate(new Date(selectedLog.createdAt), "dd MMMM yyyy", { locale: dateFnsLocale })} {formatDate(new Date(selectedLog.createdAt), "HH:mm", { locale: dateFnsLocale })}
                       </p>
                     </div>
                   </div>
@@ -835,7 +813,7 @@ export default function AdminLogsDashboard() {
                     <p className="mt-1 text-sm font-mono text-gray-900 dark:text-white break-all">{selectedLog.id}</p>
                   </div>
                   <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4">
-                    <label className="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold tracking-wider">Sévérité</label>
+                    <label className="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold tracking-wider">{t('log_severity')}</label>
                     <div className="mt-1">
                       <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold ${SEVERITY_CONFIG[selectedLog.severity]?.bg}`}>
                         <SeverityIcon severity={selectedLog.severity} />
@@ -850,7 +828,7 @@ export default function AdminLogsDashboard() {
                     </p>
                   </div>
                   <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4">
-                    <label className="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold tracking-wider">Entité</label>
+                    <label className="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold tracking-wider">{t('log_entity')}</label>
                     <p className="mt-1 text-sm text-gray-900 dark:text-white">
                       <span className="px-2 py-0.5 bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 rounded-lg font-medium">
                         {selectedLog.entityType}
@@ -863,11 +841,11 @@ export default function AdminLogsDashboard() {
                     </p>
                   </div>
                   <div className="col-span-2 bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4">
-                    <label className="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold tracking-wider">Adresse IP</label>
+                    <label className="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold tracking-wider">{t('log_ip_address')}</label>
                     <div className="mt-1 flex items-center gap-2">
                       <Globe className="h-4 w-4 text-gray-400" />
                       <p className="text-sm font-mono text-gray-900 dark:text-white">
-                        {selectedLog.ipAddress || "Non disponible"}
+                        {selectedLog.ipAddress || t('log_not_available')}
                       </p>
                     </div>
                   </div>
@@ -875,7 +853,7 @@ export default function AdminLogsDashboard() {
               
                 {selectedLog.user && (
                   <div className="bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-900/20 dark:to-purple-900/20 rounded-xl p-4 border border-violet-100 dark:border-violet-800/30">
-                    <label className="text-xs text-violet-600 dark:text-violet-400 uppercase font-semibold tracking-wider">Utilisateur</label>
+                    <label className="text-xs text-violet-600 dark:text-violet-400 uppercase font-semibold tracking-wider">{t('user')}</label>
                     <div className="mt-3 flex items-center gap-4">
                       <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center text-white font-bold shadow-lg shadow-violet-500/30">
                         {selectedLog.user.name?.[0]}{selectedLog.user.lastName?.[0]}
@@ -901,7 +879,7 @@ export default function AdminLogsDashboard() {
                   <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4">
                     <label className="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold tracking-wider flex items-center gap-2">
                       <Database className="h-3.5 w-3.5" />
-                      Métadonnées
+                      {t('log_metadata')}
                     </label>
                     <pre className="mt-2 p-4 bg-gray-900 rounded-xl text-xs text-emerald-400 overflow-auto font-mono leading-relaxed">
                       {JSON.stringify(selectedLog.metadata, null, 2)}
@@ -913,7 +891,7 @@ export default function AdminLogsDashboard() {
                   <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4">
                     <label className="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold tracking-wider flex items-center gap-2">
                       <RefreshCw className="h-3.5 w-3.5" />
-                      Modifications
+                      {t('log_changes')}
                     </label>
                     <pre className="mt-2 p-4 bg-gray-900 rounded-xl text-xs text-amber-400 overflow-auto font-mono leading-relaxed">
                       {JSON.stringify(selectedLog.changes, null, 2)}

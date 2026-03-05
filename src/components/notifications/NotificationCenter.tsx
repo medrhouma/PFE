@@ -7,6 +7,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRealTimeNotifications, Notification } from "@/hooks/useNotifications";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { 
   Bell, 
   Check, 
@@ -44,6 +45,8 @@ export default function NotificationCenter({ className = "" }: NotificationCente
     refresh,
   } = useRealTimeNotifications();
 
+  const { t, language } = useLanguage();
+  const locale = language === 'ar' ? 'ar-SA' : language === 'en' ? 'en-US' : 'fr-FR';
   const [isOpen, setIsOpen] = useState(false);
   const [filter, setFilter] = useState<FilterType>('all');
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -174,19 +177,19 @@ export default function NotificationCenter({ className = "" }: NotificationCente
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
 
-    if (diffMins < 1) return 'À l\'instant';
-    if (diffMins < 60) return `Il y a ${diffMins} min`;
-    if (diffHours < 24) return `Il y a ${diffHours}h`;
-    if (diffDays < 7) return `Il y a ${diffDays}j`;
-    return date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
+    if (diffMins < 1) return t('just_now');
+    if (diffMins < 60) return `${diffMins} min`;
+    if (diffHours < 24) return `${diffHours}h`;
+    if (diffDays < 7) return `${diffDays}${t('days_short')}`;
+    return date.toLocaleDateString(locale, { day: '2-digit', month: 'short' });
   };
 
   const categoryTabs = [
-    { id: 'all' as FilterType, label: 'Toutes', icon: '📋', count: notifications.length },
-    { id: 'unread' as FilterType, label: 'Non lues', icon: '🔔', count: unreadCount },
-    { id: 'conges' as FilterType, label: 'Congés', icon: '🏖️', count: countByCategory.conges },
-    { id: 'pointage' as FilterType, label: 'Pointage', icon: '⏰', count: countByCategory.pointage },
-    { id: 'profils' as FilterType, label: 'Profils', icon: '👤', count: countByCategory.profils },
+    { id: 'all' as FilterType, label: t('all'), icon: '📋', count: notifications.length },
+    { id: 'unread' as FilterType, label: t('unread'), icon: '🔔', count: unreadCount },
+    { id: 'conges' as FilterType, label: t('nav_leaves'), icon: '🏖️', count: countByCategory.conges },
+    { id: 'pointage' as FilterType, label: t('nav_attendance'), icon: '⏰', count: countByCategory.pointage },
+    { id: 'profils' as FilterType, label: t('profiles'), icon: '👤', count: countByCategory.profils },
   ];
 
   return (
@@ -226,18 +229,18 @@ export default function NotificationCenter({ className = "" }: NotificationCente
                   </div>
                   <div>
                     <h3 className="font-bold text-gray-900 dark:text-white">
-                      Notifications
+                      {t('notifications')}
                     </h3>
                     <div className="flex items-center gap-2">
                       {isConnected ? (
                         <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                          En temps réel
+                          {t('realtime')}
                         </span>
                       ) : (
                         <span className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
                           <WifiOff className="w-3 h-3" />
-                          Déconnecté
+                          {t('disconnected')}
                         </span>
                       )}
                     </div>
@@ -247,7 +250,7 @@ export default function NotificationCenter({ className = "" }: NotificationCente
                   <button
                     onClick={() => refresh()}
                     className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors"
-                    title="Rafraîchir"
+                    title={t('refresh')}
                   >
                     <RefreshCw className={`w-4 h-4 text-gray-500 ${isLoading ? 'animate-spin' : ''}`} />
                   </button>
@@ -256,7 +259,7 @@ export default function NotificationCenter({ className = "" }: NotificationCente
                       onClick={() => markAllAsRead()}
                       className="px-3 py-1.5 text-xs font-semibold text-white bg-gradient-to-r from-violet-500 to-purple-500 rounded-lg hover:from-violet-600 hover:to-purple-600 transition-all shadow-sm"
                     >
-                      Tout marquer lu
+                      {t('mark_all_read')}
                     </button>
                   )}
                 </div>
@@ -298,20 +301,20 @@ export default function NotificationCenter({ className = "" }: NotificationCente
             {isLoading && notifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12">
                 <div className="w-12 h-12 border-3 border-violet-500 border-t-transparent rounded-full animate-spin mb-4" />
-                <p className="text-sm text-gray-500 dark:text-gray-400">Chargement...</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{t('loading')}...</p>
               </div>
             ) : filteredNotifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-gray-500 dark:text-gray-400">
                 <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 rounded-2xl flex items-center justify-center mb-4">
                   <Bell className="w-8 h-8 text-gray-400" />
                 </div>
-                <p className="font-semibold text-gray-900 dark:text-white">Aucune notification</p>
+                <p className="font-semibold text-gray-900 dark:text-white">{t('no_notifications')}</p>
                 <p className="text-sm text-center max-w-[200px] mt-1">
                   {filter === 'unread' 
-                    ? 'Toutes vos notifications sont lues !' 
+                    ? t('all_notifications_read') 
                     : filter === 'all'
-                    ? 'Vous êtes à jour !'
-                    : `Aucune notification de type "${categoryTabs.find(t => t.id === filter)?.label}"`
+                    ? t('all_caught_up')
+                    : `${t('no_notifications_of_type')} ${categoryTabs.find(tab => tab.id === filter)?.label}`
                   }
                 </p>
               </div>
@@ -326,6 +329,7 @@ export default function NotificationCenter({ className = "" }: NotificationCente
                     getPriorityStyles={getPriorityStyles}
                     getTypeIcon={getTypeIcon}
                     formatDate={formatDate}
+                    t={t}
                   />
                 ))}
               </div>
@@ -339,7 +343,7 @@ export default function NotificationCenter({ className = "" }: NotificationCente
                 href="/notifications"
                 className="flex items-center justify-center gap-2 text-sm font-semibold text-violet-600 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300 transition-colors"
               >
-                Voir toutes les notifications
+                {t('view_all_notifications')}
                 <ExternalLink className="w-4 h-4" />
               </a>
             </div>
@@ -370,6 +374,7 @@ function NotificationItem({
   getPriorityStyles,
   getTypeIcon,
   formatDate,
+  t,
 }: {
   notification: Notification;
   onMarkAsRead: (id: string) => void;
@@ -377,6 +382,7 @@ function NotificationItem({
   getPriorityStyles: (priority: string) => { border: string; bg: string; badge: string };
   getTypeIcon: (type: string) => { icon: string; color: string };
   formatDate: (date: string) => string;
+  t: (key: string) => string;
 }) {
   const [isHovered, setIsHovered] = useState(false);
   const priorityStyles = getPriorityStyles(notification.priority);
@@ -424,7 +430,7 @@ function NotificationItem({
           {/* Priority badge for urgent/high */}
           {['URGENT', 'HIGH'].includes(notification.priority) && (
             <span className={`inline-flex items-center gap-1 mt-2 px-2.5 py-1 text-xs font-semibold rounded-lg ${priorityStyles.badge} shadow-sm`}>
-              {notification.priority === 'URGENT' ? '🔥 Urgent' : '⚡ Important'}
+              {notification.priority === 'URGENT' ? `🔥 ${t('urgent')}` : `⚡ ${t('important')}`}
             </span>
           )}
         </div>
@@ -445,7 +451,7 @@ function NotificationItem({
                 onMarkAsRead(notification.id);
               }}
               className="p-2 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded-lg transition-colors"
-              title="Marquer comme lu"
+              title={t('mark_as_read')}
             >
               <Check className="w-4 h-4 text-emerald-600" />
             </button>
@@ -456,7 +462,7 @@ function NotificationItem({
               onDelete(notification.id);
             }}
             className="p-2 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
-            title="Supprimer"
+            title={t('delete')}
           >
             <Trash2 className="w-4 h-4 text-red-500" />
           </button>

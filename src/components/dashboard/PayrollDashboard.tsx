@@ -21,6 +21,7 @@ import {
   XCircle,
   BarChart3,
 } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface PendingLeave {
   id: string;
@@ -67,6 +68,8 @@ interface RHDashboardData {
 }
 
 export default function PayrollDashboard() {
+  const { t, language } = useLanguage();
+  const locale = language === 'ar' ? 'ar-SA' : language === 'en' ? 'en-US' : 'fr-FR';
   const [data, setData] = useState<RHDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
@@ -116,10 +119,9 @@ export default function PayrollDashboard() {
     }
   };
 
-  const monthNames = [
-    "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
-    "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre",
-  ];
+  const monthNames = Array.from({ length: 12 }, (_, i) =>
+    new Date(2000, i).toLocaleDateString(locale, { month: 'long' })
+  );
 
   if (loading) {
     return (
@@ -140,7 +142,7 @@ export default function PayrollDashboard() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
           <BarChart3 className="w-7 h-7 text-blue-600" />
-          Tableau de bord Paie
+          {t('pd_payroll_dashboard')}
         </h2>
 
         <div className="flex items-center gap-3">
@@ -170,7 +172,7 @@ export default function PayrollDashboard() {
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm font-medium"
           >
             <RefreshCw className={`w-4 h-4 ${generating ? "animate-spin" : ""}`} />
-            {generating ? "Calcul..." : "Générer la paie"}
+            {generating ? t('pd_calculating') : t('pd_generate_payroll')}
           </button>
         </div>
       </div>
@@ -179,26 +181,26 @@ export default function PayrollDashboard() {
       {data?.stats && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <StatsCard
-            label="Employés actifs"
+            label={t('pd_active_employees')}
             value={data.stats.totalActiveEmployees}
             icon={<Users className="w-5 h-5" />}
             color="blue"
           />
           <StatsCard
-            label="Congés en attente"
+            label={t('pd_pending_leaves')}
             value={data.stats.pendingLeaveCount}
             icon={<Calendar className="w-5 h-5" />}
             color="yellow"
           />
           <StatsCard
-            label="Anomalies"
+            label={t('pd_anomalies')}
             value={data.stats.anomalyCount}
             icon={<AlertTriangle className="w-5 h-5" />}
             color="red"
           />
           <StatsCard
-            label="Masse salariale"
-            value={`${data.stats.totalPayroll.toLocaleString("fr-FR")} TND`}
+            label={t('pd_payroll_total')}
+            value={`${data.stats.totalPayroll.toLocaleString(locale)} TND`}
             icon={<DollarSign className="w-5 h-5" />}
             color="green"
           />
@@ -210,27 +212,27 @@ export default function PayrollDashboard() {
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
             <DollarSign className="w-5 h-5 text-green-600" />
-            Aperçu des salaires — {monthNames[selectedMonth - 1]} {selectedYear}
+            {t('pd_salary_preview')} — {monthNames[selectedMonth - 1]} {selectedYear}
           </h3>
 
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-200 dark:border-gray-700">
-                  <th className="text-left py-3 px-2 text-gray-500 dark:text-gray-400 font-medium">Employé</th>
-                  <th className="text-right py-3 px-2 text-gray-500 dark:text-gray-400 font-medium">Base</th>
-                  <th className="text-right py-3 px-2 text-gray-500 dark:text-gray-400 font-medium">Déductions</th>
-                  <th className="text-right py-3 px-2 text-gray-500 dark:text-gray-400 font-medium">Net</th>
-                  <th className="text-center py-3 px-2 text-gray-500 dark:text-gray-400 font-medium">Statut</th>
+                  <th className="text-left py-3 px-2 text-gray-500 dark:text-gray-400 font-medium">{t('pd_employee')}</th>
+                  <th className="text-right py-3 px-2 text-gray-500 dark:text-gray-400 font-medium">{t('pd_base')}</th>
+                  <th className="text-right py-3 px-2 text-gray-500 dark:text-gray-400 font-medium">{t('pd_deductions')}</th>
+                  <th className="text-right py-3 px-2 text-gray-500 dark:text-gray-400 font-medium">{t('pd_net')}</th>
+                  <th className="text-center py-3 px-2 text-gray-500 dark:text-gray-400 font-medium">{t('status')}</th>
                 </tr>
               </thead>
               <tbody>
                 {data.salaryPreview.map(emp => (
                   <tr key={emp.employeeId} className="border-b border-gray-100 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/30">
                     <td className="py-3 px-2 font-medium text-gray-900 dark:text-white">{emp.employeeName}</td>
-                    <td className="py-3 px-2 text-right text-gray-700 dark:text-gray-300">{emp.baseSalary.toLocaleString("fr-FR")} TND</td>
-                    <td className="py-3 px-2 text-right text-red-600 dark:text-red-400">-{emp.deductions.toLocaleString("fr-FR")}</td>
-                    <td className="py-3 px-2 text-right font-semibold text-gray-900 dark:text-white">{emp.netSalary.toLocaleString("fr-FR")} TND</td>
+                    <td className="py-3 px-2 text-right text-gray-700 dark:text-gray-300">{emp.baseSalary.toLocaleString(locale)} TND</td>
+                    <td className="py-3 px-2 text-right text-red-600 dark:text-red-400">-{emp.deductions.toLocaleString(locale)}</td>
+                    <td className="py-3 px-2 text-right font-semibold text-gray-900 dark:text-white">{emp.netSalary.toLocaleString(locale)} TND</td>
                     <td className="py-3 px-2 text-center">
                       <StatusBadge status={emp.status} />
                     </td>
@@ -247,7 +249,7 @@ export default function PayrollDashboard() {
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
             <Calendar className="w-5 h-5 text-purple-600" />
-            Demandes de congé en attente ({data.pendingLeaves.length})
+            {t('pd_pending_leave_requests')} ({data.pendingLeaves.length})
           </h3>
 
           <div className="space-y-3">
@@ -259,11 +261,11 @@ export default function PayrollDashboard() {
                 <div>
                   <p className="font-medium text-gray-900 dark:text-white">{leave.userName}</p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {leave.type} • {leave.duration} jour{leave.duration !== 1 ? "s" : ""}
-                    {leave.isHalfDay && " (demi-journée)"}
+                    {leave.type} • {leave.duration} {t('pd_day')}{leave.duration !== 1 ? "s" : ""}
+                    {leave.isHalfDay && ` (${t('pd_half_day')})`}
                     {" • "}
-                    {new Date(leave.startDate).toLocaleDateString("fr-FR")}
-                    {leave.startDate !== leave.endDate && ` - ${new Date(leave.endDate).toLocaleDateString("fr-FR")}`}
+                    {new Date(leave.startDate).toLocaleDateString(locale)}
+                    {leave.startDate !== leave.endDate && ` - ${new Date(leave.endDate).toLocaleDateString(locale)}`}
                   </p>
                 </div>
                 <div className="flex gap-2">
@@ -285,7 +287,7 @@ export default function PayrollDashboard() {
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
             <AlertTriangle className="w-5 h-5 text-amber-600" />
-            Anomalies de pointage ({data.anomalies.length})
+            {t('pd_attendance_anomalies')} ({data.anomalies.length})
           </h3>
 
           <div className="space-y-2">
@@ -297,7 +299,7 @@ export default function PayrollDashboard() {
                 <div>
                   <p className="font-medium text-gray-900 dark:text-white">{anomaly.userName}</p>
                   <p className="text-sm text-amber-700 dark:text-amber-400">
-                    {anomaly.reason} — {new Date(anomaly.date).toLocaleDateString("fr-FR")} ({anomaly.sessionType})
+                    {anomaly.reason} — {new Date(anomaly.date).toLocaleDateString(locale)} ({anomaly.sessionType})
                   </p>
                 </div>
               </div>

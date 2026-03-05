@@ -26,6 +26,12 @@ export {
   AFTERNOON_SESSION_HOURS,
   OVERTIME_MULTIPLIER,
   DEFAULT_ANNUAL_LEAVE_DAYS,
+  LATE_TOLERANCE_MINUTES,
+  EARLY_DEPARTURE_TOLERANCE_MINUTES,
+  MORNING_START_TIME,
+  MORNING_END_TIME,
+  AFTERNOON_START_TIME,
+  AFTERNOON_END_TIME,
   isWeekend,
   isPublicHoliday,
   isWorkDay,
@@ -33,6 +39,8 @@ export {
   getWorkDatesInMonth,
   calculateDailyRate,
   calculateHourlyRate,
+  calculateLateMinutes,
+  calculateEarlyDepartureMinutes,
   toDateString,
 } from './constants';
 
